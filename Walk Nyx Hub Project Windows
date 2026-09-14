@@ -1,1 +1,466 @@
-iwj
+--==============================================================--
+--                    WALK NYX HUB                             --
+--                  INTERFACE + LOCAL PLAYER                   --
+--==============================================================--
+
+
+--==============================================================--
+-- 1. SERVIÇOS
+--==============================================================--
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+
+--==============================================================--
+-- 2. CARREGAR WINDUI
+--==============================================================--
+
+local WindUI = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
+))()
+
+
+--==============================================================--
+-- 3. VARIÁVEIS GERAIS
+--==============================================================--
+
+local TamanhoBotao = 1.0
+
+local OpenButton = nil
+local EscalaBotao = nil
+
+
+--==============================================================--
+-- 4. VARIÁVEIS — MOVEMENT PLAYER
+--==============================================================--
+
+local SpeedAtivo = false
+local SpeedValor = 16
+
+local JumpPowerAtivo = false
+local JumpPowerValor = 50
+
+
+--==============================================================--
+-- 5. CRIAR WINDOW
+--==============================================================--
+
+local Window = WindUI:CreateWindow({
+
+    Title = "Murderer Mystery 2",
+
+    Icon = "sparkles",
+
+    Author = "Walk Nyx Project",
+
+    Size = UDim2.fromOffset(520, 360),
+
+    MinSize = Vector2.new(420, 300),
+
+    MaxSize = Vector2.new(600, 430),
+
+    Resizable = true,
+
+    Transparent = true,
+
+    Theme = "Dark",
+
+    SideBarWidth = 145,
+
+    HasOutline = true,
+
+    HideSearchBar = false,
+
+    ScrollBarEnabled = true,
+
+    User = {
+        Enabled = true,
+        Anonymous = false,
+    },
+
+})
+
+
+--==============================================================--
+-- 6. BOTÃO FLUTUANTE
+--==============================================================--
+
+OpenButton = Window:EditOpenButton({
+
+    Title = "Murderer Mystery 2",
+
+    Icon = "sparkles",
+
+    CornerRadius = UDim.new(0, 12),
+
+    StrokeThickness = 2,
+
+    Color = ColorSequence.new({
+
+        ColorSequenceKeypoint.new(
+            0,
+            Color3.fromRGB(0, 0, 0)
+        ),
+
+        ColorSequenceKeypoint.new(
+            1,
+            Color3.fromRGB(255, 255, 255)
+        ),
+
+    }),
+
+    Draggable = true,
+
+})
+
+
+--==============================================================--
+-- 7. TAMANHO DO BOTÃO FLUTUANTE
+--==============================================================--
+
+task.wait(1)
+
+pcall(function()
+
+    if OpenButton and OpenButton:IsA("GuiObject") then
+
+        EscalaBotao =
+            OpenButton:FindFirstChildOfClass("UIScale")
+
+        if not EscalaBotao then
+
+            EscalaBotao = Instance.new("UIScale")
+
+            EscalaBotao.Scale = TamanhoBotao
+
+            EscalaBotao.Parent = OpenButton
+
+        end
+
+    end
+
+end)
+
+
+--==============================================================--
+-- 8. ABA MURDERER
+-- VAZIA
+--==============================================================--
+
+local Aba_Murderer = Window:Tab({
+
+    Title = "Murderer",
+
+    Icon = "swords",
+
+})
+
+
+--==============================================================--
+-- 9. ABA SHERIFF
+-- VAZIA
+--==============================================================--
+
+local Aba_Sheriff = Window:Tab({
+
+    Title = "Sheriff",
+
+    Icon = "crosshair",
+
+})
+
+
+--==============================================================--
+-- 10. ABA AUTO FARM
+-- VAZIA
+--==============================================================--
+
+local Aba_AutoFarm = Window:Tab({
+
+    Title = "Auto Farm",
+
+    Icon = "coins",
+
+})
+
+
+--==============================================================--
+-- 11. ABA ESP
+-- VAZIA
+--==============================================================--
+
+local Aba_ESP = Window:Tab({
+
+    Title = "ESP",
+
+    Icon = "eye",
+
+})
+
+
+--==============================================================--
+-- 12. ABA TELEPORT
+-- VAZIA
+--==============================================================--
+
+local Aba_Teleport = Window:Tab({
+
+    Title = "Teleport",
+
+    Icon = "map-pin",
+
+})
+
+
+--==============================================================--
+-- 13. ABA LOCAL PLAYER
+--==============================================================--
+
+local Aba_LocalPlayer = Window:Tab({
+
+    Title = "Local Player",
+
+    Icon = "user-round",
+
+})
+
+
+Aba_LocalPlayer:Section({
+
+    Title = "Movement Player",
+
+})
+
+
+Aba_LocalPlayer:Toggle({
+
+    Title = "Speed",
+
+    Default = false,
+
+    Callback = function(state)
+
+        SpeedAtivo = state
+
+    end,
+
+})
+
+
+Aba_LocalPlayer:Slider({
+
+    Title = "Speed Value",
+
+    Value = {
+
+        Min = 16,
+
+        Max = 45,
+
+        Default = 16,
+
+    },
+
+    Step = 1,
+
+    Callback = function(value)
+
+        SpeedValor = value
+
+    end,
+
+})
+
+
+Aba_LocalPlayer:Toggle({
+
+    Title = "Power Jump",
+
+    Default = false,
+
+    Callback = function(state)
+
+        JumpPowerAtivo = state
+
+    end,
+
+})
+
+
+Aba_LocalPlayer:Slider({
+
+    Title = "Jump Power",
+
+    Value = {
+
+        Min = 50,
+
+        Max = 120,
+
+        Default = 50,
+
+    },
+
+    Step = 5,
+
+    Callback = function(value)
+
+        JumpPowerValor = value
+
+    end,
+
+})
+
+Aba_LocalPlayer:Section({
+    Title = "Extras",
+})
+
+-- ==================================
+-- 📦 VARIÁVEIS — SPEED GLITCH
+-- ==================================
+local SpeedGlitchAtivo = false
+local SpeedGlitchValor = 50
+local SpeedOriginal = 16 -- Definido corretamente para 16 no chão
+
+-- ==================================
+-- ⚡ SISTEMA SPEED GLITCH
+-- ==================================
+RunService.Heartbeat:Connect(function()
+    if not SpeedGlitchAtivo then return end
+
+    local Character = Player.Character
+    if not Character then return end
+    
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not Humanoid or not RootPart then return end
+
+    -- Verifica se o personagem está no ar de forma mais precisa
+    -- (Olha se o material do chão é Air ou se ele está pulando/caindo)
+    local estaNoAr = (Humanoid.FloorMaterial == Enum.Material.Air) or (math.abs(RootPart.AssemblyLinearVelocity.Y) > 0.5)
+
+    if estaNoAr then
+        Humanoid.WalkSpeed = SpeedGlitchValor
+    else
+        Humanoid.WalkSpeed = SpeedOriginal
+    end
+end)
+
+-- ==================================
+-- ⚡ BOTÕES — SPEED GLITCH
+-- ==================================
+Aba_LocalPlayer:Toggle({
+    Title = "Speed Glitch",
+    Default = false,
+    Callback = function(state)
+        SpeedGlitchAtivo = state
+        -- Se desativar o glitch, reseta a velocidade para o normal imediatamente
+        local char = Player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if not state and hum then
+            hum.WalkSpeed = 16
+        end
+    end,
+})
+
+Aba_LocalPlayer:Slider({
+    Title = "Glitch Speed",
+    Value = {
+        Min = 50,
+        Max = 550,
+        Default = 50,
+    },
+    Step = 5,
+    Callback = function(value)
+        SpeedGlitchValor = value
+    end,
+})
+
+
+--==============================================================--
+-- 19. SISTEMA SPEED
+--==============================================================--
+
+RunService.Heartbeat:Connect(function()
+
+    local Character = Player.Character
+
+    if not Character then
+        return
+    end
+
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        return
+    end
+
+    if SpeedAtivo then
+
+        -- Ligado = valor do slider
+        Humanoid.WalkSpeed = SpeedValor
+
+    else
+
+        -- Desligado = padrão 16
+        Humanoid.WalkSpeed = 16
+
+    end
+
+end)
+
+
+--==============================================================--
+-- 20. SISTEMA POWER JUMP
+--==============================================================--
+
+RunService.Heartbeat:Connect(function()
+
+    local Character = Player.Character
+
+    if not Character then
+        return
+    end
+
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        return
+    end
+
+    -- Faz o Humanoid usar JumpPower
+    Humanoid.UseJumpPower = true
+
+    if JumpPowerAtivo then
+
+        -- Ligado = valor do slider
+        Humanoid.JumpPower = JumpPowerValor
+
+    else
+
+        -- Desligado = padrão 50
+        Humanoid.JumpPower = 50
+
+    end
+
+end)
+
+
+--==============================================================--
+-- 21. ABA MODIFICATIONS
+-- VAZIA
+--==============================================================--
+
+local Aba_Modifications = Window:Tab({
+
+    Title = "Modifications",
+
+    Icon = "wand-sparkles",
+
+})
