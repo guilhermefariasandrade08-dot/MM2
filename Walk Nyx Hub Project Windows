@@ -352,36 +352,29 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ==================================
--- ⚡ BOTÕES — SPEED GLITCH
--- ==================================
 Aba_LocalPlayer:Toggle({
-    Title = "Speed Glitch",
+    Title = "Speed glith",
     Default = false,
-    Callback = function(state)
-        SpeedGlitchAtivo = state
-        -- Se desativar o glitch, reseta a velocidade para o normal imediatamente
-        local char = Player.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if not state and hum then
-            hum.WalkSpeed = 16
-        end
-    end,
+
+    Callback = function(Ativo)
+        _G.SpeedNoPulo = Ativo
+    end
 })
 
-Aba_LocalPlayer:Slider({
-    Title = "Glitch Speed",
-    Value = {
-        Min = 50,
-        Max = 550,
-        Default = 50,
-    },
-    Step = 5,
-    Callback = function(value)
-        SpeedGlitchValor = value
-    end,
-})
+-- ==================================
+-- VARIÁVEIS DO SPEED GLITH
+-- ==================================
 
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+
+_G.SpeedNoPulo = false
+
+local VelocidadeNoPulo = 500
+local VelocidadePadrao = 16
 
 --==============================================================--
 -- 19. SISTEMA SPEED
