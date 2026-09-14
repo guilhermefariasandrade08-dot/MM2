@@ -277,7 +277,6 @@ Aba_LocalPlayer:Slider({
 
 })
 
-
 Aba_LocalPlayer:Toggle({
 
     Title = "Power Jump",
@@ -321,92 +320,14 @@ Aba_LocalPlayer:Section({
     Title = "Extras",
 })
 
--- ==================================
--- 📦 VARIÁVEIS — SPEED GLITCH
--- ==================================
-local SpeedGlitchAtivo = false
-local SpeedGlitchValor = 50
-local SpeedOriginal = 16 -- Definido corretamente para 16 no chão
-
--- ==================================
--- ⚡ SISTEMA SPEED GLITCH
--- ==================================
-RunService.Heartbeat:Connect(function()
-    if not SpeedGlitchAtivo then return end
-
-    local Character = Player.Character
-    if not Character then return end
-    
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-    local RootPart = Character:FindFirstChild("HumanoidRootPart")
-    if not Humanoid or not RootPart then return end
-
-    -- Verifica se o personagem está no ar de forma mais precisa
-    -- (Olha se o material do chão é Air ou se ele está pulando/caindo)
-    local estaNoAr = (Humanoid.FloorMaterial == Enum.Material.Air) or (math.abs(RootPart.AssemblyLinearVelocity.Y) > 0.5)
-
-    if estaNoAr then
-        Humanoid.WalkSpeed = SpeedGlitchValor
-    else
-        Humanoid.WalkSpeed = SpeedOriginal
-    end
-end)
-
 Aba_LocalPlayer:Toggle({
-    Title = "Speed glith",
+    Title = "Speed Glitch",
+    Desc = "Aplica velocidade 300 ao pular e volta ao normal quando encostar no chão",
     Default = false,
-
     Callback = function(Ativo)
         _G.SpeedNoPulo = Ativo
     end
 })
-
--- ==================================
--- VARIÁVEIS DO SPEED GLITH
--- ==================================
-
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-
-local player = Players.LocalPlayer
-
-_G.SpeedNoPulo = false
-
-local VelocidadeNoPulo = 500
-local VelocidadePadrao = 16
-
---==============================================================--
--- 19. SISTEMA SPEED
---==============================================================--
-
-RunService.Heartbeat:Connect(function()
-
-    local Character = Player.Character
-
-    if not Character then
-        return
-    end
-
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-
-    if not Humanoid then
-        return
-    end
-
-    if SpeedAtivo then
-
-        -- Ligado = valor do slider
-        Humanoid.WalkSpeed = SpeedValor
-
-    else
-
-        -- Desligado = padrão 16
-        Humanoid.WalkSpeed = 16
-
-    end
-
-end)
 
 
 --==============================================================--
