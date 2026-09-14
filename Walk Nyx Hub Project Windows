@@ -330,6 +330,30 @@ Aba_LocalPlayer:Toggle({
 })
 
 
+-- ==================================
+-- 📦 VARIÁVEIS — SPEED GLITCH
+-- ==================================
+_G.SpeedNoPulo = false
+local VelocidadeNoPulo = 300
+
+-- ==================================
+-- ⚡ SISTEMA SPEED GLITCH
+-- ==================================
+RunService.Stepped:Connect(function()
+    local Char = player.Character
+    if not Char or not Char:FindFirstChild("Humanoid") then return end
+    local Hum = Char.Humanoid
+
+    -- ✈️ No ar = velocidade alta | 🦶 No chão = velocidade normal
+    if _G.SpeedNoPulo then
+        if Hum.FloorMaterial == Enum.Material.Air then
+            Hum.WalkSpeed = VelocidadeNoPulo
+        else
+            Hum.WalkSpeed = VelocidadePadrao
+        end
+    end
+end)
+
 --==============================================================--
 -- 20. SISTEMA POWER JUMP
 --==============================================================--
