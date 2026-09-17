@@ -1845,19 +1845,705 @@ local ModificationsPage = TabFrames[9]
 -- =============================
 -- // ——— == VARIÁVEIS == ——— \\ --
 -- =============================
---→ Coloque variáveis da aba Auto Farm aqui ↓
+-- 📋 CONFIGURAÇÕES
+local PosicaoMoeda = "Lying"   -- Standing / Lying
+local ModoMovimento = "CFrame" -- Tween / CFrame
+local ListaPosicaoAberta = false
+local ListaModoAberta = false
+
+local AutoFarmAtivo = false
+local BolsaCheia = false
+local bolsaCheiaPorEvento = false
+local collectedCoins = {}
+local cachedCoinContainer = nil
+local ultimoCheckBolsa = 0
+local resultadoUltimoCheckBolsa = false
+local HitboxOriginal = {}
+local ParouAteNovaPartida = false
+
+local CONFIG_FARM = {
+    velocidade = 18,
+    alcance_maximo = 500,
+    raio_perigo_murder = 30
+}
+local MinVel, MaxVel = 16, 20
+
+local ProximaPosicaoY = 0
 
 
 -- =============================
 -- // ——— == BOTOES == ——— \\ --
 -- =============================
---→ Coloque Botoes da aba Auto Farm aqui ↓
+
+-- ==============================================================
+-- 🏷️ TÍTULO: FARM COIN
+-- ==============================================================
+local FarmCoinLabel = Instance.new("TextLabel")
+FarmCoinLabel.BackgroundTransparency = 1
+FarmCoinLabel.Text = "Farm Coin"
+FarmCoinLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+FarmCoinLabel.TextSize = 15
+FarmCoinLabel.Font = Enum.Font.GothamBold
+FarmCoinLabel.Position = UDim2.fromOffset(0, ProximaPosicaoY)
+FarmCoinLabel.Size = UDim2.new(1, 0, 0, 24)
+FarmCoinLabel.TextXAlignment = Enum.TextXAlignment.Left
+FarmCoinLabel.Parent = ContentArea
+ProximaPosicaoY += 28
+
+-- ==============================================================
+-- 📂 LISTA: POSIÇÃO NAS MOEDAS
+-- ==============================================================
+local PosicaoCard = Instance.new("Frame")
+PosicaoCard.Size = UDim2.new(1, 0, 0, 42)
+PosicaoCard.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+PosicaoCard.Parent = ContentArea
+PosicaoCard.Position = UDim2.new(0, 0, 0, ProximaPosicaoY)
+Corner(PosicaoCard, 10)
+
+local PosicaoBtn = Instance.new("TextButton")
+PosicaoBtn.Size = UDim2.new(1, 0, 1, 0)
+PosicaoBtn.BackgroundTransparency = 1
+PosicaoBtn.Text = "Position: " .. PosicaoMoeda .. "   ∨"
+PosicaoBtn.TextColor3 = Theme.Text
+PosicaoBtn.TextSize = 12
+PosicaoBtn.Font = Enum.Font.GothamSemibold
+PosicaoBtn.AutoButtonColor = false
+PosicaoBtn.Parent = PosicaoCard
+
+local PosicaoLista = Instance.new("Frame")
+PosicaoLista.Name = "PosicaoLista"
+PosicaoLista.Size = UDim2.new(1, 0, 0, 0)
+PosicaoLista.BackgroundColor3 = Theme.DropdownBg
+PosicaoLista.Visible = false
+PosicaoLista.ClipsDescendants = true
+PosicaoLista.Parent = PosicaoCard
+Corner(PosicaoLista, 10)
+
+-- Opção Standing
+local StandingBtn = Instance.new("TextButton")
+StandingBtn.Size = UDim2.new(1, 0, 0, 36)
+StandingBtn.BackgroundTransparency = 1
+StandingBtn.Text = "  Standing"
+StandingBtn.TextColor3 = Theme.Text
+StandingBtn.TextSize = 12
+StandingBtn.Font = Enum.Font.GothamSemibold
+StandingBtn.AutoButtonColor = false
+StandingBtn.TextXAlignment = Enum.TextXAlignment.Left
+StandingBtn.Parent = PosicaoLista
+
+-- Opção Lying
+local LyingBtn = Instance.new("TextButton")
+LyingBtn.Size = UDim2.new(1, 0, 0, 36)
+LyingBtn.Position = UDim2.new(0, 0, 0, 36)
+LyingBtn.BackgroundTransparency = 1
+LyingBtn.Text = "  Lying"
+LyingBtn.TextColor3 = Theme.Text
+LyingBtn.TextSize = 12
+LyingBtn.Font = Enum.Font.GothamSemibold
+LyingBtn.AutoButtonColor = false
+LyingBtn.TextXAlignment = Enum.TextXAlignment.Left
+LyingBtn.Parent = PosicaoLista
+
+ProximaPosicaoY += 46
+
+-- ==============================================================
+-- 📂 LISTA: MODO DE MOVIMENTO
+-- ==============================================================
+local ModoCard = Instance.new("Frame")
+ModoCard.Size = UDim2.new(1, 0, 0, 42)
+ModoCard.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+ModoCard.Parent = ContentArea
+ModoCard.Position = UDim2.new(0, 0, 0, ProximaPosicaoY)
+Corner(ModoCard, 10)
+
+local ModoBtn = Instance.new("TextButton")
+ModoBtn.Size = UDim2.new(1, 0, 1, 0)
+ModoBtn.BackgroundTransparency = 1
+ModoBtn.Text = "Mode: " .. ModoMovimento .. "   ∨"
+ModoBtn.TextColor3 = Theme.Text
+ModoBtn.TextSize = 12
+ModoBtn.Font = Enum.Font.GothamSemibold
+ModoBtn.AutoButtonColor = false
+ModoBtn.Parent = ModoCard
+
+local ModoLista = Instance.new("Frame")
+ModoLista.Name = "ModoLista"
+ModoLista.Size = UDim2.new(1, 0, 0, 0)
+ModoLista.BackgroundColor3 = Theme.DropdownBg
+ModoLista.Visible = false
+ModoLista.ClipsDescendants = true
+ModoLista.Parent = ModoCard
+Corner(ModoLista, 10)
+
+-- Opção Tween
+local TweenBtn = Instance.new("TextButton")
+TweenBtn.Size = UDim2.new(1, 0, 0, 36)
+TweenBtn.BackgroundTransparency = 1
+TweenBtn.Text = "  Tween"
+TweenBtn.TextColor3 = Theme.Text
+TweenBtn.TextSize = 12
+TweenBtn.Font = Enum.Font.GothamSemibold
+TweenBtn.AutoButtonColor = false
+TweenBtn.TextXAlignment = Enum.TextXAlignment.Left
+TweenBtn.Parent = ModoLista
+
+-- Opção CFrame
+local CFrameBtn = Instance.new("TextButton")
+CFrameBtn.Size = UDim2.new(1, 0, 0, 36)
+CFrameBtn.Position = UDim2.new(0, 0, 0, 36)
+CFrameBtn.BackgroundTransparency = 1
+CFrameBtn.Text = "  CFrame"
+CFrameBtn.TextColor3 = Theme.Text
+CFrameBtn.TextSize = 12
+CFrameBtn.Font = Enum.Font.GothamSemibold
+CFrameBtn.AutoButtonColor = false
+CFrameBtn.TextXAlignment = Enum.TextXAlignment.Left
+CFrameBtn.Parent = ModoLista
+
+ProximaPosicaoY += 46
+
+-- ==============================================================
+-- ✅ BOTÃO TOGGLE AUTO FARM (AZUL)
+-- ==============================================================
+local ToggleCard = Instance.new("Frame")
+ToggleCard.Size = UDim2.new(1, 0, 0, 42)
+ToggleCard.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+ToggleCard.Parent = ContentArea
+ToggleCard.Position = UDim2.new(0, 0, 0, ProximaPosicaoY)
+Corner(ToggleCard, 10)
+
+local AutoFarmToggle = Instance.new("TextButton")
+AutoFarmToggle.Name = "AutoFarmToggle"
+AutoFarmToggle.Size = UDim2.fromOffset(30, 30)
+AutoFarmToggle.Position = UDim2.fromOffset(10, 6)
+AutoFarmToggle.BackgroundColor3 = Theme.ToggleOff
+AutoFarmToggle.BorderSizePixel = 0
+AutoFarmToggle.Text = ""
+AutoFarmToggle.AutoButtonColor = false
+AutoFarmToggle.Parent = ToggleCard
+Corner(AutoFarmToggle, 8)
+
+local CheckMark = Instance.new("TextLabel")
+CheckMark.BackgroundTransparency = 1
+CheckMark.Text = "✔"
+CheckMark.TextColor3 = Color3.fromRGB(255, 255, 255)
+CheckMark.TextSize = 14
+CheckMark.Font = Enum.Font.GothamBold
+CheckMark.Visible = false
+CheckMark.Size = UDim2.new(1, 0, 1, 0)
+CheckMark.Parent = AutoFarmToggle
+
+local ToggleLabel = Instance.new("TextLabel")
+ToggleLabel.BackgroundTransparency = 1
+ToggleLabel.Text = "Auto Farm"
+ToggleLabel.TextColor3 = Theme.Text
+ToggleLabel.TextSize = 12
+ToggleLabel.Font = Enum.Font.GothamSemibold
+ToggleLabel.Position = UDim2.fromOffset(52, 0)
+ToggleLabel.Size = UDim2.new(1, -62, 1, 0)
+ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+ToggleLabel.Parent = ToggleCard
+
+ProximaPosicaoY += 46
+
+-- ==============================================================
+-- 🎚️ SLIDER DE VELOCIDADE
+-- ==============================================================
+local SliderCard = Instance.new("Frame")
+SliderCard.Size = UDim2.new(1, 0, 0, 46)
+SliderCard.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+SliderCard.Parent = ContentArea
+SliderCard.Position = UDim2.new(0, 0, 0, ProximaPosicaoY)
+Corner(SliderCard, 10)
+
+local SliderLabel = Instance.new("TextLabel")
+SliderLabel.BackgroundTransparency = 1
+SliderLabel.Text = "Velocidade: " .. CONFIG_FARM.velocidade
+SliderLabel.TextColor3 = Theme.Text
+SliderLabel.TextSize = 12
+SliderLabel.Font = Enum.Font.GothamSemibold
+SliderLabel.Position = UDim2.fromOffset(12, 4)
+SliderLabel.Size = UDim2.new(1, -24, 0, 16)
+SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+SliderLabel.Parent = SliderCard
+
+local SliderTrack = Instance.new("Frame")
+SliderTrack.Size = UDim2.new(1, -24, 0, 8)
+SliderTrack.Position = UDim2.fromOffset(12, 26)
+SliderTrack.BackgroundColor3 = Theme.SliderTrack
+SliderTrack.Parent = SliderCard
+Corner(SliderTrack, 4)
+
+local SliderFill = Instance.new("Frame")
+SliderFill.Size = UDim2.new(((CONFIG_FARM.velocidade - MinVel) / (MaxVel - MinVel)), 0, 1, 0)
+SliderFill.BackgroundColor3 = Theme.SliderFill
+SliderFill.Parent = SliderTrack
+Corner(SliderFill, 4)
+
+local SliderBtn = Instance.new("TextButton")
+SliderBtn.Size = UDim2.fromOffset(16, 16)
+SliderBtn.Position = UDim2.new(((CONFIG_FARM.velocidade - MinVel) / (MaxVel - MinVel)), -8, 0.5, -8)
+SliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+SliderBtn.BorderSizePixel = 0
+SliderBtn.Text = ""
+SliderBtn.AutoButtonColor = false
+SliderBtn.ZIndex = 10
+SliderBtn.Parent = SliderTrack
+Corner(SliderBtn, 8)
+
+ProximaPosicaoY += 52
+
+-- ==============================================================
+-- 🔴 BOTÃO ANTI-AFK
+-- ==============================================================
+local AntiAFKButton = Instance.new("TextButton")
+AntiAFKButton.Name = "AntiAFKButton"
+AntiAFKButton.Size = UDim2.new(1, 0, 0, 42)
+AntiAFKButton.BackgroundColor3 = Theme.AntiAfkBtn
+AntiAFKButton.BorderSizePixel = 0
+AntiAFKButton.AutoButtonColor = true
+AntiAFKButton.Text = "Anti-AFK"
+AntiAFKButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AntiAFKButton.TextSize = 14
+AntiAFKButton.Font = Enum.Font.GothamBold
+AntiAFKButton.Parent = ContentArea
+AntiAFKButton.Position = UDim2.new(0, 0, 0, ProximaPosicaoY)
+Corner(AntiAFKButton, 10)
+Stroke(AntiAFKButton, Color3.fromRGB(255, 100, 110), 1)
 
 
 -- =============================
 -- // ——— == SISTEMA == ——— \\ --
 -- =============================
---→ Coloque Sistema da aba Auto Farm aqui ↓
+
+-- ==============================================================
+-- 🎯 SISTEMA DE DROPDOWN EXPANSÍVEL
+-- ==============================================================
+local function ToggleListaPosicao()
+    ListaPosicaoAberta = not ListaPosicaoAberta
+    ListaModoAberta = false
+    ModoLista.Visible = false
+    ModoLista.Size = UDim2.new(1, 0, 0, 0)
+    ModoBtn.Text = "Mode: " .. ModoMovimento .. "   ∨"
+    
+    PosicaoLista.Visible = ListaPosicaoAberta
+    PosicaoLista.Size = ListaPosicaoAberta and UDim2.new(1, 0, 0, 72) or UDim2.new(1, 0, 0, 0)
+    PosicaoBtn.Text = "Position: " .. PosicaoMoeda .. "   " .. (ListaPosicaoAberta and "∧" or "∨")
+    
+    PosicaoCard.Size = ListaPosicaoAberta and UDim2.new(1, 0, 0, 114) or UDim2.new(1, 0, 0, 42)
+    AtualizarPosicoes()
+end
+
+local function ToggleListaModo()
+    ListaModoAberta = not ListaModoAberta
+    ListaPosicaoAberta = false
+    PosicaoLista.Visible = false
+    PosicaoLista.Size = UDim2.new(1, 0, 0, 0)
+    PosicaoBtn.Text = "Position: " .. PosicaoMoeda .. "   ∨"
+    
+    ModoLista.Visible = ListaModoAberta
+    ModoLista.Size = ListaModoAberta and UDim2.new(1, 0, 0, 72) or UDim2.new(1, 0, 0, 0)
+    ModoBtn.Text = "Mode: " .. ModoMovimento .. "   " .. (ListaModoAberta and "∧" or "∨")
+    
+    ModoCard.Size = ListaModoAberta and UDim2.new(1, 0, 0, 114) or UDim2.new(1, 0, 0, 42)
+    AtualizarPosicoes()
+end
+
+function AtualizarPosicoes()
+    local deslocamentoPos = ListaPosicaoAberta and 72 or 0
+    local deslocamentoModo = ListaModoAberta and 72 or 0
+    local yBase = 0
+    
+    yBase += 28
+    PosicaoCard.Position = UDim2.new(0, 0, 0, yBase)
+    yBase += 42 + deslocamentoPos
+    ModoCard.Position = UDim2.new(0, 0, 0, yBase)
+    yBase += 42 + deslocamentoModo
+    ToggleCard.Position = UDim2.new(0, 0, 0, yBase)
+    yBase += 46
+    SliderCard.Position = UDim2.new(0, 0, 0, yBase)
+    yBase += 52
+    AntiAFKButton.Position = UDim2.new(0, 0, 0, yBase)
+end
+
+StandingBtn.MouseButton1Click:Connect(function()
+    PosicaoMoeda = "Standing"
+    ToggleListaPosicao()
+end)
+
+LyingBtn.MouseButton1Click:Connect(function()
+    PosicaoMoeda = "Lying"
+    ToggleListaPosicao()
+end)
+
+TweenBtn.MouseButton1Click:Connect(function()
+    ModoMovimento = "Tween"
+    ToggleListaModo()
+end)
+
+CFrameBtn.MouseButton1Click:Connect(function()
+    ModoMovimento = "CFrame"
+    ToggleListaModo()
+end)
+
+PosicaoBtn.MouseButton1Click:Connect(ToggleListaPosicao)
+ModoBtn.MouseButton1Click:Connect(ToggleListaModo)
+
+-- ==============================================================
+-- 🎯 TOGGLE AUTO FARM
+-- ==============================================================
+local function AtivarAutoFarm(Ativo)
+    AutoFarmAtivo = Ativo
+    CheckMark.Visible = Ativo
+    
+    TweenService:Create(AutoFarmToggle, TweenInfo.new(0.15), {
+        BackgroundColor3 = Ativo and Theme.ToggleOn or Theme.ToggleOff
+    }):Play()
+end
+
+AutoFarmToggle.MouseButton1Click:Connect(function()
+    AtivarAutoFarm(not AutoFarmAtivo)
+end)
+
+-- ==============================================================
+-- 🎯 SLIDER DE VELOCIDADE
+-- ==============================================================
+local SliderArrastando = false
+
+local function AtualizarSlider(InputPos)
+    local TrackAbs = SliderTrack.AbsolutePosition
+    local TrackSize = SliderTrack.AbsoluteSize.X
+    local X = math.clamp(InputPos.X - TrackAbs.X, 0, TrackSize)
+    local Porc = X / TrackSize
+
+    CONFIG_FARM.velocidade = math.floor(MinVel + Porc * (MaxVel - MinVel) + 0.5)
+    SliderLabel.Text = "Velocidade: " .. CONFIG_FARM.velocidade
+
+    SliderFill.Size = UDim2.new(Porc, 0, 1, 0)
+    SliderBtn.Position = UDim2.new(Porc, -8, 0.5, -8)
+end
+
+SliderBtn.InputBegan:Connect(function(Input)
+    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+        SliderArrastando = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function()
+    SliderArrastando = false
+end)
+
+UserInputService.InputChanged:Connect(function(Input)
+    if SliderArrastando and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+        AtualizarSlider(Input.Position)
+    end
+end)
+
+-- ==============================================================
+-- 🔘 ANTI-AFK
+-- ==============================================================
+local antiAfkExecutado = false
+AntiAFKButton.MouseButton1Click:Connect(function()
+    if antiAfkExecutado then return end
+    antiAfkExecutado = true
+    task.spawn(function()
+        local success, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/hassanxzayn-lua/Anti-afk/main/antiafkbyhassanxzyn"))()
+        end)
+        if not success then warn("❌ Erro Anti-AFK:", err) end
+    end)
+end)
+
+-- ==============================================================
+-- 🎯 SISTEMA DE AUTO FARM (CFRAME + TWEEN)
+-- ==============================================================
+local function ObterMurderer()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local char = p.Character
+            local hum = char:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
+                local temFaca = char:FindFirstChild("Knife") or (p:FindFirstChild("Backpack") and p.Backpack:FindFirstChild("Knife"))
+                local eMurder = p:GetAttribute("Role") == "Murderer" or temFaca
+                if eMurder then return char end
+            end
+        end
+    end
+    return nil
+end
+
+local function ResetarEstadoFarm()
+    BolsaCheia = false
+    bolsaCheiaPorEvento = false
+    ParouAteNovaPartida = false
+    table.clear(collectedCoins)
+    cachedCoinContainer = nil
+    table.clear(HitboxOriginal)
+end
+
+Player.CharacterAdded:Connect(ResetarEstadoFarm)
+
+Player:GetAttributeChangedSignal("Alive"):Connect(function()
+    if Player:GetAttribute("Alive") == true then ResetarEstadoFarm() end
+end)
+
+-- Detector de bolsa cheia via RemoteEvent
+task.spawn(function()
+    local remotes = ReplicatedStorage:FindFirstChild("Remotes", true) or ReplicatedStorage:FindFirstChild("Gameplay", true)
+    if remotes then
+        for _, remote in ipairs(remotes:GetDescendants()) do
+            if remote:IsA("RemoteEvent") and (string.find(string.lower(remote.Name), "coin") or string.find(string.lower(remote.Name), "collect")) then
+                remote.OnClientEvent:Connect(function(coletador, atual, maximo)
+                    if coletador == Player or (typeof(coletador) == "string" and coletador == Player.Name) then
+                        if tonumber(atual) and tonumber(maximo) then
+                            bolsaCheiaPorEvento = (tonumber(atual) >= tonumber(maximo))
+                        end
+                    end
+                end)
+            end
+        end
+    end
+end)
+
+local function VerificarTextoBolsaCheia()
+    if bolsaCheiaPorEvento then return true end
+    local agora = os.clock()
+    if agora - ultimoCheckBolsa < 0.5 then return resultadoUltimoCheckBolsa end
+    ultimoCheckBolsa = agora
+
+    local playerGui = Player:FindFirstChild("PlayerGui")
+    if not playerGui then return false end
+    local mainGui = playerGui:FindFirstChild("MainGUI") or playerGui:FindFirstChild("GUI")
+    if not mainGui then return false end
+
+    for _, gui in ipairs(mainGui:GetDescendants()) do
+        if gui:IsA("TextLabel") and gui.Visible and gui.Text ~= "" then
+            local texto = string.lower(gui.Text)
+            if (string.find(texto, "saco") and string.find(texto, "cheio")) or
+               (string.find(texto, "bag") and string.find(texto, "full")) or
+               string.find(texto, "full coin") or string.find(texto, "max coins") then
+                resultadoUltimoCheckBolsa = true
+                return true
+            end
+        end
+    end
+    resultadoUltimoCheckBolsa = false
+    return false
+end
+
+local function EmPartida()
+    local c = Player.Character
+    if not c or not c:FindFirstChild("Humanoid") or c.Humanoid.Health <= 0 then return false end
+    if not c:FindFirstChild("HumanoidRootPart") then return false end
+    local aliveAttr = Player:GetAttribute("Alive")
+    if aliveAttr ~= nil and aliveAttr == false then return false end
+    if Workspace:FindFirstChild("Lobby") then
+        local distLobby = (c.HumanoidRootPart.Position - Workspace.Lobby:GetPivot().Position).Magnitude
+        if distLobby < 100 then return false end
+    end
+    return true
+end
+
+local function GetSafeMapSpawn()
+    local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
+    if not coinContainer or not coinContainer.Parent then return nil end
+    local map = coinContainer.Parent
+    local spawns = map:FindFirstChild("Spawns") or map:FindFirstChild("Spawn")
+    if not spawns then return nil end
+    local partesSpawn = spawns:GetChildren()
+    if #partesSpawn == 0 then return nil end
+
+    local charMurderer = ObterMurderer()
+    local hrpMurderer = charMurderer and charMurderer:FindFirstChild("HumanoidRootPart")
+    local spawnValido = nil
+    local tentativas = 10
+
+    repeat
+        local spawnEscolhido = partesSpawn[math.random(1, #partesSpawn)]
+        if spawnEscolhido and spawnEscolhido:IsA("BasePart") then
+            local posCFrame = spawnEscolhido.CFrame + Vector3.new(0, 3, 0)
+            if hrpMurderer then
+                local distanciaMurder = (posCFrame.Position - hrpMurderer.Position).Magnitude
+                if distanciaMurder > 25 then
+                    spawnValido = posCFrame
+                    break
+                end
+            else
+                spawnValido = posCFrame
+                break
+            end
+        end
+        tentativas = tentativas - 1
+    until tentativas <= 0
+
+    if not spawnValido and #partesSpawn > 0 then
+        local fallback = partesSpawn[math.random(1, #partesSpawn)]
+        if fallback and fallback:IsA("BasePart") then
+            spawnValido = fallback.CFrame + Vector3.new(0, 3, 0)
+        end
+    end
+    return spawnValido
+end
+
+local function getNearestCoin(minhaPos)
+    local melhorMoeda, menorDistancia = nil, math.huge
+    if not cachedCoinContainer or not cachedCoinContainer.Parent then
+        cachedCoinContainer = Workspace:FindFirstChild("CoinContainer", true)
+    end
+    if not cachedCoinContainer then return nil end
+
+    local charMurderer = ObterMurderer()
+    local hrpMurderer = charMurderer and charMurderer:FindFirstChild("HumanoidRootPart")
+
+    for _, moeda in ipairs(cachedCoinContainer:GetChildren()) do
+        if moeda:IsA("BasePart")
+        and moeda.Name == "Coin_Server"
+        and moeda:FindFirstChild("TouchInterest")
+        and not collectedCoins[moeda]
+        and not moeda:GetAttribute("Collected") then
+
+            if not HitboxOriginal[moeda] then
+                HitboxOriginal[moeda] = moeda.Size
+                moeda.Size = Vector3.new(5, 15, 5)
+                moeda.Transparency = 1
+                moeda.CanCollide = false
+            end
+
+            if hrpMurderer then
+                local distMurder = (moeda.Position - hrpMurderer.Position).Magnitude
+                if distMurder <= CONFIG_FARM.raio_perigo_murder then continue end
+            end
+
+            local valDistancia = (minhaPos - moeda.Position).Magnitude
+            if valDistancia < CONFIG_FARM.alcance_maximo and valDistancia < menorDistancia then
+                menorDistancia = valDistancia
+                melhorMoeda = moeda
+            end
+        end
+    end
+    return melhorMoeda
+end
+
+-- Detecção bolsa cheia -> TP seguro
+task.spawn(function()
+    while true do
+        task.wait(0.3)
+        local estaComBolsaCheia = BolsaCheia or VerificarTextoBolsaCheia()
+        local coinContainerAtual = Workspace:FindFirstChild("CoinContainer", true)
+        if coinContainerAtual ~= cachedCoinContainer then
+            cachedCoinContainer = coinContainerAtual
+            ParouAteNovaPartida = false
+        end
+        if not EmPartida() then ParouAteNovaPartida = false end
+
+        if not ParouAteNovaPartida and EmPartida() and estaComBolsaCheia then
+            ParouAteNovaPartida = true
+            BolsaCheia = true
+            task.wait(0.2)
+            if EmPartida() then
+                local char = Player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                local safeSpawn = GetSafeMapSpawn()
+                if hrp and safeSpawn then
+                    if hum then hum.PlatformStand = true end
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    hrp.CFrame = safeSpawn
+                    task.wait(0.5)
+                    if hum and EmPartida() then hum.PlatformStand = false end
+                end
+            end
+        end
+    end
+end)
+
+-- Loop Principal do Auto Farm
+task.spawn(function()
+    while true do
+        if AutoFarmAtivo and not ParouAteNovaPartida then
+            local c = Player.Character
+            local hrp = c and c:FindFirstChild("HumanoidRootPart")
+            local humanoid = c and c:FindFirstChildOfClass("Humanoid")
+
+            if not EmPartida() or not hrp or not humanoid then
+                task.wait(0.5)
+                continue
+            end
+
+            if VerificarTextoBolsaCheia() then
+                BolsaCheia = true
+                humanoid.PlatformStand = false
+                task.wait(0.5)
+                continue
+            end
+            BolsaCheia = false
+
+            local alvo = getNearestCoin(hrp.Position)
+            if alvo then
+                while AutoFarmAtivo and not ParouAteNovaPartida and EmPartida() and alvo and alvo.Parent
+                and not BolsaCheia and not VerificarTextoBolsaCheia()
+                and not alvo:GetAttribute("Collected")
+                and not collectedCoins[alvo] do
+
+                    humanoid.PlatformStand = true
+                    local minhaPosAtual = hrp.Position
+                    local moedaMaisPertoAgora = getNearestCoin(minhaPosAtual)
+                    if moedaMaisPertoAgora and moedaMaisPertoAgora ~= alvo then
+                        alvo = moedaMaisPertoAgora
+                    end
+                    if not alvo:IsDescendantOf(Workspace) or alvo:GetAttribute("Collected") then break end
+
+                    -- Posição: Standing = acima da moeda / Lying = abaixo da moeda
+                    local offsetY = (PosicaoMoeda == "Lying") and -4 or 2
+                    local posAlvo = alvo.Position + Vector3.new(0, offsetY, 0)
+                    local direcao = (posAlvo - minhaPosAtual)
+                    local distancia = direcao.Magnitude
+
+                    -- Rotação: Lying = deitado / Standing = em pé
+                    local angulo = (PosicaoMoeda == "Lying") and math.rad(90) or 0
+                    local rotacaoFixa = CFrame.new(posAlvo) * CFrame.Angles(angulo, 0, 0)
+
+                    if distancia <= 0.8 then
+                        local tempoEsperaInicio = os.clock()
+                        while AutoFarmAtivo and not ParouAteNovaPartida and os.clock() - tempoEsperaInicio < 3 do
+                            if not EmPartida() or not alvo.Parent or alvo:GetAttribute("Collected") then break end
+                            hrp.CFrame = rotacaoFixa
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            RunService.Heartbeat:Wait()
+                        end
+                        collectedCoins[alvo] = true
+                        break
+                    end
+
+                    -- Movimento: CFrame ou Tween
+                    if ModoMovimento == "CFrame" then
+                        local velAtual = math.clamp(CONFIG_FARM.velocidade, 16, 25)
+                        local dt = RunService.Heartbeat:Wait()
+                        local passo = math.min(velAtual * dt, distancia)
+                        local novaPos = minhaPosAtual + (direcao.Unit * passo)
+                        hrp.CFrame = CFrame.new(novaPos) * CFrame.Angles(angulo, 0, 0)
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    else -- Tween
+                        local tween = TweenService:Create(hrp, TweenInfo.new(distancia / CONFIG_FARM.velocidade, Enum.EasingStyle.Linear), {
+                            CFrame = CFrame.new(posAlvo) * CFrame.Angles(angulo, 0, 0)
+                        })
+                        tween:Play()
+                        tween.Completed:Wait()
+                    end
+                end
+                humanoid.PlatformStand = false
+            else
+                humanoid.PlatformStand = false
+                task.wait(0.5)
+            end
+        else
+            local c = Player.Character
+            local hum = c and c:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = false end
+            task.wait(0.5)
+        end
+    end
+end)
 
 
 --==============================================================--
