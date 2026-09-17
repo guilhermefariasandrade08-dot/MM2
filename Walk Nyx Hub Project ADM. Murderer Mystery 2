@@ -1833,11 +1833,6 @@ local ModificationsPage = TabFrames[9]
 -- =============================
 --→ Coloque Sistema da aba Sheriff aqui ↓
 
-
---==============================================================--
---                         AUTO FARM                            --
---==============================================================--
-
 --==============================================================--
 --                         AUTO FARM                            --
 --==============================================================--
@@ -1845,6 +1840,22 @@ local ModificationsPage = TabFrames[9]
 -- =============================
 -- // ——— == VARIÁVEIS == ——— \\ --
 -- =============================
+
+--→ SERVIÇOS
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Player = Players.LocalPlayer
+
+--→ CONFIGURAÇÕES DO FARM
+local CONFIG_FARM = {
+    velocidade = 18,
+    alcance_maximo = 500,
+    raio_perigo_murder = 30
+}
 
 --→ Container
 local AutoFarmContainer
@@ -1858,6 +1869,7 @@ local MethodCard
 local MethodBox
 local MethodValue
 local MethodArrow
+
 local MethodMenu
 local MethodTween
 local MethodCframe
@@ -1871,6 +1883,7 @@ local PositionCard
 local PositionBox
 local PositionValue
 local PositionArrow
+
 local PositionMenu
 local PositionDeitado
 local PositionLevantado
@@ -1882,21 +1895,7 @@ local AutoFarmCard
 local AutoFarmToggle
 local AutoFarmIcon
 
---→ SISTEMA
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Player = Players.LocalPlayer
-
-local CONFIG_FARM = {
-    velocidade = 18,
-    alcance_maximo = 500,
-    raio_perigo_murder = 30
-}
-local MinVel, MaxVel = 16, 20
-
+--→ SISTEMA INTERNO
 local BolsaCheia = false
 local bolsaCheiaPorEvento = false
 local collectedCoins = {}
@@ -1905,6 +1904,7 @@ local ultimoCheckBolsa = 0
 local resultadoUltimoCheckBolsa = false
 local HitboxOriginal = {}
 local ParouAteNovaPartida = false
+
 
 -- =============================
 -- // ——— == BOTOES == ——— \\ --
@@ -2241,7 +2241,7 @@ AutoFarmTitle.Font = Enum.Font.GothamMedium
 AutoFarmTitle.TextXAlignment = Enum.TextXAlignment.Left
 AutoFarmTitle.Parent = AutoFarmCard
 
---→ Toggle
+--→ Toggle quadrado
 AutoFarmToggle = Instance.new("TextButton")
 AutoFarmToggle.Name = "Toggle"
 AutoFarmToggle.Size = UDim2.new(0, 26, 0, 26)
@@ -2261,14 +2261,22 @@ AutoFarmToggleStroke.Color = SelectedColor
 AutoFarmToggleStroke.Thickness = 1
 AutoFarmToggleStroke.Parent = AutoFarmToggle
 
---→ Ícone COINS
-AutoFarmIcon = CreateLucideIcon(
-    AutoFarmToggle,
-    "coins",
-    SelectedColor,
-    15
-)
-AutoFarmIcon.ZIndex = 10
+--→ COINS — Footagesus Lucide V2
+AutoFarmIcon = nil
+pcall(function()
+    AutoFarmIcon = CreateLucideIcon(
+        AutoFarmToggle,
+        "coins",
+        SelectedColor,
+        15
+    )
+end)
+
+-- Proteção caso o nome "coins" não exista na versão carregada
+if AutoFarmIcon then
+    AutoFarmIcon.ZIndex = 10
+end
+
 
 -- =============================
 -- // ——— == SISTEMA == ——— \\ --
@@ -2316,38 +2324,30 @@ local function CloseMethodMenu()
     if not MethodMenuOpen then return end
     MethodMenuOpen = false
     MethodArrow.Text = "⌄"
-    local CloseTween = TweenService:Create(
-        MethodMenu,
-        TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
-        {Size = UDim2.new(0, 155, 0, 0)}
-    )
-    CloseTween:Play()
-    CloseTween.Completed:Once(function()
+    local Tween = TweenService:Create(MethodMenu, TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Size = UDim2.new(0, 155, 0, 0)})
+    Tween:Play()
+    Tween.Completed:Once(function()
         if not MethodMenuOpen then MethodMenu.Visible = false end
     end)
 end
 
 --==============================================================--
---                    CLOSE POSITION                           --
+--                    CLOSE POSITION                            --
 --==============================================================--
 
 local function ClosePositionMenu()
     if not PositionMenuOpen then return end
     PositionMenuOpen = false
     PositionArrow.Text = "⌄"
-    local CloseTween = TweenService:Create(
-        PositionMenu,
-        TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
-        {Size = UDim2.new(0, 155, 0, 0)}
-    )
-    CloseTween:Play()
-    CloseTween.Completed:Once(function()
+    local Tween = TweenService:Create(PositionMenu, TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Size = UDim2.new(0, 155, 0, 0)})
+    Tween:Play()
+    Tween.Completed:Once(function()
         if not PositionMenuOpen then PositionMenu.Visible = false end
     end)
 end
 
 --==============================================================--
---                      OPEN METHOD                             --
+--                       OPEN METHOD                            --
 --==============================================================--
 
 local function OpenMethodMenu()
@@ -2359,12 +2359,11 @@ local function OpenMethodMenu()
     MethodMenu.Position = UDim2.new(0, BoxPosition.X - PagePosition.X - 15, 0, BoxPosition.Y - PagePosition.Y + 37)
     MethodMenu.Visible = true
     MethodMenu.Size = UDim2.new(0, 155, 0, 0)
-    TweenService:Create(MethodMenu, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-        {Size = UDim2.new(0, 155, 0, 90)}):Play()
+    TweenService:Create(MethodMenu, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, 155, 0, 90)}):Play()
 end
 
 --==============================================================--
---                    OPEN POSITION                            --
+--                    OPEN POSITION                             --
 --==============================================================--
 
 local function OpenPositionMenu()
@@ -2376,8 +2375,7 @@ local function OpenPositionMenu()
     PositionMenu.Position = UDim2.new(0, BoxPosition.X - PagePosition.X - 15, 0, BoxPosition.Y - PagePosition.Y + 37)
     PositionMenu.Visible = true
     PositionMenu.Size = UDim2.new(0, 155, 0, 0)
-    TweenService:Create(PositionMenu, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-        {Size = UDim2.new(0, 155, 0, 90)}):Play()
+    TweenService:Create(PositionMenu, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, 155, 0, 90)}):Play()
 end
 
 --==============================================================--
@@ -2388,24 +2386,22 @@ local function SelectMethod(Value)
     MethodSelected = Value
     MethodValue.Text = Value
     local NewPosition = Value == "Tween" and UDim2.new(0, 6, 0, 15) or UDim2.new(0, 6, 0, 55)
-    TweenService:Create(MethodLine, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-        {Position = NewPosition}):Play()
+    TweenService:Create(MethodLine, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = NewPosition}):Play()
     UpdateMethodColors()
-    task.delay(0.05, function() if MethodMenuOpen then CloseMethodMenu() end end)
+    CloseMethodMenu()
 end
 
 --==============================================================--
---                   SELECT POSITION                           --
+--                   SELECT POSITION                            --
 --==============================================================--
 
 local function SelectPosition(Value)
     PositionSelected = Value
     PositionValue.Text = Value
     local NewPosition = Value == "Deitado" and UDim2.new(0, 6, 0, 15) or UDim2.new(0, 6, 0, 55)
-    TweenService:Create(PositionLine, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-        {Position = NewPosition}):Play()
+    TweenService:Create(PositionLine, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = NewPosition}):Play()
     UpdatePositionColors()
-    task.delay(0.05, function() if PositionMenuOpen then ClosePositionMenu() end end)
+    ClosePositionMenu()
 end
 
 --==============================================================--
@@ -2431,21 +2427,21 @@ PositionDeitado.Activated:Connect(function() SelectPosition("Deitado") end)
 PositionLevantado.Activated:Connect(function() SelectPosition("Levantado") end)
 
 --==============================================================--
---                      AUTO FARM TOGGLE                        --
+--                       AUTO FARM TOGGLE                        --
 --==============================================================--
 
 AutoFarmToggle.Activated:Connect(function()
     AutoFarmEnabled = not AutoFarmEnabled
     if AutoFarmEnabled then
-        TweenService:Create(AutoFarmToggle, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {BackgroundColor3 = SelectedColor}):Play()
-        TweenService:Create(AutoFarmIcon, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {ImageColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+        TweenService:Create(AutoFarmToggle, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = SelectedColor}):Play()
+        if AutoFarmIcon then
+            TweenService:Create(AutoFarmIcon, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageColor3 = Color3.fromRGB(255,255,255)}):Play()
+        end
     else
-        TweenService:Create(AutoFarmToggle, TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Theme.Window}):Play()
-        TweenService:Create(AutoFarmIcon, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {ImageColor3 = SelectedColor}):Play()
+        TweenService:Create(AutoFarmToggle, TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Theme.Window}):Play()
+        if AutoFarmIcon then
+            TweenService:Create(AutoFarmIcon, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageColor3 = SelectedColor}):Play()
+        end
     end
 end)
 
@@ -2463,10 +2459,10 @@ task.spawn(function()
             AutoFarmToggleStroke.Color = SelectedColor
             if AutoFarmEnabled then
                 AutoFarmToggle.BackgroundColor3 = SelectedColor
-                AutoFarmIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+                if AutoFarmIcon then AutoFarmIcon.ImageColor3 = Color3.fromRGB(255,255,255) end
             else
                 AutoFarmToggle.BackgroundColor3 = Theme.Window
-                AutoFarmIcon.ImageColor3 = SelectedColor
+                if AutoFarmIcon then AutoFarmIcon.ImageColor3 = SelectedColor end
             end
         end
         task.wait(0.05)
@@ -2480,7 +2476,7 @@ end)
 UpdateMethodColors()
 UpdatePositionColors()
 AutoFarmToggle.BackgroundColor3 = Theme.Window
-AutoFarmIcon.ImageColor3 = SelectedColor
+if AutoFarmIcon then AutoFarmIcon.ImageColor3 = SelectedColor end
 MethodLine.Position = UDim2.new(0, 6, 0, 15)
 PositionLine.Position = UDim2.new(0, 6, 0, 15)
 
