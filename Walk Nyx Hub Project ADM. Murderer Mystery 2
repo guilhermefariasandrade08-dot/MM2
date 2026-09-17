@@ -2228,6 +2228,349 @@ AutoFarmCheck.TextTransparency = 1
 AutoFarmCheck.Parent = AutoFarmToggle
 
 
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+
+
+--==============================================================--
+--                         POSITION                             --
+--==============================================================--
+
+local function UpdatePositionColors()
+
+    PositionValue.TextColor3 = SelectedColor
+    PositionArrow.TextColor3 = SelectedColor
+    PositionLine.BackgroundColor3 = SelectedColor
+
+    if PositionSelected == "Deitado" then
+        PositionDeitado.TextColor3 = SelectedColor
+        PositionLevantado.TextColor3 = Theme.Secondary
+    else
+        PositionDeitado.TextColor3 = Theme.Secondary
+        PositionLevantado.TextColor3 = SelectedColor
+    end
+
+end
+
+
+local function OpenPositionMenu()
+
+    if PositionMenuOpen then return end
+
+    PositionMenuOpen = true
+    PositionArrow.Text = "⌃"
+
+    local BoxPos = PositionBox.AbsolutePosition
+    local PagePos = AutoFarmPage.AbsolutePosition
+
+    PositionMenu.Position = UDim2.new(
+        0,
+        BoxPos.X - PagePos.X - 15,
+        0,
+        BoxPos.Y - PagePos.Y + 37
+    )
+
+    PositionMenu.Visible = true
+    PositionMenu.Size = UDim2.new(0, 155, 0, 0)
+
+    TweenService:Create(
+        PositionMenu,
+        TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {Size = UDim2.new(0, 155, 0, 90)}
+    ):Play()
+
+end
+
+
+local function ClosePositionMenu()
+
+    if not PositionMenuOpen then return end
+
+    PositionMenuOpen = false
+    PositionArrow.Text = "⌄"
+
+    local Tween = TweenService:Create(
+        PositionMenu,
+        TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+        {Size = UDim2.new(0, 155, 0, 0)}
+    )
+
+    Tween:Play()
+
+    Tween.Completed:Once(function()
+        if not PositionMenuOpen then
+            PositionMenu.Visible = false
+        end
+    end)
+
+end
+
+
+local function SelectPosition(Value)
+
+    PositionSelected = Value
+    PositionValue.Text = Value
+
+    local NewPosition
+
+    if Value == "Deitado" then
+        NewPosition = UDim2.new(0, 6, 0, 15)
+    else
+        NewPosition = UDim2.new(0, 6, 0, 55)
+    end
+
+    TweenService:Create(
+        PositionLine,
+        TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {Position = NewPosition}
+    ):Play()
+
+    UpdatePositionColors()
+
+    task.wait(0.08)
+    ClosePositionMenu()
+
+end
+
+
+PositionBox.Activated:Connect(function()
+
+    if PositionMenuOpen then
+        ClosePositionMenu()
+    else
+        OpenPositionMenu()
+    end
+
+end)
+
+
+PositionDeitado.Activated:Connect(function()
+    SelectPosition("Deitado")
+end)
+
+
+PositionLevantado.Activated:Connect(function()
+    SelectPosition("Levantado")
+end)
+
+
+
+--==============================================================--
+--                           METHOD                             --
+--==============================================================--
+
+local function UpdateMethodColors()
+
+    MethodValue.TextColor3 = SelectedColor
+    MethodArrow.TextColor3 = SelectedColor
+    MethodLine.BackgroundColor3 = SelectedColor
+
+    if MethodSelected == "Tween" then
+        MethodTween.TextColor3 = SelectedColor
+        MethodCframe.TextColor3 = Theme.Secondary
+    else
+        MethodTween.TextColor3 = Theme.Secondary
+        MethodCframe.TextColor3 = SelectedColor
+    end
+
+end
+
+
+local function OpenMethodMenu()
+
+    if MethodMenuOpen then return end
+
+    MethodMenuOpen = true
+    MethodArrow.Text = "⌃"
+
+    local BoxPos = MethodBox.AbsolutePosition
+    local PagePos = AutoFarmPage.AbsolutePosition
+
+    MethodMenu.Position = UDim2.new(
+        0,
+        BoxPos.X - PagePos.X - 15,
+        0,
+        BoxPos.Y - PagePos.Y + 37
+    )
+
+    MethodMenu.Visible = true
+    MethodMenu.Size = UDim2.new(0, 155, 0, 0)
+
+    TweenService:Create(
+        MethodMenu,
+        TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {Size = UDim2.new(0, 155, 0, 90)}
+    ):Play()
+
+end
+
+
+local function CloseMethodMenu()
+
+    if not MethodMenuOpen then return end
+
+    MethodMenuOpen = false
+    MethodArrow.Text = "⌄"
+
+    local Tween = TweenService:Create(
+        MethodMenu,
+        TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+        {Size = UDim2.new(0, 155, 0, 0)}
+    )
+
+    Tween:Play()
+
+    Tween.Completed:Once(function()
+        if not MethodMenuOpen then
+            MethodMenu.Visible = false
+        end
+    end)
+
+end
+
+
+local function SelectMethod(Value)
+
+    MethodSelected = Value
+    MethodValue.Text = Value
+
+    local NewPosition
+
+    if Value == "Tween" then
+        NewPosition = UDim2.new(0, 6, 0, 15)
+    else
+        NewPosition = UDim2.new(0, 6, 0, 55)
+    end
+
+    TweenService:Create(
+        MethodLine,
+        TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {Position = NewPosition}
+    ):Play()
+
+    UpdateMethodColors()
+
+    task.wait(0.08)
+    CloseMethodMenu()
+
+end
+
+
+MethodBox.Activated:Connect(function()
+
+    if MethodMenuOpen then
+        CloseMethodMenu()
+    else
+        OpenMethodMenu()
+    end
+
+end)
+
+
+MethodTween.Activated:Connect(function()
+    SelectMethod("Tween")
+end)
+
+
+MethodCframe.Activated:Connect(function()
+    SelectMethod("Cframe")
+end)
+
+
+
+--==============================================================--
+--                         AUTO FARM                            --
+--==============================================================--
+
+AutoFarmToggle.Activated:Connect(function()
+
+    AutoFarmEnabled = not AutoFarmEnabled
+
+    if AutoFarmEnabled then
+
+        TweenService:Create(
+            AutoFarmToggle,
+            TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {
+                BackgroundColor3 = SelectedColor
+            }
+        ):Play()
+
+        TweenService:Create(
+            AutoFarmCheck,
+            TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {
+                TextTransparency = 0
+            }
+        ):Play()
+
+    else
+
+        TweenService:Create(
+            AutoFarmToggle,
+            TweenInfo.new(0.20, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {
+                BackgroundColor3 = Theme.Window
+            }
+        ):Play()
+
+        TweenService:Create(
+            AutoFarmCheck,
+            TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {
+                TextTransparency = 1
+            }
+        ):Play()
+
+    end
+
+end)
+
+
+
+--==============================================================--
+--                    COR DINÂMICA                              --
+--==============================================================--
+
+task.spawn(function()
+
+    local LastColor = SelectedColor
+
+    while AutoFarmPage.Parent do
+
+        if LastColor ~= SelectedColor then
+
+            LastColor = SelectedColor
+
+            PositionValue.TextColor3 = SelectedColor
+            PositionArrow.TextColor3 = SelectedColor
+            PositionLine.BackgroundColor3 = SelectedColor
+
+            MethodValue.TextColor3 = SelectedColor
+            MethodArrow.TextColor3 = SelectedColor
+            MethodLine.BackgroundColor3 = SelectedColor
+
+            ToggleStroke.Color = SelectedColor
+
+            if AutoFarmEnabled then
+                AutoFarmToggle.BackgroundColor3 = SelectedColor
+            end
+
+            UpdatePositionColors()
+            UpdateMethodColors()
+
+        end
+
+        task.wait(0.05)
+
+    end
+
+end)
+
+
+UpdatePositionColors()
+UpdateMethodColors()
 
 --==============================================================--
 --                          ABA ESP                              --
