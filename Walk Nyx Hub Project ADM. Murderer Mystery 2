@@ -1846,6 +1846,34 @@ local ModificationsPage = TabFrames[9]
 -- // ——— == VARIÁVEIS == ——— \\ --
 -- =============================
 
+-- POSITION
+local PositionSelected = "Deitado"
+local PositionMenuOpen = false
+
+local PositionCard
+local PositionBox
+local PositionValue
+local PositionArrow
+
+local PositionMenu
+local PositionDeitado
+local PositionLevantado
+local PositionLine
+
+
+-- METHOD
+local MethodSelected = "Tween"
+local MethodMenuOpen = false
+
+local MethodCard
+local MethodBox
+local MethodValue
+local MethodArrow
+
+local MethodMenu
+local MethodTween
+local MethodCframe
+local MethodLine
 
 -- =============================
 -- // ——— == BOTOES == ——— \\ --
@@ -1853,577 +1881,578 @@ local ModificationsPage = TabFrames[9]
 
 
 --==============================================================--
---                    AUTO FARM EXAMPLE                        --
---             DROPDOWN + TOGGLE ANIMATED                      --
+--                         POSITION                             --
 --==============================================================--
 
--- =============================
--- // ——— == VARIÁVEIS == ——— \\ --
--- =============================
+PositionCard = Instance.new("Frame")
+PositionCard.Name = "PositionSelector"
+PositionCard.Size = UDim2.new(1, -12, 0, 50)
+PositionCard.BackgroundColor3 = Theme.Card
+PositionCard.BorderSizePixel = 0
+PositionCard.Parent = AutoFarmPage
 
-local AutoFarmContainer = Instance.new("Frame")
-AutoFarmContainer.Name = "AutoFarmContainer"
-AutoFarmContainer.Size = UDim2.new(1, -12, 0, 0)
-AutoFarmContainer.AutomaticSize = Enum.AutomaticSize.Y
-AutoFarmContainer.BackgroundTransparency = 1
-AutoFarmContainer.Parent = AutoFarmPage
+local PositionCorner = Instance.new("UICorner")
+PositionCorner.CornerRadius = UDim.new(0, 10)
+PositionCorner.Parent = PositionCard
 
-local AutoFarmLayout = Instance.new("UIListLayout")
-AutoFarmLayout.Parent = AutoFarmContainer
-AutoFarmLayout.SortOrder = Enum.SortOrder.LayoutOrder
-AutoFarmLayout.Padding = UDim.new(0, 7)
+local PositionStroke = Instance.new("UIStroke")
+PositionStroke.Color = Theme.Border
+PositionStroke.Thickness = 1
+PositionStroke.Parent = PositionCard
 
+
+local PositionTitle = Instance.new("TextLabel")
+PositionTitle.Size = UDim2.new(0, 120, 1, 0)
+PositionTitle.Position = UDim2.new(0, 14, 0, 0)
+PositionTitle.BackgroundTransparency = 1
+PositionTitle.Text = "Position"
+PositionTitle.TextColor3 = Theme.Text
+PositionTitle.TextSize = 11
+PositionTitle.Font = Enum.Font.GothamMedium
+PositionTitle.TextXAlignment = Enum.TextXAlignment.Left
+PositionTitle.Parent = PositionCard
+
+
+PositionBox = Instance.new("TextButton")
+PositionBox.Name = "SelectorBox"
+PositionBox.Size = UDim2.new(0, 125, 0, 32)
+PositionBox.Position = UDim2.new(1, -140, 0.5, -16)
+PositionBox.BackgroundColor3 = Theme.Window
+PositionBox.BorderSizePixel = 0
+PositionBox.Text = ""
+PositionBox.AutoButtonColor = false
+PositionBox.Parent = PositionCard
+
+local PositionBoxCorner = Instance.new("UICorner")
+PositionBoxCorner.CornerRadius = UDim.new(0, 8)
+PositionBoxCorner.Parent = PositionBox
+
+local PositionBoxStroke = Instance.new("UIStroke")
+PositionBoxStroke.Color = Theme.Border
+PositionBoxStroke.Thickness = 1
+PositionBoxStroke.Parent = PositionBox
+
+
+PositionValue = Instance.new("TextLabel")
+PositionValue.Size = UDim2.new(1, -30, 1, 0)
+PositionValue.Position = UDim2.new(0, 10, 0, 0)
+PositionValue.BackgroundTransparency = 1
+PositionValue.Text = PositionSelected
+PositionValue.TextColor3 = SelectedColor
+PositionValue.TextSize = 10
+PositionValue.Font = Enum.Font.GothamMedium
+PositionValue.TextXAlignment = Enum.TextXAlignment.Left
+PositionValue.Parent = PositionBox
+
+
+PositionArrow = Instance.new("TextLabel")
+PositionArrow.Size = UDim2.new(0, 22, 1, 0)
+PositionArrow.Position = UDim2.new(1, -27, 0, 0)
+PositionArrow.BackgroundTransparency = 1
+PositionArrow.Text = "⌄"
+PositionArrow.TextColor3 = SelectedColor
+PositionArrow.TextSize = 16
+PositionArrow.Font = Enum.Font.GothamBold
+PositionArrow.Parent = PositionBox
+
+
+-- POSITION MENU
+PositionMenu = Instance.new("Frame")
+PositionMenu.Name = "PositionMenu"
+PositionMenu.Size = UDim2.new(0, 155, 0, 0)
+PositionMenu.BackgroundColor3 = Theme.Card
+PositionMenu.BorderSizePixel = 0
+PositionMenu.Visible = false
+PositionMenu.ClipsDescendants = true
+PositionMenu.ZIndex = 100
+PositionMenu.Parent = AutoFarmPage
+
+local PositionMenuCorner = Instance.new("UICorner")
+PositionMenuCorner.CornerRadius = UDim.new(0, 10)
+PositionMenuCorner.Parent = PositionMenu
+
+local PositionMenuStroke = Instance.new("UIStroke")
+PositionMenuStroke.Color = Theme.Border
+PositionMenuStroke.Thickness = 1
+PositionMenuStroke.Parent = PositionMenu
+
+
+PositionDeitado = Instance.new("TextButton")
+PositionDeitado.Name = "Deitado"
+PositionDeitado.Size = UDim2.new(1, 0, 0, 40)
+PositionDeitado.Position = UDim2.new(0, 0, 0, 5)
+PositionDeitado.BackgroundTransparency = 1
+PositionDeitado.Text = "Deitado"
+PositionDeitado.TextColor3 = Theme.Text
+PositionDeitado.TextSize = 10
+PositionDeitado.Font = Enum.Font.GothamMedium
+PositionDeitado.TextXAlignment = Enum.TextXAlignment.Left
+PositionDeitado.AutoButtonColor = false
+PositionDeitado.ZIndex = 101
+PositionDeitado.Parent = PositionMenu
+
+
+PositionLevantado = Instance.new("TextButton")
+PositionLevantado.Name = "Levantado"
+PositionLevantado.Size = UDim2.new(1, 0, 0, 40)
+PositionLevantado.Position = UDim2.new(0, 0, 0, 45)
+PositionLevantado.BackgroundTransparency = 1
+PositionLevantado.Text = "Levantado"
+PositionLevantado.TextColor3 = Theme.Secondary
+PositionLevantado.TextSize = 10
+PositionLevantado.Font = Enum.Font.GothamMedium
+PositionLevantado.TextXAlignment = Enum.TextXAlignment.Left
+PositionLevantado.AutoButtonColor = false
+PositionLevantado.ZIndex = 101
+PositionLevantado.Parent = PositionMenu
+
+
+PositionLine = Instance.new("Frame")
+PositionLine.Name = "SelectedLine"
+PositionLine.Size = UDim2.new(0, 3, 0, 20)
+PositionLine.Position = UDim2.new(0, 5, 0, 15)
+PositionLine.BackgroundColor3 = SelectedColor
+PositionLine.BorderSizePixel = 0
+PositionLine.ZIndex = 102
+PositionLine.Parent = PositionMenu
+
+local PositionLineCorner = Instance.new("UICorner")
+PositionLineCorner.CornerRadius = UDim.new(1, 0)
+PositionLineCorner.Parent = PositionLine
+
+
+
+--==============================================================--
+--                           METHOD                             --
+--==============================================================--
+
+MethodCard = Instance.new("Frame")
+MethodCard.Name = "MethodSelector"
+MethodCard.Size = UDim2.new(1, -12, 0, 50)
+MethodCard.BackgroundColor3 = Theme.Card
+MethodCard.BorderSizePixel = 0
+MethodCard.Parent = AutoFarmPage
+
+local MethodCorner = Instance.new("UICorner")
+MethodCorner.CornerRadius = UDim.new(0, 10)
+MethodCorner.Parent = MethodCard
+
+local MethodStroke = Instance.new("UIStroke")
+MethodStroke.Color = Theme.Border
+MethodStroke.Thickness = 1
+MethodStroke.Parent = MethodCard
+
+
+local MethodTitle = Instance.new("TextLabel")
+MethodTitle.Size = UDim2.new(0, 120, 1, 0)
+MethodTitle.Position = UDim2.new(0, 14, 0, 0)
+MethodTitle.BackgroundTransparency = 1
+MethodTitle.Text = "Method"
+MethodTitle.TextColor3 = Theme.Text
+MethodTitle.TextSize = 11
+MethodTitle.Font = Enum.Font.GothamMedium
+MethodTitle.TextXAlignment = Enum.TextXAlignment.Left
+MethodTitle.Parent = MethodCard
+
+
+MethodBox = Instance.new("TextButton")
+MethodBox.Name = "SelectorBox"
+MethodBox.Size = UDim2.new(0, 125, 0, 32)
+MethodBox.Position = UDim2.new(1, -140, 0.5, -16)
+MethodBox.BackgroundColor3 = Theme.Window
+MethodBox.BorderSizePixel = 0
+MethodBox.Text = ""
+MethodBox.AutoButtonColor = false
+MethodBox.Parent = MethodCard
+
+local MethodBoxCorner = Instance.new("UICorner")
+MethodBoxCorner.CornerRadius = UDim.new(0, 8)
+MethodBoxCorner.Parent = MethodBox
+
+local MethodBoxStroke = Instance.new("UIStroke")
+MethodBoxStroke.Color = Theme.Border
+MethodBoxStroke.Thickness = 1
+MethodBoxStroke.Parent = MethodBox
+
+
+MethodValue = Instance.new("TextLabel")
+MethodValue.Size = UDim2.new(1, -30, 1, 0)
+MethodValue.Position = UDim2.new(0, 10, 0, 0)
+MethodValue.BackgroundTransparency = 1
+MethodValue.Text = MethodSelected
+MethodValue.TextColor3 = SelectedColor
+MethodValue.TextSize = 10
+MethodValue.Font = Enum.Font.GothamMedium
+MethodValue.TextXAlignment = Enum.TextXAlignment.Left
+MethodValue.Parent = MethodBox
+
+
+MethodArrow = Instance.new("TextLabel")
+MethodArrow.Size = UDim2.new(0, 22, 1, 0)
+MethodArrow.Position = UDim2.new(1, -27, 0, 0)
+MethodArrow.BackgroundTransparency = 1
+MethodArrow.Text = "⌄"
+MethodArrow.TextColor3 = SelectedColor
+MethodArrow.TextSize = 16
+MethodArrow.Font = Enum.Font.GothamBold
+MethodArrow.Parent = MethodBox
+
+
+-- METHOD MENU
+MethodMenu = Instance.new("Frame")
+MethodMenu.Name = "MethodMenu"
+MethodMenu.Size = UDim2.new(0, 155, 0, 0)
+MethodMenu.BackgroundColor3 = Theme.Card
+MethodMenu.BorderSizePixel = 0
+MethodMenu.Visible = false
+MethodMenu.ClipsDescendants = true
+MethodMenu.ZIndex = 100
+MethodMenu.Parent = AutoFarmPage
+
+local MethodMenuCorner = Instance.new("UICorner")
+MethodMenuCorner.CornerRadius = UDim.new(0, 10)
+MethodMenuCorner.Parent = MethodMenu
+
+local MethodMenuStroke = Instance.new("UIStroke")
+MethodMenuStroke.Color = Theme.Border
+MethodMenuStroke.Thickness = 1
+MethodMenuStroke.Parent = MethodMenu
+
+
+MethodTween = Instance.new("TextButton")
+MethodTween.Name = "Tween"
+MethodTween.Size = UDim2.new(1, 0, 0, 40)
+MethodTween.Position = UDim2.new(0, 0, 0, 5)
+MethodTween.BackgroundTransparency = 1
+MethodTween.Text = "Tween"
+MethodTween.TextColor3 = Theme.Text
+MethodTween.TextSize = 10
+MethodTween.Font = Enum.Font.GothamMedium
+MethodTween.TextXAlignment = Enum.TextXAlignment.Left
+MethodTween.AutoButtonColor = false
+MethodTween.ZIndex = 101
+MethodTween.Parent = MethodMenu
+
+
+MethodCframe = Instance.new("TextButton")
+MethodCframe.Name = "Cframe"
+MethodCframe.Size = UDim2.new(1, 0, 0, 40)
+MethodCframe.Position = UDim2.new(0, 0, 0, 45)
+MethodCframe.BackgroundTransparency = 1
+MethodCframe.Text = "Cframe"
+MethodCframe.TextColor3 = Theme.Secondary
+MethodCframe.TextSize = 10
+MethodCframe.Font = Enum.Font.GothamMedium
+MethodCframe.TextXAlignment = Enum.TextXAlignment.Left
+MethodCframe.AutoButtonColor = false
+MethodCframe.ZIndex = 101
+MethodCframe.Parent = MethodMenu
+
+
+MethodLine = Instance.new("Frame")
+MethodLine.Name = "SelectedLine"
+MethodLine.Size = UDim2.new(0, 3, 0, 20)
+MethodLine.Position = UDim2.new(0, 5, 0, 15)
+MethodLine.BackgroundColor3 = SelectedColor
+MethodLine.BorderSizePixel = 0
+MethodLine.ZIndex = 102
+MethodLine.Parent = MethodMenu
+
+local MethodLineCorner = Instance.new("UICorner")
+MethodLineCorner.CornerRadius = UDim.new(1, 0)
+MethodLineCorner.Parent = MethodLine
 
 -- =============================
 -- // ——— == SISTEMA == ——— \\ --
 -- =============================
 
-local function CreateDropdown(Title, Options, LayoutOrder)
 
-    local Card = Instance.new("Frame")
-    Card.Name = Title .. "Dropdown"
-    Card.Size = UDim2.new(1, 0, 0, 50)
-    Card.BackgroundColor3 = Theme.Card
-    Card.BorderSizePixel = 0
-    Card.LayoutOrder = LayoutOrder
-    Card.ClipsDescendants = true
-    Card.Parent = AutoFarmContainer
+--==============================================================--
+--                         POSITION                             --
+--==============================================================--
 
-    local CardCorner = Instance.new("UICorner")
-    CardCorner.CornerRadius = UDim.new(0, 10)
-    CardCorner.Parent = Card
+local function UpdatePositionColors()
 
-    local CardStroke = Instance.new("UIStroke")
-    CardStroke.Color = Theme.Border
-    CardStroke.Thickness = 1
-    CardStroke.Parent = Card
+    PositionValue.TextColor3 = SelectedColor
+    PositionArrow.TextColor3 = SelectedColor
+    PositionLine.BackgroundColor3 = SelectedColor
 
-
-    -- HEADER
-    local Header = Instance.new("TextButton")
-    Header.Name = "Header"
-    Header.Size = UDim2.new(1, 0, 0, 50)
-    Header.BackgroundTransparency = 1
-    Header.Text = ""
-    Header.AutoButtonColor = false
-    Header.Parent = Card
-
-
-    local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Name = "Title"
-    TitleLabel.Size = UDim2.new(1, -55, 1, 0)
-    TitleLabel.Position = UDim2.new(0, 14, 0, 0)
-    TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = Title
-    TitleLabel.TextColor3 = Theme.Text
-    TitleLabel.TextSize = 11
-    TitleLabel.Font = Enum.Font.GothamMedium
-    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TitleLabel.Parent = Header
-
-
-    -- VALOR SELECIONADO
-    local SelectedLabel = Instance.new("TextLabel")
-    SelectedLabel.Name = "Selected"
-    SelectedLabel.Size = UDim2.new(0, 90, 1, 0)
-    SelectedLabel.Position = UDim2.new(1, -125, 0, 0)
-    SelectedLabel.BackgroundTransparency = 1
-    SelectedLabel.Text = Options[1]
-    SelectedLabel.TextColor3 = SelectedColor
-    SelectedLabel.TextSize = 10
-    SelectedLabel.Font = Enum.Font.GothamMedium
-    SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
-    SelectedLabel.Parent = Header
-
-
-    -- SETA
-    local Arrow = Instance.new("TextLabel")
-    Arrow.Name = "Arrow"
-    Arrow.Size = UDim2.new(0, 25, 0, 25)
-    Arrow.Position = UDim2.new(1, -32, 0, 12)
-    Arrow.BackgroundTransparency = 1
-    Arrow.Text = "⌄"
-    Arrow.TextColor3 = SelectedColor
-    Arrow.TextSize = 17
-    Arrow.Font = Enum.Font.GothamBold
-    Arrow.Parent = Header
-
-
-    -- LISTA
-    local OptionsHolder = Instance.new("Frame")
-    OptionsHolder.Name = "Options"
-    OptionsHolder.Size = UDim2.new(1, -16, 0, 0)
-    OptionsHolder.Position = UDim2.new(0, 8, 0, 52)
-    OptionsHolder.BackgroundTransparency = 1
-    OptionsHolder.ClipsDescendants = true
-    OptionsHolder.Parent = Card
-
-    local OptionsLayout = Instance.new("UIListLayout")
-    OptionsLayout.Parent = OptionsHolder
-    OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    OptionsLayout.Padding = UDim.new(0, 4)
-
-
-    -- CRIA AS OPÇÕES
-    local OptionButtons = {}
-
-    for Index, OptionName in ipairs(Options) do
-
-        local Option = Instance.new("TextButton")
-        Option.Name = "Option_" .. OptionName
-        Option.Size = UDim2.new(1, 0, 0, 34)
-        Option.BackgroundColor3 = Theme.Window
-        Option.BorderSizePixel = 0
-        Option.Text = OptionName
-        Option.TextColor3 = Theme.Secondary
-        Option.TextSize = 10
-        Option.Font = Enum.Font.GothamMedium
-        Option.AutoButtonColor = false
-        Option.LayoutOrder = Index
-        Option.Parent = OptionsHolder
-
-        local OptionCorner = Instance.new("UICorner")
-        OptionCorner.CornerRadius = UDim.new(0, 8)
-        OptionCorner.Parent = Option
-
-        local OptionStroke = Instance.new("UIStroke")
-        OptionStroke.Color = Theme.Border
-        OptionStroke.Thickness = 1
-        OptionStroke.Transparency = 0.5
-        OptionStroke.Parent = Option
-
-        OptionButtons[#OptionButtons + 1] = Option
-
-
-        Option.MouseEnter:Connect(function()
-
-            TweenService:Create(
-                Option,
-                TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {
-                    BackgroundColor3 = Theme.CardHover,
-                    TextColor3 = SelectedColor
-                }
-            ):Play()
-
-        end)
-
-
-        Option.MouseLeave:Connect(function()
-
-            local IsSelected = SelectedLabel.Text == OptionName
-
-            TweenService:Create(
-                Option,
-                TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {
-                    BackgroundColor3 = Theme.Window,
-                    TextColor3 = IsSelected and SelectedColor or Theme.Secondary
-                }
-            ):Play()
-
-        end)
-
+    if PositionSelected == "Deitado" then
+        PositionDeitado.TextColor3 = SelectedColor
+        PositionLevantado.TextColor3 = Theme.Secondary
+    else
+        PositionDeitado.TextColor3 = Theme.Secondary
+        PositionLevantado.TextColor3 = SelectedColor
     end
 
+end
 
-    local Open = false
 
+local function OpenPositionMenu()
 
-    -- ATUALIZA TAMANHO DA LISTA
-    local function GetListHeight()
-
-        local Count = #Options
-
-        return (Count * 34) + ((Count - 1) * 4)
-
+    if PositionMenuOpen then
+        return
     end
 
+    PositionMenuOpen = true
+    PositionArrow.Text = "⌃"
 
-    -- ABRIR / FECHAR
-    Header.Activated:Connect(function()
+    local BoxPos = PositionBox.AbsolutePosition
+    local PagePos = AutoFarmPage.AbsolutePosition
 
-        Open = not Open
+    PositionMenu.Position = UDim2.new(
+        0,
+        BoxPos.X - PagePos.X - 15,
+        0,
+        BoxPos.Y - PagePos.Y + 37
+    )
 
+    PositionMenu.Visible = true
+    PositionMenu.Size = UDim2.new(0, 155, 0, 0)
 
-        if Open then
+    TweenService:Create(
+        PositionMenu,
+        TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {
+            Size = UDim2.new(0, 155, 0, 90)
+        }
+    ):Play()
 
-            Arrow.Text = "⌃"
-
-            local ListHeight = GetListHeight()
-            local CardHeight = 58 + ListHeight
-
-            TweenService:Create(
-                Card,
-                TweenInfo.new(
-                    0.28,
-                    Enum.EasingStyle.Quint,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    Size = UDim2.new(1, 0, 0, CardHeight)
-                }
-            ):Play()
-
-
-            TweenService:Create(
-                OptionsHolder,
-                TweenInfo.new(
-                    0.28,
-                    Enum.EasingStyle.Quint,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    Size = UDim2.new(1, -16, 0, ListHeight)
-                }
-            ):Play()
+end
 
 
-            -- FADE DAS OPÇÕES
-            for _, Button in ipairs(OptionButtons) do
+local function ClosePositionMenu()
 
-                Button.BackgroundTransparency = 1
-                Button.TextTransparency = 1
+    if not PositionMenuOpen then
+        return
+    end
 
-                TweenService:Create(
-                    Button,
-                    TweenInfo.new(
-                        0.22,
-                        Enum.EasingStyle.Quad,
-                        Enum.EasingDirection.Out
-                    ),
-                    {
-                        BackgroundTransparency = 0,
-                        TextTransparency = 0
-                    }
-                ):Play()
+    PositionMenuOpen = false
+    PositionArrow.Text = "⌄"
 
-            end
+    local Tween = TweenService:Create(
+        PositionMenu,
+        TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+        {
+            Size = UDim2.new(0, 155, 0, 0)
+        }
+    )
 
-        else
+    Tween:Play()
 
-            Arrow.Text = "⌄"
+    Tween.Completed:Once(function()
 
-
-            TweenService:Create(
-                Card,
-                TweenInfo.new(
-                    0.25,
-                    Enum.EasingStyle.Quint,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    Size = UDim2.new(1, 0, 0, 50)
-                }
-            ):Play()
-
-
-            TweenService:Create(
-                OptionsHolder,
-                TweenInfo.new(
-                    0.25,
-                    Enum.EasingStyle.Quint,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    Size = UDim2.new(1, -16, 0, 0)
-                }
-            ):Play()
-
+        if not PositionMenuOpen then
+            PositionMenu.Visible = false
         end
 
     end)
 
-
-    -- SELECIONAR OPÇÃO
-    for _, Option in ipairs(OptionButtons) do
-
-        Option.Activated:Connect(function()
-
-            SelectedLabel.Text = Option.Text
-
-            -- FECHA AUTOMATICAMENTE
-            Open = false
-            Arrow.Text = "⌄"
-
-
-            TweenService:Create(
-                Card,
-                TweenInfo.new(
-                    0.25,
-                    Enum.EasingStyle.Quint,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    Size = UDim2.new(1, 0, 0, 50)
-                }
-            ):Play()
-
-
-            TweenService:Create(
-                OptionsHolder,
-                TweenInfo.new(
-                    0.25,
-                    Enum.EasingStyle.Quint,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    Size = UDim2.new(1, -16, 0, 0)
-                }
-            ):Play()
-
-
-            -- ATUALIZA CORES
-            for _, OtherOption in ipairs(OptionButtons) do
-
-                TweenService:Create(
-                    OtherOption,
-                    TweenInfo.new(0.15),
-                    {
-                        TextColor3 =
-                            OtherOption == Option
-                            and SelectedColor
-                            or Theme.Secondary
-                    }
-                ):Play()
-
-            end
-
-        end)
-
-    end
-
-
-    -- RETORNA O CARD
-    return {
-        Card = Card,
-        Header = Header,
-        Selected = SelectedLabel,
-        Arrow = Arrow,
-        Options = OptionButtons
-    }
-
 end
 
 
--- =============================
--- // ——— == BOTOES == ——— \\ --
--- =============================
+local function SelectPosition(Value)
 
+    PositionSelected = Value
+    PositionValue.Text = Value
 
--- PRIMEIRA LISTA
-local PositionDropdown = CreateDropdown(
-    "Position",
-    {
-        "Deitado",
-        "Levantado"
-    },
-    1
-)
+    local TargetPosition
 
-
--- SEGUNDA LISTA
-local MethodDropdown = CreateDropdown(
-    "Method",
-    {
-        "Tween",
-        "Cframe"
-    },
-    2
-)
-
-
---==============================================================--
---                         TOGGLE                               --
---==============================================================--
-
-local ToggleCard = Instance.new("Frame")
-ToggleCard.Name = "AutoFarmToggle"
-ToggleCard.Size = UDim2.new(1, 0, 0, 50)
-ToggleCard.BackgroundColor3 = Theme.Card
-ToggleCard.BorderSizePixel = 0
-ToggleCard.LayoutOrder = 3
-ToggleCard.Parent = AutoFarmContainer
-
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 10)
-ToggleCorner.Parent = ToggleCard
-
-local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Theme.Border
-ToggleStroke.Thickness = 1
-ToggleStroke.Parent = ToggleCard
-
-
-local ToggleText = Instance.new("TextLabel")
-ToggleText.Size = UDim2.new(1, -55, 1, 0)
-ToggleText.Position = UDim2.new(0, 14, 0, 0)
-ToggleText.BackgroundTransparency = 1
-ToggleText.Text = "Auto Farm"
-ToggleText.TextColor3 = Theme.Text
-ToggleText.TextSize = 11
-ToggleText.Font = Enum.Font.GothamMedium
-ToggleText.TextXAlignment = Enum.TextXAlignment.Left
-ToggleText.Parent = ToggleCard
-
-
--- QUADRADO DO TOGGLE
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "Toggle"
-ToggleButton.Size = UDim2.new(0, 26, 0, 26)
-ToggleButton.Position = UDim2.new(1, -40, 0.5, -13)
-ToggleButton.BackgroundColor3 = Theme.Window
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Text = ""
-ToggleButton.AutoButtonColor = false
-ToggleButton.Parent = ToggleCard
-
-local ToggleCorner2 = Instance.new("UICorner")
-ToggleCorner2.CornerRadius = UDim.new(0, 7)
-ToggleCorner2.Parent = ToggleButton
-
-local ToggleStroke2 = Instance.new("UIStroke")
-ToggleStroke2.Color = SelectedColor
-ToggleStroke2.Thickness = 1
-ToggleStroke2.Parent = ToggleButton
-
-
--- CHECK
-local Check = Instance.new("TextLabel")
-Check.Name = "Check"
-Check.Size = UDim2.new(1, 0, 1, 0)
-Check.BackgroundTransparency = 1
-Check.Text = "✔"
-Check.TextColor3 = Color3.fromRGB(255,255,255)
-Check.TextSize = 14
-Check.Font = Enum.Font.GothamBold
-Check.TextTransparency = 1
-Check.Parent = ToggleButton
-
-
-local ToggleEnabled = false
-
-
--- FUNÇÃO DE ATUALIZAÇÃO DA COR
-local function UpdateAutoFarmColors()
-
-    -- DROPDOWN 1
-    PositionDropdown.Selected.TextColor3 = SelectedColor
-    PositionDropdown.Arrow.TextColor3 = SelectedColor
-
-    -- DROPDOWN 2
-    MethodDropdown.Selected.TextColor3 = SelectedColor
-    MethodDropdown.Arrow.TextColor3 = SelectedColor
-
-    -- TOGGLE
-    ToggleStroke2.Color = SelectedColor
-
-    if ToggleEnabled then
-        ToggleButton.BackgroundColor3 = SelectedColor
-    end
-
-end
-
-
--- TOGGLE
-ToggleButton.Activated:Connect(function()
-
-    ToggleEnabled = not ToggleEnabled
-
-
-    if ToggleEnabled then
-
-        TweenService:Create(
-            ToggleButton,
-            TweenInfo.new(
-                0.22,
-                Enum.EasingStyle.Quint,
-                Enum.EasingDirection.Out
-            ),
-            {
-                BackgroundColor3 = SelectedColor,
-                Size = UDim2.new(0, 28, 0, 28)
-            }
-        ):Play()
-
-
-        TweenService:Create(
-            Check,
-            TweenInfo.new(
-                0.18,
-                Enum.EasingStyle.Quad,
-                Enum.EasingDirection.Out
-            ),
-            {
-                TextTransparency = 0
-            }
-        ):Play()
-
-
-        -- VOLTA PARA 26x26
-        task.delay(0.12, function()
-
-            TweenService:Create(
-                ToggleButton,
-                TweenInfo.new(
-                    0.15,
-                    Enum.EasingStyle.Quad,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    Size = UDim2.new(0, 26, 0, 26)
-                }
-            ):Play()
-
-        end)
-
+    if Value == "Deitado" then
+        TargetPosition = UDim2.new(0, 5, 0, 15)
     else
+        TargetPosition = UDim2.new(0, 5, 0, 55)
+    end
 
-        TweenService:Create(
-            ToggleButton,
-            TweenInfo.new(
-                0.2,
-                Enum.EasingStyle.Quad,
-                Enum.EasingDirection.Out
-            ),
-            {
-                BackgroundColor3 = Theme.Window
-            }
-        ):Play()
+    TweenService:Create(
+        PositionLine,
+        TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {
+            Position = TargetPosition
+        }
+    ):Play()
+
+    UpdatePositionColors()
+
+    task.wait(0.08)
+    ClosePositionMenu()
+
+end
 
 
-        TweenService:Create(
-            Check,
-            TweenInfo.new(
-                0.15,
-                Enum.EasingStyle.Quad,
-                Enum.EasingDirection.Out
-            ),
-            {
-                TextTransparency = 1
-            }
-        ):Play()
+PositionBox.Activated:Connect(function()
 
+    if PositionMenuOpen then
+        ClosePositionMenu()
+    else
+        OpenPositionMenu()
     end
 
 end)
 
 
+PositionDeitado.Activated:Connect(function()
+    SelectPosition("Deitado")
+end)
+
+
+PositionLevantado.Activated:Connect(function()
+    SelectPosition("Levantado")
+end)
+
+
+
 --==============================================================--
---        ATUALIZAÇÃO AUTOMÁTICA QUANDO A COR MUDAR            --
+--                           METHOD                             --
+--==============================================================--
+
+local function UpdateMethodColors()
+
+    MethodValue.TextColor3 = SelectedColor
+    MethodArrow.TextColor3 = SelectedColor
+    MethodLine.BackgroundColor3 = SelectedColor
+
+    if MethodSelected == "Tween" then
+        MethodTween.TextColor3 = SelectedColor
+        MethodCframe.TextColor3 = Theme.Secondary
+    else
+        MethodTween.TextColor3 = Theme.Secondary
+        MethodCframe.TextColor3 = SelectedColor
+    end
+
+end
+
+
+local function OpenMethodMenu()
+
+    if MethodMenuOpen then
+        return
+    end
+
+    MethodMenuOpen = true
+    MethodArrow.Text = "⌃"
+
+    local BoxPos = MethodBox.AbsolutePosition
+    local PagePos = AutoFarmPage.AbsolutePosition
+
+    MethodMenu.Position = UDim2.new(
+        0,
+        BoxPos.X - PagePos.X - 15,
+        0,
+        BoxPos.Y - PagePos.Y + 37
+    )
+
+    MethodMenu.Visible = true
+    MethodMenu.Size = UDim2.new(0, 155, 0, 0)
+
+    TweenService:Create(
+        MethodMenu,
+        TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {
+            Size = UDim2.new(0, 155, 0, 90)
+        }
+    ):Play()
+
+end
+
+
+local function CloseMethodMenu()
+
+    if not MethodMenuOpen then
+        return
+    end
+
+    MethodMenuOpen = false
+    MethodArrow.Text = "⌄"
+
+    local Tween = TweenService:Create(
+        MethodMenu,
+        TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+        {
+            Size = UDim2.new(0, 155, 0, 0)
+        }
+    )
+
+    Tween:Play()
+
+    Tween.Completed:Once(function()
+
+        if not MethodMenuOpen then
+            MethodMenu.Visible = false
+        end
+
+    end)
+
+end
+
+
+local function SelectMethod(Value)
+
+    MethodSelected = Value
+    MethodValue.Text = Value
+
+    local TargetPosition
+
+    if Value == "Tween" then
+        TargetPosition = UDim2.new(0, 5, 0, 15)
+    else
+        TargetPosition = UDim2.new(0, 5, 0, 55)
+    end
+
+    TweenService:Create(
+        MethodLine,
+        TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {
+            Position = TargetPosition
+        }
+    ):Play()
+
+    UpdateMethodColors()
+
+    task.wait(0.08)
+    CloseMethodMenu()
+
+end
+
+
+MethodBox.Activated:Connect(function()
+
+    if MethodMenuOpen then
+        CloseMethodMenu()
+    else
+        OpenMethodMenu()
+    end
+
+end)
+
+
+MethodTween.Activated:Connect(function()
+    SelectMethod("Tween")
+end)
+
+
+MethodCframe.Activated:Connect(function()
+    SelectMethod("Cframe")
+end)
+
+
+
+--==============================================================--
+--                    COR DA INTERFACE                          --
 --==============================================================--
 
 task.spawn(function()
 
     local LastColor = SelectedColor
 
-    while AutoFarmContainer.Parent do
+    while PositionCard.Parent do
 
         if LastColor ~= SelectedColor then
 
             LastColor = SelectedColor
 
-            UpdateAutoFarmColors()
+            UpdatePositionColors()
+            UpdateMethodColors()
 
         end
 
@@ -2434,14 +2463,8 @@ task.spawn(function()
 end)
 
 
-UpdateAutoFarmColors()
-
-
-
-
--- =============================
--- // ——— == SISTEMA == ——— \\ --
--- =============================
+UpdatePositionColors()
+UpdateMethodColors()
 
 
 --==============================================================--
