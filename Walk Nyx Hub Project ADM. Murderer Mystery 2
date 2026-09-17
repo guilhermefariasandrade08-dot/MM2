@@ -1847,7 +1847,11 @@ local ModificationsPage = TabFrames[9]
 -- // ——— == VARIÁVEIS == ——— \\ --
 -- =============================
 
--- METHOD
+--→ Container dos cards
+local AutoFarmContainer
+
+
+--→ METHOD
 local MethodSelected = "Tween"
 local MethodMenuOpen = false
 
@@ -1855,13 +1859,14 @@ local MethodCard
 local MethodBox
 local MethodValue
 local MethodArrow
+
 local MethodMenu
 local MethodTween
 local MethodCframe
 local MethodLine
 
 
--- POSITION
+--→ POSITION
 local PositionSelected = "Deitado"
 local PositionMenuOpen = false
 
@@ -1869,18 +1874,23 @@ local PositionCard
 local PositionBox
 local PositionValue
 local PositionArrow
+
 local PositionMenu
 local PositionDeitado
 local PositionLevantado
 local PositionLine
 
 
--- AUTO FARM
+--→ AUTO FARM
 local AutoFarmEnabled = false
 
 local AutoFarmCard
 local AutoFarmToggle
 local AutoFarmCheck
+
+
+--→ Layout
+local AutoFarmLayout
 
 
 
@@ -1890,15 +1900,39 @@ local AutoFarmCheck
 
 
 --==============================================================--
+--                    CONTAINER DOS CARDS                       --
+--==============================================================--
+
+AutoFarmContainer = Instance.new("Frame")
+AutoFarmContainer.Name = "AutoFarmContainer"
+AutoFarmContainer.Size = UDim2.new(1, -12, 0, 174)
+AutoFarmContainer.Position = UDim2.new(0, 6, 0, 6)
+AutoFarmContainer.BackgroundTransparency = 1
+AutoFarmContainer.BorderSizePixel = 0
+AutoFarmContainer.Parent = AutoFarmPage
+
+
+AutoFarmLayout = Instance.new("UIListLayout")
+AutoFarmLayout.FillDirection = Enum.FillDirection.Vertical
+AutoFarmLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+AutoFarmLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+AutoFarmLayout.Padding = UDim.new(0, 8)
+AutoFarmLayout.SortOrder = Enum.SortOrder.LayoutOrder
+AutoFarmLayout.Parent = AutoFarmContainer
+
+
+
+--==============================================================--
 --                           METHOD                             --
 --==============================================================--
 
 MethodCard = Instance.new("Frame")
 MethodCard.Name = "MethodCard"
-MethodCard.Size = UDim2.new(1, -12, 0, 50)
+MethodCard.LayoutOrder = 1
+MethodCard.Size = UDim2.new(1, 0, 0, 50)
 MethodCard.BackgroundColor3 = Theme.Card
 MethodCard.BorderSizePixel = 0
-MethodCard.Parent = AutoFarmPage
+MethodCard.Parent = AutoFarmContainer
 
 local MethodCorner = Instance.new("UICorner")
 MethodCorner.CornerRadius = UDim.new(0, 10)
@@ -1910,7 +1944,9 @@ MethodStroke.Thickness = 1
 MethodStroke.Parent = MethodCard
 
 
+--→ Título
 local MethodTitle = Instance.new("TextLabel")
+MethodTitle.Name = "Title"
 MethodTitle.Size = UDim2.new(0, 120, 1, 0)
 MethodTitle.Position = UDim2.new(0, 14, 0, 0)
 MethodTitle.BackgroundTransparency = 1
@@ -1922,6 +1958,7 @@ MethodTitle.TextXAlignment = Enum.TextXAlignment.Left
 MethodTitle.Parent = MethodCard
 
 
+--→ Box
 MethodBox = Instance.new("TextButton")
 MethodBox.Name = "MethodBox"
 MethodBox.Size = UDim2.new(0, 125, 0, 32)
@@ -1942,7 +1979,9 @@ MethodBoxStroke.Thickness = 1
 MethodBoxStroke.Parent = MethodBox
 
 
+--→ Valor
 MethodValue = Instance.new("TextLabel")
+MethodValue.Name = "Value"
 MethodValue.Size = UDim2.new(1, -30, 1, 0)
 MethodValue.Position = UDim2.new(0, 10, 0, 0)
 MethodValue.BackgroundTransparency = 1
@@ -1954,7 +1993,9 @@ MethodValue.TextXAlignment = Enum.TextXAlignment.Left
 MethodValue.Parent = MethodBox
 
 
+--→ Seta
 MethodArrow = Instance.new("TextLabel")
+MethodArrow.Name = "Arrow"
 MethodArrow.Size = UDim2.new(0, 22, 1, 0)
 MethodArrow.Position = UDim2.new(1, -27, 0, 0)
 MethodArrow.BackgroundTransparency = 1
@@ -1965,7 +2006,11 @@ MethodArrow.Font = Enum.Font.GothamBold
 MethodArrow.Parent = MethodBox
 
 
--- METHOD MENU
+
+--==============================================================--
+--                       METHOD MENU                            --
+--==============================================================--
+
 MethodMenu = Instance.new("Frame")
 MethodMenu.Name = "MethodMenu"
 MethodMenu.Size = UDim2.new(0, 155, 0, 0)
@@ -1986,7 +2031,9 @@ MethodMenuStroke.Thickness = 1
 MethodMenuStroke.Parent = MethodMenu
 
 
+--→ Tween
 MethodTween = Instance.new("TextButton")
+MethodTween.Name = "Tween"
 MethodTween.Size = UDim2.new(1, -15, 0, 40)
 MethodTween.Position = UDim2.new(0, 15, 0, 5)
 MethodTween.BackgroundTransparency = 1
@@ -2000,7 +2047,9 @@ MethodTween.ZIndex = 501
 MethodTween.Parent = MethodMenu
 
 
+--→ Cframe
 MethodCframe = Instance.new("TextButton")
+MethodCframe.Name = "Cframe"
 MethodCframe.Size = UDim2.new(1, -15, 0, 40)
 MethodCframe.Position = UDim2.new(0, 15, 0, 45)
 MethodCframe.BackgroundTransparency = 1
@@ -2014,7 +2063,9 @@ MethodCframe.ZIndex = 501
 MethodCframe.Parent = MethodMenu
 
 
+--→ Linha selecionada
 MethodLine = Instance.new("Frame")
+MethodLine.Name = "SelectedLine"
 MethodLine.Size = UDim2.new(0, 3, 0, 20)
 MethodLine.Position = UDim2.new(0, 6, 0, 15)
 MethodLine.BackgroundColor3 = SelectedColor
@@ -2034,10 +2085,11 @@ MethodLineCorner.Parent = MethodLine
 
 PositionCard = Instance.new("Frame")
 PositionCard.Name = "PositionCard"
-PositionCard.Size = UDim2.new(1, -12, 0, 50)
+PositionCard.LayoutOrder = 2
+PositionCard.Size = UDim2.new(1, 0, 0, 50)
 PositionCard.BackgroundColor3 = Theme.Card
 PositionCard.BorderSizePixel = 0
-PositionCard.Parent = AutoFarmPage
+PositionCard.Parent = AutoFarmContainer
 
 local PositionCorner = Instance.new("UICorner")
 PositionCorner.CornerRadius = UDim.new(0, 10)
@@ -2049,7 +2101,9 @@ PositionStroke.Thickness = 1
 PositionStroke.Parent = PositionCard
 
 
+--→ Título
 local PositionTitle = Instance.new("TextLabel")
+PositionTitle.Name = "Title"
 PositionTitle.Size = UDim2.new(0, 120, 1, 0)
 PositionTitle.Position = UDim2.new(0, 14, 0, 0)
 PositionTitle.BackgroundTransparency = 1
@@ -2061,6 +2115,7 @@ PositionTitle.TextXAlignment = Enum.TextXAlignment.Left
 PositionTitle.Parent = PositionCard
 
 
+--→ Box
 PositionBox = Instance.new("TextButton")
 PositionBox.Name = "PositionBox"
 PositionBox.Size = UDim2.new(0, 125, 0, 32)
@@ -2081,7 +2136,9 @@ PositionBoxStroke.Thickness = 1
 PositionBoxStroke.Parent = PositionBox
 
 
+--→ Valor
 PositionValue = Instance.new("TextLabel")
+PositionValue.Name = "Value"
 PositionValue.Size = UDim2.new(1, -30, 1, 0)
 PositionValue.Position = UDim2.new(0, 10, 0, 0)
 PositionValue.BackgroundTransparency = 1
@@ -2093,7 +2150,9 @@ PositionValue.TextXAlignment = Enum.TextXAlignment.Left
 PositionValue.Parent = PositionBox
 
 
+--→ Seta
 PositionArrow = Instance.new("TextLabel")
+PositionArrow.Name = "Arrow"
 PositionArrow.Size = UDim2.new(0, 22, 1, 0)
 PositionArrow.Position = UDim2.new(1, -27, 0, 0)
 PositionArrow.BackgroundTransparency = 1
@@ -2104,7 +2163,11 @@ PositionArrow.Font = Enum.Font.GothamBold
 PositionArrow.Parent = PositionBox
 
 
--- POSITION MENU
+
+--==============================================================--
+--                     POSITION MENU                           --
+--==============================================================--
+
 PositionMenu = Instance.new("Frame")
 PositionMenu.Name = "PositionMenu"
 PositionMenu.Size = UDim2.new(0, 155, 0, 0)
@@ -2125,7 +2188,9 @@ PositionMenuStroke.Thickness = 1
 PositionMenuStroke.Parent = PositionMenu
 
 
+--→ Deitado
 PositionDeitado = Instance.new("TextButton")
+PositionDeitado.Name = "Deitado"
 PositionDeitado.Size = UDim2.new(1, -15, 0, 40)
 PositionDeitado.Position = UDim2.new(0, 15, 0, 5)
 PositionDeitado.BackgroundTransparency = 1
@@ -2139,7 +2204,9 @@ PositionDeitado.ZIndex = 501
 PositionDeitado.Parent = PositionMenu
 
 
+--→ Levantado
 PositionLevantado = Instance.new("TextButton")
+PositionLevantado.Name = "Levantado"
 PositionLevantado.Size = UDim2.new(1, -15, 0, 40)
 PositionLevantado.Position = UDim2.new(0, 15, 0, 45)
 PositionLevantado.BackgroundTransparency = 1
@@ -2153,7 +2220,9 @@ PositionLevantado.ZIndex = 501
 PositionLevantado.Parent = PositionMenu
 
 
+--→ Linha selecionada
 PositionLine = Instance.new("Frame")
+PositionLine.Name = "SelectedLine"
 PositionLine.Size = UDim2.new(0, 3, 0, 20)
 PositionLine.Position = UDim2.new(0, 6, 0, 15)
 PositionLine.BackgroundColor3 = SelectedColor
@@ -2172,11 +2241,12 @@ PositionLineCorner.Parent = PositionLine
 --==============================================================--
 
 AutoFarmCard = Instance.new("Frame")
-AutoFarmCard.Name = "AutoFarmToggle"
-AutoFarmCard.Size = UDim2.new(1, -12, 0, 50)
+AutoFarmCard.Name = "AutoFarmCard"
+AutoFarmCard.LayoutOrder = 3
+AutoFarmCard.Size = UDim2.new(1, 0, 0, 50)
 AutoFarmCard.BackgroundColor3 = Theme.Card
 AutoFarmCard.BorderSizePixel = 0
-AutoFarmCard.Parent = AutoFarmPage
+AutoFarmCard.Parent = AutoFarmContainer
 
 local AutoFarmCorner = Instance.new("UICorner")
 AutoFarmCorner.CornerRadius = UDim.new(0, 10)
@@ -2188,7 +2258,9 @@ AutoFarmStroke.Thickness = 1
 AutoFarmStroke.Parent = AutoFarmCard
 
 
+--→ Título
 local AutoFarmTitle = Instance.new("TextLabel")
+AutoFarmTitle.Name = "Title"
 AutoFarmTitle.Size = UDim2.new(1, -55, 1, 0)
 AutoFarmTitle.Position = UDim2.new(0, 14, 0, 0)
 AutoFarmTitle.BackgroundTransparency = 1
@@ -2200,7 +2272,9 @@ AutoFarmTitle.TextXAlignment = Enum.TextXAlignment.Left
 AutoFarmTitle.Parent = AutoFarmCard
 
 
+--→ Toggle quadrado
 AutoFarmToggle = Instance.new("TextButton")
+AutoFarmToggle.Name = "Toggle"
 AutoFarmToggle.Size = UDim2.new(0, 26, 0, 26)
 AutoFarmToggle.Position = UDim2.new(1, -40, 0.5, -13)
 AutoFarmToggle.BackgroundColor3 = Theme.Window
@@ -2209,20 +2283,22 @@ AutoFarmToggle.Text = ""
 AutoFarmToggle.AutoButtonColor = false
 AutoFarmToggle.Parent = AutoFarmCard
 
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 7)
-ToggleCorner.Parent = AutoFarmToggle
+local AutoFarmToggleCorner = Instance.new("UICorner")
+AutoFarmToggleCorner.CornerRadius = UDim.new(0, 7)
+AutoFarmToggleCorner.Parent = AutoFarmToggle
 
-local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = SelectedColor
-ToggleStroke.Thickness = 1
-ToggleStroke.Parent = AutoFarmToggle
+local AutoFarmToggleStroke = Instance.new("UIStroke")
+AutoFarmToggleStroke.Color = SelectedColor
+AutoFarmToggleStroke.Thickness = 1
+AutoFarmToggleStroke.Parent = AutoFarmToggle
 
 
+--→ Check
 AutoFarmCheck = Instance.new("TextLabel")
+AutoFarmCheck.Name = "Check"
 AutoFarmCheck.Size = UDim2.new(1, 0, 1, 0)
 AutoFarmCheck.BackgroundTransparency = 1
-AutoFarmCheck.Text = "✔"
+AutoFarmCheck.Text = "✓"
 AutoFarmCheck.TextColor3 = Color3.fromRGB(255, 255, 255)
 AutoFarmCheck.TextSize = 14
 AutoFarmCheck.Font = Enum.Font.GothamBold
@@ -2237,7 +2313,7 @@ AutoFarmCheck.Parent = AutoFarmToggle
 
 
 --==============================================================--
---                           METHOD                             --
+--                     ATUALIZAR METHOD                         --
 --==============================================================--
 
 local function UpdateMethodColors()
@@ -2247,49 +2323,50 @@ local function UpdateMethodColors()
     MethodLine.BackgroundColor3 = SelectedColor
 
     if MethodSelected == "Tween" then
+
         MethodTween.TextColor3 = SelectedColor
         MethodCframe.TextColor3 = Theme.Secondary
+
     else
+
         MethodTween.TextColor3 = Theme.Secondary
         MethodCframe.TextColor3 = SelectedColor
+
     end
 
 end
 
 
-local function ClosePositionMenu()
 
-    if not PositionMenuOpen then
-        return
+--==============================================================--
+--                    ATUALIZAR POSITION                        --
+--==============================================================--
+
+local function UpdatePositionColors()
+
+    PositionValue.TextColor3 = SelectedColor
+    PositionArrow.TextColor3 = SelectedColor
+    PositionLine.BackgroundColor3 = SelectedColor
+
+    if PositionSelected == "Deitado" then
+
+        PositionDeitado.TextColor3 = SelectedColor
+        PositionLevantado.TextColor3 = Theme.Secondary
+
+    else
+
+        PositionDeitado.TextColor3 = Theme.Secondary
+        PositionLevantado.TextColor3 = SelectedColor
+
     end
-
-    PositionMenuOpen = false
-    PositionArrow.Text = "⌄"
-
-    local CloseTween = TweenService:Create(
-        PositionMenu,
-        TweenInfo.new(
-            0.20,
-            Enum.EasingStyle.Quint,
-            Enum.EasingDirection.In
-        ),
-        {
-            Size = UDim2.new(0, 155, 0, 0)
-        }
-    )
-
-    CloseTween:Play()
-
-    CloseTween.Completed:Once(function()
-
-        if not PositionMenuOpen then
-            PositionMenu.Visible = false
-        end
-
-    end)
 
 end
 
+
+
+--==============================================================--
+--                     FECHAR METHOD                            --
+--==============================================================--
 
 local function CloseMethodMenu()
 
@@ -2300,7 +2377,7 @@ local function CloseMethodMenu()
     MethodMenuOpen = false
     MethodArrow.Text = "⌄"
 
-    local CloseTween = TweenService:Create(
+    local Tween = TweenService:Create(
         MethodMenu,
         TweenInfo.new(
             0.20,
@@ -2312,9 +2389,9 @@ local function CloseMethodMenu()
         }
     )
 
-    CloseTween:Play()
+    Tween:Play()
 
-    CloseTween.Completed:Once(function()
+    Tween.Completed:Once(function()
 
         if not MethodMenuOpen then
             MethodMenu.Visible = false
@@ -2325,6 +2402,50 @@ local function CloseMethodMenu()
 end
 
 
+
+--==============================================================--
+--                    FECHAR POSITION                          --
+--==============================================================--
+
+local function ClosePositionMenu()
+
+    if not PositionMenuOpen then
+        return
+    end
+
+    PositionMenuOpen = false
+    PositionArrow.Text = "⌄"
+
+    local Tween = TweenService:Create(
+        PositionMenu,
+        TweenInfo.new(
+            0.20,
+            Enum.EasingStyle.Quint,
+            Enum.EasingDirection.In
+        ),
+        {
+            Size = UDim2.new(0, 155, 0, 0)
+        }
+    )
+
+    Tween:Play()
+
+    Tween.Completed:Once(function()
+
+        if not PositionMenuOpen then
+            PositionMenu.Visible = false
+        end
+
+    end)
+
+end
+
+
+
+--==============================================================--
+--                     ABRIR METHOD                             --
+--==============================================================--
+
 local function OpenMethodMenu()
 
     ClosePositionMenu()
@@ -2332,14 +2453,14 @@ local function OpenMethodMenu()
     MethodMenuOpen = true
     MethodArrow.Text = "⌃"
 
-    local BoxPos = MethodBox.AbsolutePosition
-    local PagePos = AutoFarmPage.AbsolutePosition
+    local BoxPosition = MethodBox.AbsolutePosition
+    local PagePosition = AutoFarmPage.AbsolutePosition
 
     MethodMenu.Position = UDim2.new(
         0,
-        BoxPos.X - PagePos.X - 15,
+        BoxPosition.X - PagePosition.X - 15,
         0,
-        BoxPos.Y - PagePos.Y + 37
+        BoxPosition.Y - PagePosition.Y + 37
     )
 
     MethodMenu.Visible = true
@@ -2360,6 +2481,11 @@ local function OpenMethodMenu()
 end
 
 
+
+--==============================================================--
+--                    ABRIR POSITION                           --
+--==============================================================--
+
 local function OpenPositionMenu()
 
     CloseMethodMenu()
@@ -2367,14 +2493,14 @@ local function OpenPositionMenu()
     PositionMenuOpen = true
     PositionArrow.Text = "⌃"
 
-    local BoxPos = PositionBox.AbsolutePosition
-    local PagePos = AutoFarmPage.AbsolutePosition
+    local BoxPosition = PositionBox.AbsolutePosition
+    local PagePosition = AutoFarmPage.AbsolutePosition
 
     PositionMenu.Position = UDim2.new(
         0,
-        BoxPos.X - PagePos.X - 15,
+        BoxPosition.X - PagePosition.X - 15,
         0,
-        BoxPos.Y - PagePos.Y + 37
+        BoxPosition.Y - PagePosition.Y + 37
     )
 
     PositionMenu.Visible = true
@@ -2395,6 +2521,11 @@ local function OpenPositionMenu()
 end
 
 
+
+--==============================================================--
+--                     SELECIONAR METHOD                        --
+--==============================================================--
+
 local function SelectMethod(Value)
 
     MethodSelected = Value
@@ -2403,9 +2534,13 @@ local function SelectMethod(Value)
     local NewPosition
 
     if Value == "Tween" then
+
         NewPosition = UDim2.new(0, 6, 0, 15)
+
     else
+
         NewPosition = UDim2.new(0, 6, 0, 55)
+
     end
 
     TweenService:Create(
@@ -2422,12 +2557,21 @@ local function SelectMethod(Value)
 
     UpdateMethodColors()
 
-    task.wait(0.08)
+    task.delay(0.05, function()
 
-    CloseMethodMenu()
+        if MethodMenuOpen then
+            CloseMethodMenu()
+        end
+
+    end)
 
 end
 
+
+
+--==============================================================--
+--                   SELECIONAR POSITION                        --
+--==============================================================--
 
 local function SelectPosition(Value)
 
@@ -2437,9 +2581,13 @@ local function SelectPosition(Value)
     local NewPosition
 
     if Value == "Deitado" then
+
         NewPosition = UDim2.new(0, 6, 0, 15)
+
     else
+
         NewPosition = UDim2.new(0, 6, 0, 55)
+
     end
 
     TweenService:Create(
@@ -2456,81 +2604,88 @@ local function SelectPosition(Value)
 
     UpdatePositionColors()
 
-    task.wait(0.08)
+    task.delay(0.05, function()
 
-    ClosePositionMenu()
+        if PositionMenuOpen then
+            ClosePositionMenu()
+        end
 
-end
-
-
-local function UpdatePositionColors()
-
-    PositionValue.TextColor3 = SelectedColor
-    PositionArrow.TextColor3 = SelectedColor
-    PositionLine.BackgroundColor3 = SelectedColor
-
-    if PositionSelected == "Deitado" then
-        PositionDeitado.TextColor3 = SelectedColor
-        PositionLevantado.TextColor3 = Theme.Secondary
-    else
-        PositionDeitado.TextColor3 = Theme.Secondary
-        PositionLevantado.TextColor3 = SelectedColor
-    end
+    end)
 
 end
 
 
 
 --==============================================================--
---                         EVENTOS                              --
+--                       METHOD EVENT                           --
 --==============================================================--
 
 MethodBox.Activated:Connect(function()
 
     if MethodMenuOpen then
+
         CloseMethodMenu()
+
     else
+
         OpenMethodMenu()
+
     end
 
 end)
 
 
 MethodTween.Activated:Connect(function()
+
     SelectMethod("Tween")
+
 end)
 
 
 MethodCframe.Activated:Connect(function()
+
     SelectMethod("Cframe")
+
 end)
 
 
 
+--==============================================================--
+--                      POSITION EVENT                          --
+--==============================================================--
+
 PositionBox.Activated:Connect(function()
 
     if PositionMenuOpen then
+
         ClosePositionMenu()
+
     else
+
         OpenPositionMenu()
+
     end
 
 end)
 
 
 PositionDeitado.Activated:Connect(function()
+
     SelectPosition("Deitado")
+
 end)
 
 
 PositionLevantado.Activated:Connect(function()
+
     SelectPosition("Levantado")
+
 end)
 
 
 
 --==============================================================--
---                         TOGGLE                               --
+--                       AUTO FARM TOGGLE                       --
 --==============================================================--
 
 AutoFarmToggle.Activated:Connect(function()
@@ -2553,7 +2708,7 @@ AutoFarmToggle.Activated:Connect(function()
 
         TweenService:Create(
             AutoFarmCheck,
-            TweenInfo.new(0.18),
+            TweenInfo.new(0.18, Enum.EasingStyle.Quint),
             {
                 TextTransparency = 0
             }
@@ -2565,7 +2720,7 @@ AutoFarmToggle.Activated:Connect(function()
             AutoFarmToggle,
             TweenInfo.new(
                 0.20,
-                Enum.EasingStyle.Quad,
+                Enum.EasingStyle.Quint,
                 Enum.EasingDirection.Out
             ),
             {
@@ -2575,7 +2730,7 @@ AutoFarmToggle.Activated:Connect(function()
 
         TweenService:Create(
             AutoFarmCheck,
-            TweenInfo.new(0.15),
+            TweenInfo.new(0.15, Enum.EasingStyle.Quint),
             {
                 TextTransparency = 1
             }
@@ -2588,7 +2743,7 @@ end)
 
 
 --==============================================================--
---                    COR DINÂMICA                              --
+--                  COR DINÂMICA DO CONFIG                      --
 --==============================================================--
 
 task.spawn(function()
@@ -2604,10 +2759,12 @@ task.spawn(function()
             UpdateMethodColors()
             UpdatePositionColors()
 
-            ToggleStroke.Color = SelectedColor
+            AutoFarmToggleStroke.Color = SelectedColor
 
             if AutoFarmEnabled then
+
                 AutoFarmToggle.BackgroundColor3 = SelectedColor
+
             end
 
         end
@@ -2619,8 +2776,19 @@ task.spawn(function()
 end)
 
 
+
+--==============================================================--
+--                     ESTADO INICIAL                           --
+--==============================================================--
+
 UpdateMethodColors()
 UpdatePositionColors()
+
+AutoFarmToggle.BackgroundColor3 = Theme.Window
+AutoFarmCheck.TextTransparency = 1
+
+MethodLine.Position = UDim2.new(0, 6, 0, 15)
+PositionLine.Position = UDim2.new(0, 6, 0, 15)
 
 
 --==============================================================--
