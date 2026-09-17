@@ -1838,6 +1838,74 @@ local ModificationsPage = TabFrames[9]
 --                         AUTO FARM                            --
 --==============================================================--
 
+--==============================================================--
+--                         AUTO FARM                            --
+--==============================================================--
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+
+--→ Container
+local AutoFarmContainer
+local AutoFarmLayout
+
+--→ METHOD
+local MethodSelected = "Tween"
+local MethodMenuOpen = false
+
+local MethodCard
+local MethodBox
+local MethodValue
+local MethodArrow
+local MethodMenu
+local MethodTween
+local MethodCframe
+local MethodLine
+
+--→ POSITION
+local PositionSelected = "Deitado"
+local PositionMenuOpen = false
+
+local PositionCard
+local PositionBox
+local PositionValue
+local PositionArrow
+local PositionMenu
+local PositionDeitado
+local PositionLevantado
+local PositionLine
+
+--→ AUTO FARM
+local AutoFarmEnabled = false
+local AutoFarmCard
+local AutoFarmToggle
+local AutoFarmIcon
+
+--→ SISTEMA
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Player = Players.LocalPlayer
+
+local CONFIG_FARM = {
+    velocidade = 18,
+    alcance_maximo = 500,
+    raio_perigo_murder = 30
+}
+local MinVel, MaxVel = 16, 20
+
+local BolsaCheia = false
+local bolsaCheiaPorEvento = false
+local collectedCoins = {}
+local cachedCoinContainer = nil
+local ultimoCheckBolsa = 0
+local resultadoUltimoCheckBolsa = false
+local HitboxOriginal = {}
+local ParouAteNovaPartida = false
+
 
 -- =============================
 -- // ——— == VARIÁVEIS == ——— \\ --
