@@ -1851,6 +1851,431 @@ local ModificationsPage = TabFrames[9]
 -- // ——— == BOTOES == ——— \\ --
 -- =============================
 
+-- ============================================================
+-- AUTO FARM - EXAMPLE CONTROLS
+-- ============================================================
+
+local AutoFarmExampleFrame = Instance.new("Frame")
+AutoFarmExampleFrame.Name = "ExampleControls"
+AutoFarmExampleFrame.Size = UDim2.new(1,-6,0,0)
+AutoFarmExampleFrame.AutomaticSize = Enum.AutomaticSize.Y
+AutoFarmExampleFrame.BackgroundTransparency = 1
+AutoFarmExampleFrame.BorderSizePixel = 0
+AutoFarmExampleFrame.Parent = AutoFarmPage
+
+local AutoFarmExampleLayout = Instance.new("UIListLayout")
+AutoFarmExampleLayout.Padding = UDim.new(0,8)
+AutoFarmExampleLayout.SortOrder = Enum.SortOrder.LayoutOrder
+AutoFarmExampleLayout.Parent = AutoFarmExampleFrame
+
+
+-- ============================================================
+-- LISTA 1
+-- ============================================================
+
+local PositionListOpen = false
+local PositionSelected = "Deitado"
+
+local PositionCard = Instance.new("Frame")
+PositionCard.Name = "PositionList"
+PositionCard.Size = UDim2.new(1,0,0,42)
+PositionCard.AutomaticSize = Enum.AutomaticSize.Y
+PositionCard.BackgroundColor3 = Theme.Card
+PositionCard.BorderSizePixel = 0
+PositionCard.LayoutOrder = 1
+PositionCard.Parent = AutoFarmExampleFrame
+
+local PositionCorner = Instance.new("UICorner")
+PositionCorner.CornerRadius = UDim.new(0,10)
+PositionCorner.Parent = PositionCard
+
+local PositionStroke = Instance.new("UIStroke")
+PositionStroke.Color = Theme.Border
+PositionStroke.Thickness = 1
+PositionStroke.Parent = PositionCard
+
+
+-- BOTÃO PRINCIPAL
+
+local PositionButton = Instance.new("TextButton")
+PositionButton.Size = UDim2.new(1,0,0,42)
+PositionButton.BackgroundTransparency = 1
+PositionButton.BorderSizePixel = 0
+PositionButton.Text = ""
+PositionButton.AutoButtonColor = false
+PositionButton.ZIndex = 5
+PositionButton.Parent = PositionCard
+
+local PositionTitle = Instance.new("TextLabel")
+PositionTitle.Size = UDim2.new(1,-50,1,0)
+PositionTitle.Position = UDim2.fromOffset(14,0)
+PositionTitle.BackgroundTransparency = 1
+PositionTitle.Text = "Position"
+PositionTitle.TextColor3 = Theme.Text
+PositionTitle.TextSize = 11
+PositionTitle.Font = Enum.Font.GothamSemibold
+PositionTitle.TextXAlignment = Enum.TextXAlignment.Left
+PositionTitle.Parent = PositionButton
+
+
+-- SETA
+
+local PositionArrow = Instance.new("TextLabel")
+PositionArrow.Size = UDim2.fromOffset(25,25)
+PositionArrow.Position = UDim2.new(1,-35,.5,-12)
+PositionArrow.BackgroundTransparency = 1
+PositionArrow.Text = "⌄"
+PositionArrow.TextColor3 = Theme.Secondary
+PositionArrow.TextSize = 18
+PositionArrow.Font = Enum.Font.GothamBold
+PositionArrow.TextXAlignment = Enum.TextXAlignment.Center
+PositionArrow.Parent = PositionButton
+
+
+-- LISTA
+
+local PositionOptions = Instance.new("Frame")
+PositionOptions.Name = "Options"
+PositionOptions.Size = UDim2.new(1,-12,0,0)
+PositionOptions.Position = UDim2.fromOffset(6,42)
+PositionOptions.AutomaticSize = Enum.AutomaticSize.Y
+PositionOptions.BackgroundTransparency = 1
+PositionOptions.Visible = false
+PositionOptions.Parent = PositionCard
+
+local PositionOptionsLayout = Instance.new("UIListLayout")
+PositionOptionsLayout.Padding = UDim.new(0,4)
+PositionOptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+PositionOptionsLayout.Parent = PositionOptions
+
+
+local function CreatePositionOption(Text,Order)
+
+	local Option = Instance.new("TextButton")
+
+	Option.Size = UDim2.new(1,0,0,32)
+	Option.BackgroundColor3 = Theme.Window
+	Option.BorderSizePixel = 0
+	Option.Text = Text
+	Option.TextColor3 =
+		Text == PositionSelected
+		and SelectedColor
+		or Theme.Secondary
+
+	Option.TextSize = 10
+	Option.Font = Enum.Font.GothamMedium
+	Option.TextXAlignment = Enum.TextXAlignment.Left
+	Option.AutoButtonColor = false
+	Option.LayoutOrder = Order
+	Option.Parent = PositionOptions
+
+	local Padding = Instance.new("UIPadding")
+	Padding.PaddingLeft = UDim.new(0,10)
+	Padding.Parent = Option
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0,7)
+	Corner.Parent = Option
+
+	Option.Activated:Connect(function()
+
+		PositionSelected = Text
+
+		PositionTitle.Text =
+			"Position: "..PositionSelected
+
+		for _,Child in ipairs(PositionOptions:GetChildren()) do
+
+			if Child:IsA("TextButton") then
+				Child.TextColor3 =
+					Child == Option
+					and SelectedColor
+					or Theme.Secondary
+			end
+		end
+	end)
+end
+
+CreatePositionOption("Deitado",1)
+CreatePositionOption("Levantado",2)
+
+
+PositionButton.Activated:Connect(function()
+
+	PositionListOpen = not PositionListOpen
+
+	PositionOptions.Visible = PositionListOpen
+
+	PositionArrow.Text =
+		PositionListOpen
+		and "⌃"
+		or "⌄"
+
+end)
+
+
+-- ============================================================
+-- LISTA 2
+-- ============================================================
+
+local MethodListOpen = false
+local MethodSelected = "Tween"
+
+local MethodCard = Instance.new("Frame")
+MethodCard.Name = "MethodList"
+MethodCard.Size = UDim2.new(1,0,0,42)
+MethodCard.AutomaticSize = Enum.AutomaticSize.Y
+MethodCard.BackgroundColor3 = Theme.Card
+MethodCard.BorderSizePixel = 0
+MethodCard.LayoutOrder = 2
+MethodCard.Parent = AutoFarmExampleFrame
+
+local MethodCorner = Instance.new("UICorner")
+MethodCorner.CornerRadius = UDim.new(0,10)
+MethodCorner.Parent = MethodCard
+
+local MethodStroke = Instance.new("UIStroke")
+MethodStroke.Color = Theme.Border
+MethodStroke.Thickness = 1
+MethodStroke.Parent = MethodCard
+
+
+-- BOTÃO PRINCIPAL
+
+local MethodButton = Instance.new("TextButton")
+MethodButton.Size = UDim2.new(1,0,0,42)
+MethodButton.BackgroundTransparency = 1
+MethodButton.BorderSizePixel = 0
+MethodButton.Text = ""
+MethodButton.AutoButtonColor = false
+MethodButton.ZIndex = 5
+MethodButton.Parent = MethodCard
+
+local MethodTitle = Instance.new("TextLabel")
+MethodTitle.Size = UDim2.new(1,-50,1,0)
+MethodTitle.Position = UDim2.fromOffset(14,0)
+MethodTitle.BackgroundTransparency = 1
+MethodTitle.Text = "Method"
+MethodTitle.TextColor3 = Theme.Text
+MethodTitle.TextSize = 11
+MethodTitle.Font = Enum.Font.GothamSemibold
+MethodTitle.TextXAlignment = Enum.TextXAlignment.Left
+MethodTitle.Parent = MethodButton
+
+
+-- SETA
+
+local MethodArrow = Instance.new("TextLabel")
+MethodArrow.Size = UDim2.fromOffset(25,25)
+MethodArrow.Position = UDim2.new(1,-35,.5,-12)
+MethodArrow.BackgroundTransparency = 1
+MethodArrow.Text = "⌄"
+MethodArrow.TextColor3 = Theme.Secondary
+MethodArrow.TextSize = 18
+MethodArrow.Font = Enum.Font.GothamBold
+MethodArrow.TextXAlignment = Enum.TextXAlignment.Center
+MethodArrow.Parent = MethodButton
+
+
+-- LISTA
+
+local MethodOptions = Instance.new("Frame")
+MethodOptions.Name = "Options"
+MethodOptions.Size = UDim2.new(1,-12,0,0)
+MethodOptions.Position = UDim2.fromOffset(6,42)
+MethodOptions.AutomaticSize = Enum.AutomaticSize.Y
+MethodOptions.BackgroundTransparency = 1
+MethodOptions.Visible = false
+MethodOptions.Parent = MethodCard
+
+local MethodOptionsLayout = Instance.new("UIListLayout")
+MethodOptionsLayout.Padding = UDim.new(0,4)
+MethodOptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+MethodOptionsLayout.Parent = MethodOptions
+
+
+local function CreateMethodOption(Text,Order)
+
+	local Option = Instance.new("TextButton")
+
+	Option.Size = UDim2.new(1,0,0,32)
+	Option.BackgroundColor3 = Theme.Window
+	Option.BorderSizePixel = 0
+	Option.Text = Text
+	Option.TextColor3 =
+		Text == MethodSelected
+		and SelectedColor
+		or Theme.Secondary
+
+	Option.TextSize = 10
+	Option.Font = Enum.Font.GothamMedium
+	Option.TextXAlignment = Enum.TextXAlignment.Left
+	Option.AutoButtonColor = false
+	Option.LayoutOrder = Order
+	Option.Parent = MethodOptions
+
+	local Padding = Instance.new("UIPadding")
+	Padding.PaddingLeft = UDim.new(0,10)
+	Padding.Parent = Option
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0,7)
+	Corner.Parent = Option
+
+	Option.Activated:Connect(function()
+
+		MethodSelected = Text
+
+		MethodTitle.Text =
+			"Method: "..MethodSelected
+
+		for _,Child in ipairs(MethodOptions:GetChildren()) do
+
+			if Child:IsA("TextButton") then
+				Child.TextColor3 =
+					Child == Option
+					and SelectedColor
+					or Theme.Secondary
+			end
+		end
+	end)
+end
+
+CreateMethodOption("Tween",1)
+CreateMethodOption("Cframe",2)
+
+
+MethodButton.Activated:Connect(function()
+
+	MethodListOpen = not MethodListOpen
+
+	MethodOptions.Visible = MethodListOpen
+
+	MethodArrow.Text =
+		MethodListOpen
+		and "⌃"
+		or "⌄"
+
+end)
+
+
+-- ============================================================
+-- TOGGLE
+-- ============================================================
+
+local ExampleToggleEnabled = false
+
+local ToggleCard = Instance.new("Frame")
+ToggleCard.Name = "ExampleToggle"
+ToggleCard.Size = UDim2.new(1,0,0,50)
+ToggleCard.BackgroundColor3 = Theme.Card
+ToggleCard.BorderSizePixel = 0
+ToggleCard.LayoutOrder = 3
+ToggleCard.Parent = AutoFarmExampleFrame
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0,10)
+ToggleCorner.Parent = ToggleCard
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Theme.Border
+ToggleStroke.Thickness = 1
+ToggleStroke.Parent = ToggleCard
+
+
+local ToggleLabel = Instance.new("TextLabel")
+ToggleLabel.Size = UDim2.new(1,-60,1,0)
+ToggleLabel.Position = UDim2.fromOffset(14,0)
+ToggleLabel.BackgroundTransparency = 1
+ToggleLabel.Text = "Auto Farm"
+ToggleLabel.TextColor3 = Theme.Text
+ToggleLabel.TextSize = 11
+ToggleLabel.Font = Enum.Font.GothamSemibold
+ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+ToggleLabel.Parent = ToggleCard
+
+
+-- QUADRADO
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "Toggle"
+ToggleButton.Size = UDim2.fromOffset(26,26)
+ToggleButton.Position = UDim2.new(1,-40,.5,-13)
+ToggleButton.BackgroundColor3 = Theme.Window
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Text = ""
+ToggleButton.AutoButtonColor = false
+ToggleButton.Parent = ToggleCard
+
+local ToggleCorner2 = Instance.new("UICorner")
+ToggleCorner2.CornerRadius = UDim.new(0,7)
+ToggleCorner2.Parent = ToggleButton
+
+local ToggleStroke2 = Instance.new("UIStroke")
+ToggleStroke2.Color = Theme.Border
+ToggleStroke2.Thickness = 1
+ToggleStroke2.Parent = ToggleButton
+
+
+-- CHECK
+
+local ToggleCheck = Instance.new("TextLabel")
+ToggleCheck.Size = UDim2.fromScale(1,1)
+ToggleCheck.BackgroundTransparency = 1
+ToggleCheck.Text = "✔"
+ToggleCheck.TextColor3 = Color3.fromRGB(255,255,255)
+ToggleCheck.TextSize = 13
+ToggleCheck.Font = Enum.Font.GothamBold
+ToggleCheck.TextXAlignment = Enum.TextXAlignment.Center
+ToggleCheck.TextYAlignment = Enum.TextYAlignment.Center
+ToggleCheck.TextTransparency = 1
+ToggleCheck.Parent = ToggleButton
+
+
+-- ANIMAÇÃO / TOGGLE
+
+ToggleButton.Activated:Connect(function()
+
+	ExampleToggleEnabled = not ExampleToggleEnabled
+
+	local TargetColor =
+		ExampleToggleEnabled
+		and SelectedColor
+		or Theme.Window
+
+	local TargetCheckTransparency =
+		ExampleToggleEnabled
+		and 0
+		or 1
+
+	TweenService:Create(
+		ToggleButton,
+		TweenInfo.new(
+			.18,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+		{
+			BackgroundColor3 = TargetColor
+		}
+	):Play()
+
+	TweenService:Create(
+		ToggleCheck,
+		TweenInfo.new(
+			.15,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+		{
+			TextTransparency = TargetCheckTransparency
+		}
+	):Play()
+
+end)
+
+
+
 
 
 -- =============================
