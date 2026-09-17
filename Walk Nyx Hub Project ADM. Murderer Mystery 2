@@ -2271,13 +2271,494 @@ AutoFarmIcon = CreateLucideIcon(
 AutoFarmIcon.ZIndex = 10
 
 -- =============================
--- // ——— == VARIÁVEIS == ——— \\ --
+-- // ——— == SISTEMA == ——— \\ --
 -- =============================
 
+--==============================================================--
+--                     METHOD COLORS                            --
+--==============================================================--
 
+local function UpdateMethodColors()
+    MethodValue.TextColor3 = SelectedColor
+    MethodArrow.TextColor3 = SelectedColor
+    MethodLine.BackgroundColor3 = SelectedColor
+    if MethodSelected == "Tween" then
+        MethodTween.TextColor3 = SelectedColor
+        MethodCframe.TextColor3 = Theme.Secondary
+    else
+        MethodTween.TextColor3 = Theme.Secondary
+        MethodCframe.TextColor3 = SelectedColor
+    end
+end
 
+--==============================================================--
+--                    POSITION COLORS                           --
+--==============================================================--
 
+local function UpdatePositionColors()
+    PositionValue.TextColor3 = SelectedColor
+    PositionArrow.TextColor3 = SelectedColor
+    PositionLine.BackgroundColor3 = SelectedColor
+    if PositionSelected == "Deitado" then
+        PositionDeitado.TextColor3 = SelectedColor
+        PositionLevantado.TextColor3 = Theme.Secondary
+    else
+        PositionDeitado.TextColor3 = Theme.Secondary
+        PositionLevantado.TextColor3 = SelectedColor
+    end
+end
 
+--==============================================================--
+--                     CLOSE METHOD                             --
+--==============================================================--
+
+local function CloseMethodMenu()
+    if not MethodMenuOpen then return end
+    MethodMenuOpen = false
+    MethodArrow.Text = "⌄"
+    local CloseTween = TweenService:Create(
+        MethodMenu,
+        TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+        {Size = UDim2.new(0, 155, 0, 0)}
+    )
+    CloseTween:Play()
+    CloseTween.Completed:Once(function()
+        if not MethodMenuOpen then MethodMenu.Visible = false end
+    end)
+end
+
+--==============================================================--
+--                    CLOSE POSITION                           --
+--==============================================================--
+
+local function ClosePositionMenu()
+    if not PositionMenuOpen then return end
+    PositionMenuOpen = false
+    PositionArrow.Text = "⌄"
+    local CloseTween = TweenService:Create(
+        PositionMenu,
+        TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+        {Size = UDim2.new(0, 155, 0, 0)}
+    )
+    CloseTween:Play()
+    CloseTween.Completed:Once(function()
+        if not PositionMenuOpen then PositionMenu.Visible = false end
+    end)
+end
+
+--==============================================================--
+--                      OPEN METHOD                             --
+--==============================================================--
+
+local function OpenMethodMenu()
+    ClosePositionMenu()
+    MethodMenuOpen = true
+    MethodArrow.Text = "⌃"
+    local BoxPosition = MethodBox.AbsolutePosition
+    local PagePosition = AutoFarmPage.AbsolutePosition
+    MethodMenu.Position = UDim2.new(0, BoxPosition.X - PagePosition.X - 15, 0, BoxPosition.Y - PagePosition.Y + 37)
+    MethodMenu.Visible = true
+    MethodMenu.Size = UDim2.new(0, 155, 0, 0)
+    TweenService:Create(MethodMenu, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {Size = UDim2.new(0, 155, 0, 90)}):Play()
+end
+
+--==============================================================--
+--                    OPEN POSITION                            --
+--==============================================================--
+
+local function OpenPositionMenu()
+    CloseMethodMenu()
+    PositionMenuOpen = true
+    PositionArrow.Text = "⌃"
+    local BoxPosition = PositionBox.AbsolutePosition
+    local PagePosition = AutoFarmPage.AbsolutePosition
+    PositionMenu.Position = UDim2.new(0, BoxPosition.X - PagePosition.X - 15, 0, BoxPosition.Y - PagePosition.Y + 37)
+    PositionMenu.Visible = true
+    PositionMenu.Size = UDim2.new(0, 155, 0, 0)
+    TweenService:Create(PositionMenu, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {Size = UDim2.new(0, 155, 0, 90)}):Play()
+end
+
+--==============================================================--
+--                     SELECT METHOD                            --
+--==============================================================--
+
+local function SelectMethod(Value)
+    MethodSelected = Value
+    MethodValue.Text = Value
+    local NewPosition = Value == "Tween" and UDim2.new(0, 6, 0, 15) or UDim2.new(0, 6, 0, 55)
+    TweenService:Create(MethodLine, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {Position = NewPosition}):Play()
+    UpdateMethodColors()
+    task.delay(0.05, function() if MethodMenuOpen then CloseMethodMenu() end end)
+end
+
+--==============================================================--
+--                   SELECT POSITION                           --
+--==============================================================--
+
+local function SelectPosition(Value)
+    PositionSelected = Value
+    PositionValue.Text = Value
+    local NewPosition = Value == "Deitado" and UDim2.new(0, 6, 0, 15) or UDim2.new(0, 6, 0, 55)
+    TweenService:Create(PositionLine, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {Position = NewPosition}):Play()
+    UpdatePositionColors()
+    task.delay(0.05, function() if PositionMenuOpen then ClosePositionMenu() end end)
+end
+
+--==============================================================--
+--                       METHOD EVENTS                          --
+--==============================================================--
+
+MethodBox.Activated:Connect(function()
+    if MethodMenuOpen then CloseMethodMenu() else OpenMethodMenu() end
+end)
+
+MethodTween.Activated:Connect(function() SelectMethod("Tween") end)
+MethodCframe.Activated:Connect(function() SelectMethod("Cframe") end)
+
+--==============================================================--
+--                      POSITION EVENTS                         --
+--==============================================================--
+
+PositionBox.Activated:Connect(function()
+    if PositionMenuOpen then ClosePositionMenu() else OpenPositionMenu() end
+end)
+
+PositionDeitado.Activated:Connect(function() SelectPosition("Deitado") end)
+PositionLevantado.Activated:Connect(function() SelectPosition("Levantado") end)
+
+--==============================================================--
+--                      AUTO FARM TOGGLE                        --
+--==============================================================--
+
+AutoFarmToggle.Activated:Connect(function()
+    AutoFarmEnabled = not AutoFarmEnabled
+    if AutoFarmEnabled then
+        TweenService:Create(AutoFarmToggle, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {BackgroundColor3 = SelectedColor}):Play()
+        TweenService:Create(AutoFarmIcon, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {ImageColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    else
+        TweenService:Create(AutoFarmToggle, TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Theme.Window}):Play()
+        TweenService:Create(AutoFarmIcon, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {ImageColor3 = SelectedColor}):Play()
+    end
+end)
+
+--==============================================================--
+--                     COR DINÂMICA                             --
+--==============================================================--
+
+task.spawn(function()
+    local LastColor = SelectedColor
+    while AutoFarmPage.Parent do
+        if LastColor ~= SelectedColor then
+            LastColor = SelectedColor
+            UpdateMethodColors()
+            UpdatePositionColors()
+            AutoFarmToggleStroke.Color = SelectedColor
+            if AutoFarmEnabled then
+                AutoFarmToggle.BackgroundColor3 = SelectedColor
+                AutoFarmIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            else
+                AutoFarmToggle.BackgroundColor3 = Theme.Window
+                AutoFarmIcon.ImageColor3 = SelectedColor
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+--==============================================================--
+--                       ESTADO INICIAL                         --
+--==============================================================--
+
+UpdateMethodColors()
+UpdatePositionColors()
+AutoFarmToggle.BackgroundColor3 = Theme.Window
+AutoFarmIcon.ImageColor3 = SelectedColor
+MethodLine.Position = UDim2.new(0, 6, 0, 15)
+PositionLine.Position = UDim2.new(0, 6, 0, 15)
+
+--==============================================================--
+--              🎯 SISTEMA DE AUTO FARM COMPLETO                 --
+--==============================================================--
+
+local function ObterMurderer()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local char = p.Character
+            local hum = char:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
+                local temFaca = char:FindFirstChild("Knife") or (p:FindFirstChild("Backpack") and p.Backpack:FindFirstChild("Knife"))
+                local eMurder = p:GetAttribute("Role") == "Murderer" or temFaca
+                if eMurder then return char end
+            end
+        end
+    end
+    return nil
+end
+
+local function ResetarEstadoFarm()
+    BolsaCheia = false
+    bolsaCheiaPorEvento = false
+    ParouAteNovaPartida = false
+    table.clear(collectedCoins)
+    cachedCoinContainer = nil
+    table.clear(HitboxOriginal)
+end
+
+Player.CharacterAdded:Connect(ResetarEstadoFarm)
+
+Player:GetAttributeChangedSignal("Alive"):Connect(function()
+    if Player:GetAttribute("Alive") == true then ResetarEstadoFarm() end
+end)
+
+-- 💰 DETECTOR DE BOLSA CHEIA
+task.spawn(function()
+    local remotes = ReplicatedStorage:FindFirstChild("Remotes", true) or ReplicatedStorage:FindFirstChild("Gameplay", true)
+    if remotes then
+        for _, remote in ipairs(remotes:GetDescendants()) do
+            if remote:IsA("RemoteEvent") and (string.find(string.lower(remote.Name), "coin") or string.find(string.lower(remote.Name), "collect")) then
+                remote.OnClientEvent:Connect(function(coletador, atual, maximo)
+                    if coletador == Player or (typeof(coletador) == "string" and coletador == Player.Name) then
+                        if tonumber(atual) and tonumber(maximo) then
+                            bolsaCheiaPorEvento = (tonumber(atual) >= tonumber(maximo))
+                        end
+                    end
+                end)
+            end
+        end
+    end
+end)
+
+local function VerificarTextoBolsaCheia()
+    if bolsaCheiaPorEvento then return true end
+    local agora = os.clock()
+    if agora - ultimoCheckBolsa < 0.5 then return resultadoUltimoCheckBolsa end
+    ultimoCheckBolsa = agora
+    local playerGui = Player:FindFirstChild("PlayerGui")
+    if not playerGui then return false end
+    local mainGui = playerGui:FindFirstChild("MainGUI") or playerGui:FindFirstChild("GUI")
+    if not mainGui then return false end
+    for _, gui in ipairs(mainGui:GetDescendants()) do
+        if gui:IsA("TextLabel") and gui.Visible and gui.Text ~= "" then
+            local texto = string.lower(gui.Text)
+            if (string.find(texto, "saco") and string.find(texto, "cheio")) or
+               (string.find(texto, "bag") and string.find(texto, "full")) or
+               string.find(texto, "full coin") or string.find(texto, "max coins") then
+                resultadoUltimoCheckBolsa = true
+                return true
+            end
+        end
+    end
+    resultadoUltimoCheckBolsa = false
+    return false
+end
+
+local function EmPartida()
+    local c = Player.Character
+    if not c or not c:FindFirstChild("Humanoid") or c.Humanoid.Health <= 0 then return false end
+    if not c:FindFirstChild("HumanoidRootPart") then return false end
+    local aliveAttr = Player:GetAttribute("Alive")
+    if aliveAttr ~= nil and aliveAttr == false then return false end
+    if Workspace:FindFirstChild("Lobby") then
+        local distLobby = (c.HumanoidRootPart.Position - Workspace.Lobby:GetPivot().Position).Magnitude
+        if distLobby < 100 then return false end
+    end
+    return true
+end
+
+local function GetSafeMapSpawn()
+    local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
+    if not coinContainer or not coinContainer.Parent then return nil end
+    local map = coinContainer.Parent
+    local spawns = map:FindFirstChild("Spawns") or map:FindFirstChild("Spawn")
+    if not spawns then return nil end
+    local partesSpawn = spawns:GetChildren()
+    if #partesSpawn == 0 then return nil end
+    local charMurderer = ObterMurderer()
+    local hrpMurderer = charMurderer and charMurderer:FindFirstChild("HumanoidRootPart")
+    local spawnValido = nil
+    local tentativas = 10
+    repeat
+        local spawnEscolhido = partesSpawn[math.random(1, #partesSpawn)]
+        if spawnEscolhido and spawnEscolhido:IsA("BasePart") then
+            local posCFrame = spawnEscolhido.CFrame + Vector3.new(0, 3, 0)
+            if hrpMurderer then
+                local distanciaMurder = (posCFrame.Position - hrpMurderer.Position).Magnitude
+                if distanciaMurder > 25 then
+                    spawnValido = posCFrame
+                    break
+                end
+            else
+                spawnValido = posCFrame
+                break
+            end
+        end
+        tentativas = tentativas - 1
+    until tentativas <= 0
+    if not spawnValido and #partesSpawn > 0 then
+        local fallback = partesSpawn[math.random(1, #partesSpawn)]
+        if fallback and fallback:IsA("BasePart") then
+            spawnValido = fallback.CFrame + Vector3.new(0, 3, 0)
+        end
+    end
+    return spawnValido
+end
+
+local function getNearestCoin(minhaPos)
+    local melhorMoeda, menorDistancia = nil, math.huge
+    if not cachedCoinContainer or not cachedCoinContainer.Parent then
+        cachedCoinContainer = Workspace:FindFirstChild("CoinContainer", true)
+    end
+    if not cachedCoinContainer then return nil end
+    local charMurderer = ObterMurderer()
+    local hrpMurderer = charMurderer and charMurderer:FindFirstChild("HumanoidRootPart")
+    for _, moeda in ipairs(cachedCoinContainer:GetChildren()) do
+        if moeda:IsA("BasePart")
+        and moeda.Name == "Coin_Server"
+        and moeda:FindFirstChild("TouchInterest")
+        and not collectedCoins[moeda]
+        and not moeda:GetAttribute("Collected") then
+            if not HitboxOriginal[moeda] then
+                HitboxOriginal[moeda] = moeda.Size
+                moeda.Size = Vector3.new(5, 15, 5)
+                moeda.Transparency = 1
+                moeda.CanCollide = false
+            end
+            if hrpMurderer then
+                local distMurder = (moeda.Position - hrpMurderer.Position).Magnitude
+                if distMurder <= CONFIG_FARM.raio_perigo_murder then continue end
+            end
+            local valDistancia = (minhaPos - moeda.Position).Magnitude
+            if valDistancia < CONFIG_FARM.alcance_maximo and valDistancia < menorDistancia then
+                menorDistancia = valDistancia
+                melhorMoeda = moeda
+            end
+        end
+    end
+    return melhorMoeda
+end
+
+-- 🔄 DETECÇÃO DE BOLSA CHEIA -> TP SEGURO
+task.spawn(function()
+    while true do
+        task.wait(0.3)
+        local estaComBolsaCheia = BolsaCheia or VerificarTextoBolsaCheia()
+        local coinContainerAtual = Workspace:FindFirstChild("CoinContainer", true)
+        if coinContainerAtual ~= cachedCoinContainer then
+            cachedCoinContainer = coinContainerAtual
+            ParouAteNovaPartida = false
+        end
+        if not EmPartida() then ParouAteNovaPartida = false end
+        if not ParouAteNovaPartida and EmPartida() and estaComBolsaCheia then
+            ParouAteNovaPartida = true
+            BolsaCheia = true
+            task.wait(0.2)
+            if EmPartida() then
+                local char = Player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                local safeSpawn = GetSafeMapSpawn()
+                if hrp and safeSpawn then
+                    if hum then hum.PlatformStand = true end
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    hrp.CFrame = safeSpawn
+                    task.wait(0.5)
+                    if hum and EmPartida() then hum.PlatformStand = false end
+                end
+            end
+        end
+    end
+end)
+
+-- 🟢 LOOP PRINCIPAL DO AUTO FARM
+task.spawn(function()
+    while true do
+        if AutoFarmEnabled and not ParouAteNovaPartida then
+            local c = Player.Character
+            local hrp = c and c:FindFirstChild("HumanoidRootPart")
+            local humanoid = c and c:FindFirstChildOfClass("Humanoid")
+            if not EmPartida() or not hrp or not humanoid then
+                task.wait(0.5)
+                continue
+            end
+            if VerificarTextoBolsaCheia() then
+                BolsaCheia = true
+                humanoid.PlatformStand = false
+                task.wait(0.5)
+                continue
+            end
+            BolsaCheia = false
+            local alvo = getNearestCoin(hrp.Position)
+            if alvo then
+                while AutoFarmEnabled and not ParouAteNovaPartida and EmPartida() and alvo and alvo.Parent
+                and not BolsaCheia and not VerificarTextoBolsaCheia()
+                and not alvo:GetAttribute("Collected")
+                and not collectedCoins[alvo] do
+                    humanoid.PlatformStand = true
+                    local minhaPosAtual = hrp.Position
+                    local moedaMaisPertoAgora = getNearestCoin(minhaPosAtual)
+                    if moedaMaisPertoAgora and moedaMaisPertoAgora ~= alvo then
+                        alvo = moedaMaisPertoAgora
+                    end
+                    if not alvo:IsDescendantOf(Workspace) or alvo:GetAttribute("Collected") then
+                        break
+                    end
+                    -- Posição: Deitado = abaixo / Levantado = acima
+                    local offsetY = (PositionSelected == "Deitado") and -4 or 2
+                    local posAlvo = alvo.Position + Vector3.new(0, offsetY, 0)
+                    local direcao = (posAlvo - minhaPosAtual)
+                    local distancia = direcao.Magnitude
+                    -- Rotação: Deitado = 90° / Levantado = 0°
+                    local angulo = (PositionSelected == "Deitado") and math.rad(90) or 0
+                    if distancia <= 0.8 then
+                        local tempoEsperaInicio = os.clock()
+                        local rotacaoFixa = CFrame.new(posAlvo) * CFrame.Angles(angulo, 0, 0)
+                        while AutoFarmEnabled and not ParouAteNovaPartida and os.clock() - tempoEsperaInicio < 3 do
+                            if not EmPartida() or not alvo.Parent or alvo:GetAttribute("Collected") then
+                                break
+                            end
+                            hrp.CFrame = rotacaoFixa
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            RunService.Heartbeat:Wait()
+                        end
+                        collectedCoins[alvo] = true
+                        break
+                    end
+                    -- Movimento: CFrame ou Tween
+                    if MethodSelected == "Cframe" then
+                        local velAtual = math.clamp(CONFIG_FARM.velocidade, 16, 25)
+                        local dt = RunService.Heartbeat:Wait()
+                        local passo = math.min(velAtual * dt, distancia)
+                        local novaPos = minhaPosAtual + (direcao.Unit * passo)
+                        hrp.CFrame = CFrame.new(novaPos) * CFrame.Angles(angulo, 0, 0)
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    else
+                        local tween = TweenService:Create(hrp, TweenInfo.new(distancia / CONFIG_FARM.velocidade, Enum.EasingStyle.Linear),
+                            {CFrame = CFrame.new(posAlvo) * CFrame.Angles(angulo, 0, 0)})
+                        tween:Play()
+                        tween.Completed:Wait()
+                    end
+                end
+                humanoid.PlatformStand = false
+            else
+                humanoid.PlatformStand = false
+                task.wait(0.5)
+            end
+        else
+            local c = Player.Character
+            local hum = c and c:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = false end
+            task.wait(0.5)
+        end
+    end
+end)
 
 --==============================================================--
 --                          ABA ESP                              --
