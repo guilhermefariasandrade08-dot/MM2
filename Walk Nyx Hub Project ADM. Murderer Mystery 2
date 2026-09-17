@@ -1,0 +1,2310 @@
+-- 1758 Primeira linha onde começa os botões --
+
+--==============================================================--
+--                    WALK NYX HUB PROJECT                     --
+--              PREMIUM UI / FOOTAGESUS LUCIDE V2              --
+--                 ALWAYS ON TOP & LAYER FIXED                  --
+--==============================================================--
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+--==============================================================--
+--                    REMOVE OLD GUI                            --
+--==============================================================--
+
+for _, Name in ipairs({
+	"WN_Premium",
+	"W_Hub",
+	"WN_FloatGui",
+	"W_FloatGui"
+}) do
+	local Old = PlayerGui:FindFirstChild(Name)
+
+	if Old then
+		Old:Destroy()
+	end
+end
+
+--==============================================================--
+--                    FOOTAGESUS LUCIDE                         --
+--==============================================================--
+
+local Icons
+
+do
+	local Success, Source = pcall(function()
+		return game:HttpGet(
+			"https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"
+		)
+	end)
+
+	if Success and Source then
+		local Loaded, Library = pcall(function()
+			return loadstring(Source)()
+		end)
+
+		if Loaded and Library then
+			Icons = Library
+
+			pcall(function()
+				Icons.SetIconsType("lucide")
+			end)
+		end
+	end
+end
+
+--==============================================================--
+--                         COLORS                               --
+--==============================================================--
+
+local Colors = {
+	Blue = Color3.fromRGB(65,150,255),
+	Red = Color3.fromRGB(255,65,75),
+	Pink = Color3.fromRGB(255,75,170),
+	Purple = Color3.fromRGB(155,90,255),
+	Yellow = Color3.fromRGB(255,205,55),
+	Green = Color3.fromRGB(65,220,125)
+}
+
+local SelectedColor = Colors.Blue
+
+--==============================================================--
+--                         THEME                                --
+--==============================================================--
+
+local Theme = {
+	Background = Color3.fromRGB(5,7,11),
+	Window = Color3.fromRGB(10,12,17),
+	Sidebar = Color3.fromRGB(8,10,14),
+	Card = Color3.fromRGB(15,18,24),
+	Text = Color3.fromRGB(245,247,250),
+	Secondary = Color3.fromRGB(165,170,180),
+	Muted = Color3.fromRGB(90,96,108),
+	Border = Color3.fromRGB(35,43,56),
+	Accent = Colors.Blue
+}
+
+--==============================================================--
+--                         CONFIG                               --
+--==============================================================--
+
+local DEFAULT_WIDTH = 520
+local DEFAULT_HEIGHT = 380
+
+local SIDEBAR_COMPACT = 60
+local SIDEBAR_EXPANDED = 150
+
+local WindowOpen = true
+local WindowAnimating = false
+
+local SidebarExpanded = false
+local CurrentTab = 1
+local ScriptClosed = false
+
+local FloatMovementLocked = true
+local FloatButtonHidden = false
+local FloatButtonSize = 48
+
+local OpenKey = Enum.KeyCode.RightShift
+
+--==============================================================--
+--                         STORAGE                              --
+--==============================================================--
+
+local AccentObjects = {}
+
+local TabFrames = {}
+local TabButtons = {}
+local TabIcons = {}
+
+local ColorButtons = {}
+
+local MovementToggle
+local MovementCheck
+
+local HideToggle
+local HideCheck
+
+local SizeValue
+local SizeSlider
+local SizeFill
+
+local FloatButton
+
+local ShowWindow
+local HideWindow
+
+local TopAccentGradient
+local TopAccentLine
+
+--==============================================================--
+--                    REGISTER ACCENT                           --
+--==============================================================--
+
+local function RegisterAccent(Object, Property)
+	if Object then
+		table.insert(AccentObjects,{
+			Object = Object,
+			Property = Property
+		})
+	end
+end
+
+--==============================================================--
+--                    CREATE LUCIDE ICON                        --
+--==============================================================--
+
+local function CreateLucideIcon(Parent,Name,Color,Size)
+
+	Size = Size or 18
+
+	if not Icons then
+		return nil
+	end
+
+	local Success, Data = pcall(function()
+		return Icons.Icon2(Name,"lucide")
+	end)
+
+	if not Success or type(Data) ~= "table" or not Data[1] then
+		return nil
+	end
+
+	local Image = Instance.new("ImageLabel")
+
+	Image.Name = "Icon"
+	Image.AnchorPoint = Vector2.new(.5,.5)
+	Image.Position = UDim2.fromScale(.5,.5)
+	Image.Size = UDim2.fromOffset(Size,Size)
+
+	Image.BackgroundTransparency = 1
+	Image.BorderSizePixel = 0
+
+	Image.Image = Data[1]
+	Image.ImageColor3 = Color
+	Image.ScaleType = Enum.ScaleType.Fit
+	Image.ZIndex = 50
+
+	if Data[2] then
+		if Data[2].ImageRectSize then
+			Image.ImageRectSize = Data[2].ImageRectSize
+		end
+
+		if Data[2].ImageRectPosition then
+			Image.ImageRectOffset = Data[2].ImageRectPosition
+		end
+	end
+
+	Image.Parent = Parent
+
+	return Image
+end
+
+--==============================================================--
+--                          TABS                                --
+--==============================================================--
+
+local Tabs = {
+	{Name = "Main",Icon = "house"},
+	{Name = "Murderer",Icon = "swords"},
+	{Name = "Sheriff",Icon = "crosshair"},
+	{Name = "Auto Farm",Icon = "coins"},
+	{Name = "ESP",Icon = "eye"},
+	{Name = "Local Player",Icon = "user-round"},
+	{Name = "Teleport & Fling",Icon = "send"},
+	{Name = "Keybinds",Icon = "keyboard"},
+	{Name = "Modifications",Icon = "wand-sparkles"}
+}
+
+--==============================================================--
+--                       SCREEN GUI                             --
+--==============================================================--
+
+local ScreenGui = Instance.new("ScreenGui")
+
+ScreenGui.Name = "WN_Premium"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.DisplayOrder = 2147483646
+ScreenGui.Parent = PlayerGui
+
+--==============================================================--
+--                    FLOAT GUI                                 --
+--==============================================================--
+
+local FloatGui = Instance.new("ScreenGui")
+
+FloatGui.Name = "WN_FloatGui"
+FloatGui.ResetOnSpawn = false
+FloatGui.IgnoreGuiInset = true
+FloatGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+FloatGui.DisplayOrder = 2147483647
+FloatGui.Parent = PlayerGui
+
+--==============================================================--
+--                         WINDOW                               --
+--==============================================================--
+
+local Window = Instance.new("Frame")
+
+Window.Name = "Main"
+Window.Size = UDim2.fromOffset(DEFAULT_WIDTH,DEFAULT_HEIGHT)
+Window.AnchorPoint = Vector2.new(.5,.5)
+Window.Position = UDim2.fromScale(.5,.5)
+Window.BackgroundColor3 = Theme.Window
+Window.BorderSizePixel = 0
+Window.ClipsDescendants = true
+Window.Parent = ScreenGui
+
+local WindowCorner = Instance.new("UICorner")
+WindowCorner.CornerRadius = UDim.new(0,16)
+WindowCorner.Parent = Window
+
+--==============================================================--
+--                 TOP ACCENT LINE - FIXED                     --
+--==============================================================--
+
+TopAccentLine = Instance.new("Frame")
+
+TopAccentLine.Name = "TopAccentLine"
+TopAccentLine.AnchorPoint = Vector2.new(.5,0)
+TopAccentLine.Size = UDim2.new(1,-18,0,4)
+TopAccentLine.Position = UDim2.new(.5,0,0,0)
+TopAccentLine.BackgroundColor3 = SelectedColor
+TopAccentLine.BackgroundTransparency = 0
+TopAccentLine.BorderSizePixel = 0
+TopAccentLine.ZIndex = 500
+TopAccentLine.Parent = Window
+
+local TopAccentCorner = Instance.new("UICorner")
+TopAccentCorner.CornerRadius = UDim.new(1,0)
+TopAccentCorner.Parent = TopAccentLine
+
+TopAccentGradient = Instance.new("UIGradient")
+
+TopAccentGradient.Name = "TopBlackFade"
+TopAccentGradient.Rotation = 0
+
+TopAccentGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0,Color3.fromRGB(0,0,0)),
+	ColorSequenceKeypoint.new(.10,Color3.fromRGB(8,16,27)),
+	ColorSequenceKeypoint.new(.18,Color3.fromRGB(
+		math.floor(SelectedColor.R*255*.35),
+		math.floor(SelectedColor.G*255*.35),
+		math.floor(SelectedColor.B*255*.35)
+	)),
+	ColorSequenceKeypoint.new(.27,SelectedColor),
+	ColorSequenceKeypoint.new(.50,SelectedColor),
+	ColorSequenceKeypoint.new(.73,SelectedColor),
+	ColorSequenceKeypoint.new(.82,Color3.fromRGB(
+		math.floor(SelectedColor.R*255*.35),
+		math.floor(SelectedColor.G*255*.35),
+		math.floor(SelectedColor.B*255*.35)
+	)),
+	ColorSequenceKeypoint.new(.90,Color3.fromRGB(8,16,27)),
+	ColorSequenceKeypoint.new(1,Color3.fromRGB(0,0,0))
+})
+
+TopAccentGradient.Parent = TopAccentLine
+
+--==============================================================--
+--                    WINDOW GRADIENT                            --
+--==============================================================--
+
+local WindowGradient = Instance.new("UIGradient")
+
+WindowGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0,Color3.fromRGB(20,24,33)),
+	ColorSequenceKeypoint.new(.5,Color3.fromRGB(12,14,19)),
+	ColorSequenceKeypoint.new(1,Color3.fromRGB(8,10,14))
+})
+
+WindowGradient.Rotation = 45
+WindowGradient.Parent = Window
+
+--==============================================================--
+--                         HEADER                               --
+--==============================================================--
+
+local Header = Instance.new("Frame")
+
+Header.Size = UDim2.new(1,0,0,55)
+Header.Position = UDim2.fromOffset(0,2)
+Header.BackgroundTransparency = 1
+Header.Active = true
+Header.ZIndex = 10
+Header.Parent = Window
+
+--==============================================================--
+--                          MM2                                 --
+--==============================================================--
+
+local MM2Button = Instance.new("TextButton")
+
+MM2Button.Name = "MM2Button"
+MM2Button.Size = UDim2.fromOffset(40,34)
+MM2Button.Position = UDim2.fromOffset(10,10)
+MM2Button.BackgroundColor3 = Color3.fromRGB(11,12,16)
+MM2Button.BorderSizePixel = 0
+MM2Button.Text = "M M 2"
+MM2Button.TextColor3 = SelectedColor
+MM2Button.TextSize = 13
+MM2Button.Font = Enum.Font.GothamBold
+MM2Button.AutoButtonColor = false
+MM2Button.ZIndex = 80
+MM2Button.Parent = Header
+
+local MM2Corner = Instance.new("UICorner")
+MM2Corner.CornerRadius = UDim.new(0,10)
+MM2Corner.Parent = MM2Button
+
+local MM2Stroke = Instance.new("UIStroke")
+
+MM2Stroke.Name = "AccentBorder"
+MM2Stroke.Color = SelectedColor
+MM2Stroke.Thickness = 1.5
+MM2Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+MM2Stroke.Parent = MM2Button
+
+RegisterAccent(MM2Button,"TextColor3")
+RegisterAccent(MM2Stroke,"Color")
+
+--==============================================================--
+--                           TITLE                              --
+--==============================================================--
+
+local Title = Instance.new("TextLabel")
+
+Title.Size = UDim2.fromOffset(220,22)
+Title.Position = UDim2.fromOffset(60,8)
+Title.BackgroundTransparency = 1
+Title.Text = "WALK NYX HUB PROJECT"
+Title.TextColor3 = Theme.Text
+Title.TextSize = 13
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+local Subtitle = Instance.new("TextLabel")
+
+Subtitle.Size = UDim2.fromOffset(220,16)
+Subtitle.Position = UDim2.fromOffset(60,28)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "PREMIUM EDITION"
+Subtitle.TextColor3 = Theme.Muted
+Subtitle.TextSize = 8
+Subtitle.Font = Enum.Font.GothamMedium
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+Subtitle.Parent = Header
+
+--==============================================================--
+--                           GEAR                               --
+--==============================================================--
+
+local GearButton = Instance.new("TextButton")
+
+GearButton.Name = "GearButton"
+GearButton.Size = UDim2.fromOffset(32,32)
+GearButton.Position = UDim2.new(1,-195,0,11)
+GearButton.BackgroundColor3 = Theme.Card
+GearButton.BorderSizePixel = 0
+GearButton.Text = ""
+GearButton.AutoButtonColor = false
+GearButton.ZIndex = 80
+GearButton.Parent = Header
+
+local GearCorner = Instance.new("UICorner")
+GearCorner.CornerRadius = UDim.new(0,9)
+GearCorner.Parent = GearButton
+
+local GearStroke = Instance.new("UIStroke")
+GearStroke.Color = Theme.Border
+GearStroke.Thickness = 1
+GearStroke.Parent = GearButton
+
+local GearHolder = Instance.new("Frame")
+GearHolder.Size = UDim2.fromScale(1,1)
+GearHolder.BackgroundTransparency = 1
+GearHolder.Parent = GearButton
+
+local GearIcon = CreateLucideIcon(
+	GearHolder,
+	"settings",
+	SelectedColor,
+	16
+)
+
+if GearIcon then
+	RegisterAccent(GearIcon,"ImageColor3")
+end
+
+--==============================================================--
+--                         PROFILE                              --
+--==============================================================--
+
+local Profile = Instance.new("Frame")
+
+Profile.Size = UDim2.fromOffset(120,38)
+Profile.Position = UDim2.new(1,-155,0,8)
+Profile.BackgroundTransparency = 1
+Profile.Parent = Header
+
+local Avatar = Instance.new("ImageLabel")
+
+Avatar.Size = UDim2.fromOffset(34,34)
+Avatar.Position = UDim2.fromOffset(0,2)
+Avatar.BackgroundColor3 = Theme.Card
+Avatar.BorderSizePixel = 0
+Avatar.Image =
+	"rbxthumb://type=AvatarHeadShot&id="
+	.. Player.UserId
+	.. "&w=150&h=150"
+Avatar.ScaleType = Enum.ScaleType.Crop
+Avatar.Parent = Profile
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(1,0)
+AvatarCorner.Parent = Avatar
+
+local AvatarStroke = Instance.new("UIStroke")
+AvatarStroke.Color = SelectedColor
+AvatarStroke.Thickness = 1.4
+AvatarStroke.Parent = Avatar
+
+RegisterAccent(AvatarStroke,"Color")
+
+local DisplayName = Instance.new("TextLabel")
+
+DisplayName.Size = UDim2.fromOffset(80,18)
+DisplayName.Position = UDim2.fromOffset(40,2)
+DisplayName.BackgroundTransparency = 1
+DisplayName.Text = Player.DisplayName
+DisplayName.TextColor3 = Theme.Text
+DisplayName.TextSize = 10
+DisplayName.Font = Enum.Font.GothamBold
+DisplayName.TextXAlignment = Enum.TextXAlignment.Left
+DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
+DisplayName.Parent = Profile
+
+local Username = Instance.new("TextLabel")
+
+Username.Size = UDim2.fromOffset(80,16)
+Username.Position = UDim2.fromOffset(40,20)
+Username.BackgroundTransparency = 1
+Username.Text = "@" .. Player.Name
+Username.TextColor3 = Theme.Secondary
+Username.TextSize = 8
+Username.Font = Enum.Font.GothamMedium
+Username.TextXAlignment = Enum.TextXAlignment.Left
+Username.TextTruncate = Enum.TextTruncate.AtEnd
+Username.Parent = Profile
+
+--==============================================================--
+--                            X                                 --
+--==============================================================--
+
+local CloseButton = Instance.new("TextButton")
+
+CloseButton.Name = "Close"
+CloseButton.Size = UDim2.fromOffset(30,30)
+CloseButton.Position = UDim2.new(1,-35,0,12)
+CloseButton.BackgroundColor3 = Theme.Card
+CloseButton.BorderSizePixel = 0
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Theme.Text
+CloseButton.TextSize = 12
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.AutoButtonColor = false
+CloseButton.ZIndex = 80
+CloseButton.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0,8)
+CloseCorner.Parent = CloseButton
+
+local CloseStroke = Instance.new("UIStroke")
+CloseStroke.Color = Theme.Border
+CloseStroke.Thickness = 1
+CloseStroke.Parent = CloseButton
+
+--==============================================================--
+--                    FLOAT BUTTON                              --
+--==============================================================--
+
+FloatButton = Instance.new("TextButton")
+
+FloatButton.Name = "WNFloat"
+FloatButton.Size = UDim2.fromOffset(FloatButtonSize,FloatButtonSize)
+FloatButton.AnchorPoint = Vector2.new(.5,.5)
+FloatButton.Position = UDim2.new(1,-65,1,-80)
+FloatButton.BackgroundColor3 = Color3.fromRGB(11,12,16)
+FloatButton.BorderSizePixel = 0
+FloatButton.Text = "W"
+FloatButton.TextColor3 = SelectedColor
+FloatButton.TextSize = 14
+FloatButton.Font = Enum.Font.GothamBold
+FloatButton.AutoButtonColor = false
+FloatButton.Active = true
+FloatButton.Selectable = true
+FloatButton.ZIndex = 100
+FloatButton.Parent = FloatGui
+
+local FloatCorner = Instance.new("UICorner")
+FloatCorner.CornerRadius = UDim.new(0,12)
+FloatCorner.Parent = FloatButton
+
+local FloatStroke = Instance.new("UIStroke")
+
+FloatStroke.Name = "AccentBorder"
+FloatStroke.Color = SelectedColor
+FloatStroke.Thickness = 1.5
+FloatStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+FloatStroke.Parent = FloatButton
+
+RegisterAccent(FloatButton,"TextColor3")
+RegisterAccent(FloatStroke,"Color")
+
+--==============================================================--
+--                    FLOAT DRAG SYSTEM                         --
+--==============================================================--
+
+local DraggingFloat = false
+local FloatDragInput = nil
+local FloatDragStart = nil
+local FloatGrabOffset = nil
+local FloatWasDragged = false
+
+local FLOAT_DRAG_THRESHOLD = 8
+
+local function ClampFloatButton(Position)
+
+	local Camera = workspace.CurrentCamera
+
+	if not Camera then
+		return Position
+	end
+
+	local ViewportSize = Camera.ViewportSize
+	local ButtonSize = FloatButton.AbsoluteSize
+
+	local HalfX = ButtonSize.X / 2
+	local HalfY = ButtonSize.Y / 2
+
+	return Vector2.new(
+		math.clamp(Position.X,HalfX,ViewportSize.X-HalfX),
+		math.clamp(Position.Y,HalfY,ViewportSize.Y-HalfY)
+	)
+end
+
+FloatButton.InputBegan:Connect(function(Input)
+
+	local InputType = Input.UserInputType
+
+	if InputType ~= Enum.UserInputType.MouseButton1
+	and InputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	FloatDragInput = Input
+
+	FloatDragStart = Vector2.new(
+		Input.Position.X,
+		Input.Position.Y
+	)
+
+	local AbsolutePosition = FloatButton.AbsolutePosition
+
+	FloatGrabOffset =
+		FloatDragStart -
+		Vector2.new(
+			AbsolutePosition.X,
+			AbsolutePosition.Y
+		)
+
+	DraggingFloat = false
+	FloatWasDragged = false
+end)
+
+UserInputService.InputChanged:Connect(function(Input)
+
+	if not FloatDragInput then
+		return
+	end
+
+	local InputType = Input.UserInputType
+
+	if InputType ~= Enum.UserInputType.MouseMovement
+	and InputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	local CurrentPosition = Vector2.new(
+		Input.Position.X,
+		Input.Position.Y
+	)
+
+	local Delta = CurrentPosition - FloatDragStart
+
+	if FloatMovementLocked then
+		return
+	end
+
+	if not DraggingFloat then
+		if Delta.Magnitude < FLOAT_DRAG_THRESHOLD then
+			return
+		end
+
+		DraggingFloat = true
+		FloatWasDragged = true
+	end
+
+	local NewPosition = CurrentPosition - FloatGrabOffset
+	local ClampedPosition = ClampFloatButton(NewPosition)
+
+	FloatButton.Position = UDim2.fromOffset(
+		math.floor(ClampedPosition.X+.5),
+		math.floor(ClampedPosition.Y+.5)
+	)
+end)
+
+UserInputService.InputEnded:Connect(function(Input)
+
+	if Input == FloatDragInput then
+		FloatDragInput = nil
+		DraggingFloat = false
+	end
+end)
+
+--==============================================================--
+--                    SHOW / HIDE WINDOW                         --
+--==============================================================--
+
+ShowWindow = function()
+
+	if WindowAnimating or WindowOpen or ScriptClosed then
+		return
+	end
+
+	WindowAnimating = true
+	WindowOpen = true
+
+	Window.Visible = true
+
+	Window.Size = UDim2.fromOffset(380,280)
+
+	local Tween = TweenService:Create(
+		Window,
+		TweenInfo.new(
+			.3,
+			Enum.EasingStyle.Back,
+			Enum.EasingDirection.Out
+		),
+		{
+			Size = UDim2.fromOffset(
+				DEFAULT_WIDTH,
+				DEFAULT_HEIGHT
+			)
+		}
+	)
+
+	Tween:Play()
+
+	task.delay(.3,function()
+		WindowAnimating = false
+	end)
+end
+
+HideWindow = function()
+
+	if WindowAnimating or not WindowOpen or ScriptClosed then
+		return
+	end
+
+	WindowAnimating = true
+	WindowOpen = false
+
+	local Tween = TweenService:Create(
+		Window,
+		TweenInfo.new(
+			.25,
+			Enum.EasingStyle.Quint,
+			Enum.EasingDirection.In
+		),
+		{
+			Size = UDim2.fromOffset(380,280)
+		}
+	)
+
+	Tween:Play()
+
+	Tween.Completed:Connect(function()
+
+		Window.Visible = false
+
+		Window.Size = UDim2.fromOffset(
+			DEFAULT_WIDTH,
+			DEFAULT_HEIGHT
+		)
+
+		WindowAnimating = false
+	end)
+end
+
+FloatButton.Activated:Connect(function()
+
+	if ScriptClosed then
+		return
+	end
+
+	if FloatWasDragged then
+		FloatWasDragged = false
+		return
+	end
+
+	if WindowOpen then
+		HideWindow()
+	else
+		ShowWindow()
+	end
+end)
+
+--==============================================================--
+--                  CONFIGURATION MENU                          --
+--==============================================================--
+
+local ColorMenu = Instance.new("Frame")
+
+ColorMenu.Name = "ConfigurationMenu"
+ColorMenu.Size = UDim2.fromOffset(300,230)
+ColorMenu.Position = UDim2.new(1,-315,0,50)
+ColorMenu.BackgroundColor3 = Theme.Card
+ColorMenu.BorderSizePixel = 0
+ColorMenu.Visible = false
+ColorMenu.ZIndex = 300
+ColorMenu.Parent = Window
+
+local ColorMenuCorner = Instance.new("UICorner")
+ColorMenuCorner.CornerRadius = UDim.new(0,10)
+ColorMenuCorner.Parent = ColorMenu
+
+local ColorMenuStroke = Instance.new("UIStroke")
+ColorMenuStroke.Color = Theme.Border
+ColorMenuStroke.Thickness = 1
+ColorMenuStroke.Parent = ColorMenu
+
+--==============================================================--
+--                    CONFIG TITLES                             --
+--==============================================================--
+
+local ColorTitle = Instance.new("TextLabel")
+
+ColorTitle.Size = UDim2.fromOffset(110,22)
+ColorTitle.Position = UDim2.fromOffset(10,6)
+ColorTitle.BackgroundTransparency = 1
+ColorTitle.Text = "Interface Color"
+ColorTitle.TextColor3 = Theme.Text
+ColorTitle.TextSize = 11
+ColorTitle.Font = Enum.Font.GothamBold
+ColorTitle.TextXAlignment = Enum.TextXAlignment.Left
+ColorTitle.TextYAlignment = Enum.TextYAlignment.Center
+ColorTitle.ZIndex = 301
+ColorTitle.Parent = ColorMenu
+
+local ExtraTitle = Instance.new("TextLabel")
+
+ExtraTitle.Size = UDim2.fromOffset(150,22)
+ExtraTitle.Position = UDim2.fromOffset(138,6)
+ExtraTitle.BackgroundTransparency = 1
+ExtraTitle.Text = "Button Settings"
+ExtraTitle.TextColor3 = Theme.Text
+ExtraTitle.TextSize = 11
+ExtraTitle.Font = Enum.Font.GothamBold
+ExtraTitle.TextXAlignment = Enum.TextXAlignment.Left
+ExtraTitle.TextYAlignment = Enum.TextYAlignment.Center
+ExtraTitle.ZIndex = 302
+ExtraTitle.Parent = ColorMenu
+
+local Divider = Instance.new("Frame")
+
+Divider.Size = UDim2.new(0,1,1,-12)
+Divider.Position = UDim2.fromOffset(132,6)
+Divider.BackgroundColor3 = Theme.Border
+Divider.BorderSizePixel = 0
+Divider.ZIndex = 302
+Divider.Parent = ColorMenu
+
+--==============================================================--
+--                    COLOR CONTAINER                           --
+--==============================================================--
+
+local ColorContainer = Instance.new("Frame")
+
+ColorContainer.Size = UDim2.fromOffset(112,190)
+ColorContainer.Position = UDim2.fromOffset(10,32)
+ColorContainer.BackgroundTransparency = 1
+ColorContainer.ZIndex = 301
+ColorContainer.Parent = ColorMenu
+
+local ColorLayout = Instance.new("UIListLayout")
+
+ColorLayout.Padding = UDim.new(0,4)
+ColorLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ColorLayout.Parent = ColorContainer
+
+--==============================================================--
+--                   SETTINGS AREA                              --
+--==============================================================--
+
+local SettingsArea = Instance.new("Frame")
+
+SettingsArea.Name = "FloatingSettingsArea"
+SettingsArea.Size = UDim2.fromOffset(150,190)
+SettingsArea.Position = UDim2.fromOffset(140,32)
+SettingsArea.BackgroundTransparency = 1
+SettingsArea.ZIndex = 301
+SettingsArea.Parent = ColorMenu
+
+--==============================================================--
+--                    SETTING LABEL                             --
+--==============================================================--
+
+local function CreateSettingLabel(Text,PositionY)
+
+	local Label = Instance.new("TextLabel")
+
+	Label.Size = UDim2.fromOffset(95,22)
+	Label.Position = UDim2.fromOffset(0,PositionY)
+	Label.BackgroundTransparency = 1
+	Label.Text = Text
+	Label.TextColor3 = Theme.Text
+	Label.TextSize = 10
+	Label.Font = Enum.Font.GothamSemibold
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextYAlignment = Enum.TextYAlignment.Center
+	Label.ZIndex = 302
+	Label.Parent = SettingsArea
+
+	return Label
+end
+
+CreateSettingLabel("Lock Button",0)
+
+--==============================================================--
+--                  MOVEMENT TOGGLE                             --
+--==============================================================--
+
+MovementToggle = Instance.new("TextButton")
+
+MovementToggle.Name = "MovementToggle"
+MovementToggle.Size = UDim2.fromOffset(22,22)
+MovementToggle.Position = UDim2.fromOffset(130,0)
+MovementToggle.BackgroundColor3 = SelectedColor
+MovementToggle.BorderSizePixel = 0
+MovementToggle.Text = ""
+MovementToggle.AutoButtonColor = false
+MovementToggle.ZIndex = 304
+MovementToggle.Parent = SettingsArea
+
+local MovementCorner = Instance.new("UICorner")
+MovementCorner.CornerRadius = UDim.new(0,5)
+MovementCorner.Parent = MovementToggle
+
+local MovementStroke = Instance.new("UIStroke")
+MovementStroke.Color = Theme.Border
+MovementStroke.Thickness = 1
+MovementStroke.Parent = MovementToggle
+
+MovementCheck = Instance.new("TextLabel")
+
+MovementCheck.Size = UDim2.fromScale(1,1)
+MovementCheck.BackgroundTransparency = 1
+MovementCheck.Text = "✔"
+MovementCheck.TextColor3 = Color3.fromRGB(255,255,255)
+MovementCheck.TextSize = 11
+MovementCheck.Font = Enum.Font.GothamBold
+MovementCheck.TextXAlignment = Enum.TextXAlignment.Center
+MovementCheck.TextYAlignment = Enum.TextYAlignment.Center
+MovementCheck.Visible = true
+MovementCheck.ZIndex = 305
+MovementCheck.Parent = MovementToggle
+
+--==============================================================--
+--                         SIZE                                 --
+--==============================================================--
+
+CreateSettingLabel("Button Size",32)
+
+SizeValue = Instance.new("TextLabel")
+
+SizeValue.Size = UDim2.fromOffset(30,18)
+SizeValue.Position = UDim2.fromOffset(122,34)
+SizeValue.BackgroundTransparency = 1
+SizeValue.Text = tostring(FloatButtonSize)
+SizeValue.TextColor3 = SelectedColor
+SizeValue.TextSize = 10
+SizeValue.Font = Enum.Font.GothamBold
+SizeValue.TextXAlignment = Enum.TextXAlignment.Right
+SizeValue.ZIndex = 303
+SizeValue.Parent = SettingsArea
+
+RegisterAccent(SizeValue,"TextColor3")
+
+local MIN_FLOAT_SIZE = 36
+local MAX_FLOAT_SIZE = 70
+
+SizeSlider = Instance.new("Frame")
+
+SizeSlider.Name = "SizeSlider"
+SizeSlider.Size = UDim2.fromOffset(150,8)
+SizeSlider.Position = UDim2.fromOffset(0,58)
+SizeSlider.BackgroundColor3 = Theme.Window
+SizeSlider.BorderSizePixel = 0
+SizeSlider.ZIndex = 302
+SizeSlider.Parent = SettingsArea
+
+local SizeSliderCorner = Instance.new("UICorner")
+SizeSliderCorner.CornerRadius = UDim.new(1,0)
+SizeSliderCorner.Parent = SizeSlider
+
+SizeFill = Instance.new("Frame")
+
+SizeFill.Name = "Fill"
+
+SizeFill.Size = UDim2.new(
+	(FloatButtonSize-MIN_FLOAT_SIZE)/
+	(MAX_FLOAT_SIZE-MIN_FLOAT_SIZE),
+	0,
+	1,
+	0
+)
+
+SizeFill.BackgroundColor3 = SelectedColor
+SizeFill.BorderSizePixel = 0
+SizeFill.ZIndex = 303
+SizeFill.Parent = SizeSlider
+
+local SizeFillCorner = Instance.new("UICorner")
+SizeFillCorner.CornerRadius = UDim.new(1,0)
+SizeFillCorner.Parent = SizeFill
+
+RegisterAccent(SizeFill,"BackgroundColor3")
+
+--==============================================================--
+--                     KEYBIND                                  --
+--==============================================================--
+
+CreateSettingLabel("Hotkey",78)
+
+local KeyBox = Instance.new("TextBox")
+
+KeyBox.Name = "OpenKey"
+KeyBox.Size = UDim2.fromOffset(45,22)
+KeyBox.Position = UDim2.fromOffset(107,78)
+KeyBox.BackgroundColor3 = Theme.Window
+KeyBox.BorderSizePixel = 0
+KeyBox.Text = "RShift"
+KeyBox.PlaceholderText = "Key"
+KeyBox.TextColor3 = Theme.Text
+KeyBox.PlaceholderColor3 = Theme.Muted
+KeyBox.TextSize = 10
+KeyBox.Font = Enum.Font.GothamBold
+KeyBox.ClearTextOnFocus = false
+KeyBox.TextXAlignment = Enum.TextXAlignment.Center
+KeyBox.ZIndex = 304
+KeyBox.Parent = SettingsArea
+
+local KeyBoxCorner = Instance.new("UICorner")
+KeyBoxCorner.CornerRadius = UDim.new(0,5)
+KeyBoxCorner.Parent = KeyBox
+
+local KeyBoxStroke = Instance.new("UIStroke")
+KeyBoxStroke.Color = Theme.Border
+KeyBoxStroke.Thickness = 1
+KeyBoxStroke.Parent = KeyBox
+
+--==============================================================--
+--                     HIDE BUTTON                              --
+--==============================================================--
+
+CreateSettingLabel("Hide Button",110)
+
+HideToggle = Instance.new("TextButton")
+
+HideToggle.Name = "HideToggle"
+HideToggle.Size = UDim2.fromOffset(22,22)
+HideToggle.Position = UDim2.fromOffset(130,110)
+HideToggle.BackgroundColor3 = Theme.Window
+HideToggle.BorderSizePixel = 0
+HideToggle.Text = ""
+HideToggle.AutoButtonColor = false
+HideToggle.ZIndex = 304
+HideToggle.Parent = SettingsArea
+
+local HideCorner = Instance.new("UICorner")
+HideCorner.CornerRadius = UDim.new(0,5)
+HideCorner.Parent = HideToggle
+
+local HideStroke = Instance.new("UIStroke")
+HideStroke.Color = Theme.Border
+HideStroke.Thickness = 1
+HideStroke.Parent = HideToggle
+
+local HideCheck = Instance.new("TextLabel")
+
+HideCheck.Size = UDim2.fromScale(1,1)
+HideCheck.BackgroundTransparency = 1
+HideCheck.Text = "✔"
+HideCheck.TextColor3 = Color3.fromRGB(255,255,255)
+HideCheck.TextSize = 11
+HideCheck.Font = Enum.Font.GothamBold
+HideCheck.TextXAlignment = Enum.TextXAlignment.Center
+HideCheck.TextYAlignment = Enum.TextYAlignment.Center
+HideCheck.Visible = false
+HideCheck.ZIndex = 305
+HideCheck.Parent = HideToggle
+
+--==============================================================--
+--                  REFRESH FLOAT COLORS                        --
+--==============================================================--
+
+local function RefreshFloatingColors()
+
+	local MovementColor =
+		FloatMovementLocked
+		and SelectedColor
+		or Theme.Window
+
+	MovementToggle.BackgroundColor3 = MovementColor
+
+	local HideColor =
+		FloatButtonHidden
+		and SelectedColor
+		or Theme.Window
+
+	HideToggle.BackgroundColor3 = HideColor
+
+	SizeFill.BackgroundColor3 = SelectedColor
+	SizeValue.TextColor3 = SelectedColor
+end
+
+--==============================================================--
+--                    TOP ACCENT UPDATE                         --
+--==============================================================--
+
+local function UpdateTopAccent()
+
+	if not TopAccentLine or not TopAccentGradient then
+		return
+	end
+
+	TopAccentLine.Size = UDim2.new(1,-18,0,4)
+	TopAccentLine.Position = UDim2.new(.5,0,0,0)
+	TopAccentLine.BackgroundColor3 = SelectedColor
+
+	TopAccentGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0,Color3.fromRGB(0,0,0)),
+		ColorSequenceKeypoint.new(.10,Color3.fromRGB(8,16,27)),
+		ColorSequenceKeypoint.new(.18,Color3.fromRGB(
+			math.floor(SelectedColor.R*255*.35),
+			math.floor(SelectedColor.G*255*.35),
+			math.floor(SelectedColor.B*255*.35)
+		)),
+		ColorSequenceKeypoint.new(.27,SelectedColor),
+		ColorSequenceKeypoint.new(.50,SelectedColor),
+		ColorSequenceKeypoint.new(.73,SelectedColor),
+		ColorSequenceKeypoint.new(.82,Color3.fromRGB(
+			math.floor(SelectedColor.R*255*.35),
+			math.floor(SelectedColor.G*255*.35),
+			math.floor(SelectedColor.B*255*.35)
+		)),
+		ColorSequenceKeypoint.new(.90,Color3.fromRGB(8,16,27)),
+		ColorSequenceKeypoint.new(1,Color3.fromRGB(0,0,0))
+	})
+end
+
+--==============================================================--
+--                    COLOR BUTTONS                             --
+--==============================================================--
+
+local function CreateColorButton(Name,Color,Order)
+
+	local Button = Instance.new("TextButton")
+
+	Button.Name = Name
+	Button.LayoutOrder = Order
+	Button.Size = UDim2.new(1,0,0,24)
+	Button.BackgroundColor3 = Theme.Window
+	Button.BorderSizePixel = 0
+	Button.Text = ""
+	Button.AutoButtonColor = false
+	Button.ZIndex = 302
+	Button.Parent = ColorContainer
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0,5)
+	Corner.Parent = Button
+
+	local Label = Instance.new("TextLabel")
+
+	Label.Size = UDim2.new(1,-30,1,0)
+	Label.Position = UDim2.fromOffset(6,0)
+	Label.BackgroundTransparency = 1
+	Label.Text = Name
+	Label.TextColor3 = Theme.Text
+	Label.TextSize = 10
+	Label.Font = Enum.Font.GothamSemibold
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.ZIndex = 303
+	Label.Parent = Button
+
+	local Dot = Instance.new("Frame")
+
+	Dot.Name = "ColorDot"
+	Dot.Size = UDim2.fromOffset(16,16)
+	Dot.Position = UDim2.new(1,-20,.5,-8)
+	Dot.BackgroundColor3 = Color
+	Dot.BorderSizePixel = 0
+	Dot.ZIndex = 304
+	Dot.Parent = Button
+
+	local DotCorner = Instance.new("UICorner")
+	DotCorner.CornerRadius = UDim.new(1,0)
+	DotCorner.Parent = Dot
+
+	local Check = Instance.new("TextLabel")
+
+	Check.Name = "Check"
+	Check.Size = UDim2.fromScale(1,1)
+	Check.BackgroundTransparency = 1
+	Check.Text = "✔"
+
+	Check.TextColor3 =
+		Name == "Yellow"
+		and Color3.fromRGB(20,20,20)
+		or Color3.fromRGB(255,255,255)
+
+	Check.TextSize = 10
+	Check.Font = Enum.Font.GothamBold
+	Check.TextXAlignment = Enum.TextXAlignment.Center
+	Check.TextYAlignment = Enum.TextYAlignment.Center
+	Check.Visible = Name == "Blue"
+	Check.ZIndex = 305
+	Check.Parent = Dot
+
+	ColorButtons[Name] = {
+		Button = Button,
+		Dot = Dot,
+		Check = Check,
+		Color = Color
+	}
+
+	Button.Activated:Connect(function()
+
+		SelectedColor = Color
+		Theme.Accent = Color
+
+		UpdateTopAccent()
+
+		for _,Data in ipairs(AccentObjects) do
+
+			local Object = Data.Object
+
+			if Object and Object.Parent then
+				pcall(function()
+					Object[Data.Property] = Color
+				end)
+			end
+		end
+
+		for Index,Icon in ipairs(TabIcons) do
+
+			if Icon and Icon.Parent then
+				Icon.ImageColor3 =
+					Index == CurrentTab
+					and SelectedColor
+					or Theme.Secondary
+			end
+		end
+
+		for Index,TabButton in ipairs(TabButtons) do
+
+			local Indicator =
+				TabButton:FindFirstChild("Indicator")
+
+			if Indicator and Index == CurrentTab then
+				Indicator.BackgroundColor3 = SelectedColor
+			end
+		end
+
+		for ColorName,Data in pairs(ColorButtons) do
+			Data.Check.Visible = ColorName == Name
+		end
+
+		RefreshFloatingColors()
+
+		ColorMenu.Visible = false
+	end)
+end
+
+CreateColorButton("Blue",Colors.Blue,1)
+CreateColorButton("Red",Colors.Red,2)
+CreateColorButton("Pink",Colors.Pink,3)
+CreateColorButton("Purple",Colors.Purple,4)
+CreateColorButton("Yellow",Colors.Yellow,5)
+CreateColorButton("Green",Colors.Green,6)
+
+--==============================================================--
+--                  MOVEMENT TOGGLE                             --
+--==============================================================--
+
+MovementToggle.Activated:Connect(function()
+
+	FloatMovementLocked = not FloatMovementLocked
+	MovementCheck.Visible = FloatMovementLocked
+
+	local TargetColor =
+		FloatMovementLocked
+		and SelectedColor
+		or Theme.Window
+
+	TweenService:Create(
+		MovementToggle,
+		TweenInfo.new(
+			.18,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+		{
+			BackgroundColor3 = TargetColor
+		}
+	):Play()
+end)
+
+--==============================================================--
+--                     FLOAT SIZE                               --
+--==============================================================--
+
+local function UpdateFloatSize(Value)
+
+	Value = math.clamp(
+		Value,
+		MIN_FLOAT_SIZE,
+		MAX_FLOAT_SIZE
+	)
+
+	Value = math.floor(Value+.5)
+
+	FloatButtonSize = Value
+	SizeValue.Text = tostring(Value)
+
+	local Alpha =
+		(Value-MIN_FLOAT_SIZE)/
+		(MAX_FLOAT_SIZE-MIN_FLOAT_SIZE)
+
+	SizeFill.Size = UDim2.new(Alpha,0,1,0)
+
+	FloatButton.Size = UDim2.fromOffset(Value,Value)
+end
+
+local SizeDragging = false
+local SizeInputConnections = {}
+
+local function ClearSizeDragConnections()
+
+	for _,Conn in ipairs(SizeInputConnections) do
+		Conn:Disconnect()
+	end
+
+	SizeInputConnections = {}
+end
+
+local function UpdateSizeFromInput(Input)
+
+	local SliderPosition = SizeSlider.AbsolutePosition
+	local SliderWidth = SizeSlider.AbsoluteSize.X
+
+	if SliderWidth <= 0 then
+		return
+	end
+
+	local Alpha = math.clamp(
+		(
+			Input.Position.X-
+			SliderPosition.X
+		)/
+		SliderWidth,
+		0,
+		1
+	)
+
+	local Value =
+		MIN_FLOAT_SIZE+
+		(MAX_FLOAT_SIZE-MIN_FLOAT_SIZE)*
+		Alpha
+
+	UpdateFloatSize(Value)
+end
+
+SizeSlider.InputBegan:Connect(function(Input)
+
+	if Input.UserInputType ~= Enum.UserInputType.MouseButton1
+	and Input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	SizeDragging = true
+
+	ClearSizeDragConnections()
+	UpdateSizeFromInput(Input)
+
+	local MoveConn =
+		UserInputService.InputChanged:Connect(function(Change)
+
+			if not SizeDragging then
+				return
+			end
+
+			if Change.UserInputType ~= Enum.UserInputType.MouseMovement
+			and Change.UserInputType ~= Enum.UserInputType.Touch then
+				return
+			end
+
+			UpdateSizeFromInput(Change)
+		end)
+
+	local EndConn =
+		UserInputService.InputEnded:Connect(function(EndedInput)
+
+			if EndedInput.UserInputType ==
+				Enum.UserInputType.MouseButton1
+				or
+				EndedInput.UserInputType ==
+				Enum.UserInputType.Touch then
+
+				SizeDragging = false
+				ClearSizeDragConnections()
+			end
+		end)
+
+	table.insert(SizeInputConnections,MoveConn)
+	table.insert(SizeInputConnections,EndConn)
+end)
+
+--==============================================================--
+--                     HIDE TOGGLE                              --
+--==============================================================--
+
+HideToggle.Activated:Connect(function()
+
+	FloatButtonHidden = not FloatButtonHidden
+	HideCheck.Visible = FloatButtonHidden
+
+	local TargetColor =
+		FloatButtonHidden
+		and SelectedColor
+		or Theme.Window
+
+	TweenService:Create(
+		HideToggle,
+		TweenInfo.new(
+			.18,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+		{
+			BackgroundColor3 = TargetColor
+		}
+	):Play()
+
+	if FloatButtonHidden then
+
+		TweenService:Create(
+			FloatButton,
+			TweenInfo.new(
+				.18,
+				Enum.EasingStyle.Quad,
+				Enum.EasingDirection.Out
+			),
+			{
+				BackgroundTransparency = 1,
+				TextTransparency = 1
+			}
+		):Play()
+
+		FloatStroke.Transparency = 1
+
+	else
+
+		FloatButton.BackgroundTransparency = 0
+		FloatButton.TextTransparency = 0
+		FloatStroke.Transparency = 0
+	end
+end)
+
+--==============================================================--
+--                       KEY MAP                                --
+--==============================================================--
+
+local KeyMap = {}
+
+for _,KeyCode in ipairs(Enum.KeyCode:GetEnumItems()) do
+	KeyMap[string.lower(KeyCode.Name)] = KeyCode
+end
+
+KeyBox.FocusLost:Connect(function()
+
+	local Text = KeyBox.Text
+
+	Text = string.gsub(Text,"%s+","")
+
+	if Text == "" then
+
+		KeyBox.Text = "RShift"
+		OpenKey = Enum.KeyCode.RightShift
+
+		return
+	end
+
+	local Lower = string.lower(Text)
+
+	local Found
+
+	if Lower == "rshift" then
+
+		Found = Enum.KeyCode.RightShift
+
+	elseif Lower == "lshift" then
+
+		Found = Enum.KeyCode.LeftShift
+
+	elseif Lower == "rctrl"
+	or Lower == "rightctrl" then
+
+		Found = Enum.KeyCode.RightControl
+
+	elseif Lower == "lctrl"
+	or Lower == "leftctrl" then
+
+		Found = Enum.KeyCode.LeftControl
+
+	elseif Lower == "space" then
+
+		Found = Enum.KeyCode.Space
+
+	else
+
+		Found = KeyMap[Lower]
+	end
+
+	if Found then
+
+		OpenKey = Found
+		KeyBox.Text = Found.Name
+
+	else
+
+		KeyBox.Text = "RShift"
+		OpenKey = Enum.KeyCode.RightShift
+	end
+end)
+
+--==============================================================--
+--                          GEAR                                --
+--==============================================================--
+
+GearButton.Activated:Connect(function()
+
+	ColorMenu.Visible = not ColorMenu.Visible
+
+end)
+
+--==============================================================--
+--                           BODY                               --
+--==============================================================--
+
+local Body = Instance.new("Frame")
+
+Body.Size = UDim2.new(1,0,1,-55)
+Body.Position = UDim2.fromOffset(0,55)
+Body.BackgroundTransparency = 1
+Body.ClipsDescendants = true
+Body.Parent = Window
+
+--==============================================================--
+--                          SIDEBAR                             --
+--==============================================================--
+
+local Sidebar = Instance.new("ScrollingFrame")
+
+Sidebar.Name = "Sidebar"
+Sidebar.Size = UDim2.new(0,SIDEBAR_COMPACT,1,0)
+Sidebar.BackgroundColor3 = Theme.Sidebar
+Sidebar.BorderSizePixel = 0
+Sidebar.ScrollBarThickness = 2
+Sidebar.ScrollBarImageColor3 = SelectedColor
+Sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Sidebar.CanvasSize = UDim2.fromOffset(0,0)
+Sidebar.ScrollingDirection = Enum.ScrollingDirection.Y
+Sidebar.Active = true
+Sidebar.ClipsDescendants = true
+Sidebar.Parent = Body
+
+RegisterAccent(Sidebar,"ScrollBarImageColor3")
+
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0,16)
+SidebarCorner.Parent = Sidebar
+
+local SidebarContent = Instance.new("Frame")
+
+SidebarContent.Size = UDim2.new(1,0,0,0)
+SidebarContent.AutomaticSize = Enum.AutomaticSize.Y
+SidebarContent.BackgroundTransparency = 1
+SidebarContent.Parent = Sidebar
+
+local SidebarPadding = Instance.new("UIPadding")
+
+SidebarPadding.PaddingTop = UDim.new(0,8)
+SidebarPadding.PaddingBottom = UDim.new(0,8)
+SidebarPadding.PaddingLeft = UDim.new(0,6)
+SidebarPadding.PaddingRight = UDim.new(0,6)
+SidebarPadding.Parent = SidebarContent
+
+local SidebarLayout = Instance.new("UIListLayout")
+
+SidebarLayout.Padding = UDim.new(0,6)
+SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SidebarLayout.Parent = SidebarContent
+
+--==============================================================--
+--                          CONTENT                             --
+--==============================================================--
+
+local Content = Instance.new("Frame")
+
+Content.Size = UDim2.new(1,-66,1,-10)
+Content.Position = UDim2.fromOffset(63,0)
+Content.BackgroundTransparency = 1
+Content.ClipsDescendants = true
+Content.Parent = Body
+
+--==============================================================--
+--                           TABS                               --
+--==============================================================--
+
+for Index,TabData in ipairs(Tabs) do
+
+	local Page = Instance.new("ScrollingFrame")
+
+	Page.Name = TabData.Name .. "Page"
+	Page.Size = UDim2.fromScale(1,1)
+	Page.BackgroundTransparency = 1
+	Page.BorderSizePixel = 0
+
+	Page.CanvasSize = UDim2.fromOffset(0,0)
+	Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+	Page.ScrollBarThickness = 3
+	Page.ScrollBarImageColor3 = SelectedColor
+	Page.ScrollingDirection = Enum.ScrollingDirection.Y
+	Page.Visible = Index == 1
+
+	Page.Parent = Content
+
+	TabFrames[Index] = Page
+
+	RegisterAccent(
+		Page,
+		"ScrollBarImageColor3"
+	)
+
+	local Button = Instance.new("TextButton")
+
+	Button.Name = TabData.Name
+	Button.LayoutOrder = Index
+	Button.Size = UDim2.new(1,0,0,38)
+	Button.BackgroundColor3 = Theme.Card
+	Button.BackgroundTransparency = Index == 1 and 0 or 1
+	Button.BorderSizePixel = 0
+	Button.Text = ""
+	Button.AutoButtonColor = false
+	Button.ZIndex = 5
+	Button.Parent = SidebarContent
+
+	local ButtonCorner = Instance.new("UICorner")
+
+	ButtonCorner.CornerRadius = UDim.new(0,10)
+	ButtonCorner.Parent = Button
+
+	local Indicator = Instance.new("Frame")
+
+	Indicator.Name = "Indicator"
+	Indicator.Size = UDim2.fromOffset(3,16)
+	Indicator.Position = UDim2.new(0,0,.5,-8)
+	Indicator.BackgroundColor3 = SelectedColor
+	Indicator.BorderSizePixel = 0
+	Indicator.Visible = Index == 1
+	Indicator.Parent = Button
+
+	local IndicatorCorner = Instance.new("UICorner")
+	IndicatorCorner.CornerRadius = UDim.new(1,0)
+	IndicatorCorner.Parent = Indicator
+
+	RegisterAccent(
+		Indicator,
+		"BackgroundColor3"
+	)
+
+	local IconHolder = Instance.new("Frame")
+
+	IconHolder.Size = UDim2.fromOffset(28,28)
+	IconHolder.Position = UDim2.fromOffset(8,5)
+	IconHolder.BackgroundTransparency = 1
+	IconHolder.ZIndex = 20
+	IconHolder.Parent = Button
+
+	local Icon = CreateLucideIcon(
+		IconHolder,
+		TabData.Icon,
+		Index == 1 and SelectedColor or Theme.Secondary,
+		18
+	)
+
+	TabIcons[Index] = Icon
+
+	local NameLabel = Instance.new("TextLabel")
+
+	NameLabel.Name = "Name"
+	NameLabel.Size = UDim2.new(1,-42,1,0)
+	NameLabel.Position = UDim2.fromOffset(42,0)
+	NameLabel.BackgroundTransparency = 1
+	NameLabel.Text = TabData.Name
+	NameLabel.TextColor3 =
+		Index == 1 and Theme.Text or Theme.Secondary
+	NameLabel.TextSize = 10
+	NameLabel.Font = Enum.Font.GothamSemibold
+	NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	NameLabel.TextYAlignment = Enum.TextYAlignment.Center
+	NameLabel.TextTransparency = 1
+	NameLabel.ZIndex = 10
+	NameLabel.Parent = Button
+
+	TabButtons[Index] = Button
+
+	Button.Activated:Connect(function()
+
+		CurrentTab = Index
+
+		for Number,OtherButton in ipairs(TabButtons) do
+
+			local Selected = Number == Index
+
+			OtherButton.BackgroundTransparency =
+				Selected and 0 or 1
+
+			local OtherName =
+				OtherButton:FindFirstChild("Name")
+
+			if OtherName then
+				OtherName.TextColor3 =
+					Selected and Theme.Text or Theme.Secondary
+			end
+
+			local OtherIndicator =
+				OtherButton:FindFirstChild("Indicator")
+
+			if OtherIndicator then
+
+				OtherIndicator.Visible = Selected
+
+				if Selected then
+					OtherIndicator.BackgroundColor3 = SelectedColor
+				end
+			end
+
+			local OtherIcon = TabIcons[Number]
+
+			if OtherIcon and OtherIcon.Parent then
+				OtherIcon.ImageColor3 =
+					Selected and SelectedColor or Theme.Secondary
+			end
+
+			if TabFrames[Number] then
+				TabFrames[Number].Visible = Selected
+			end
+		end
+	end)
+end
+
+--==============================================================--
+--              PÁGINAS DAS ABAS / REFERÊNCIAS                 --
+--==============================================================--
+
+local MainPage = TabFrames[1]
+local MurdererPage = TabFrames[2]
+local SheriffPage = TabFrames[3]
+local AutoFarmPage = TabFrames[4]
+local ESPPage = TabFrames[5]
+local LocalPlayerPage = TabFrames[6]
+local TeleportFlingPage = TabFrames[7]
+local KeybindsPage = TabFrames[8]
+local ModificationsPage = TabFrames[9]
+
+--==============================================================--
+--                         ABA MAIN                             --
+--==============================================================--
+
+-- ==========================
+-- ABA MAIN
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba Main aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba Main aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba Main aqui ↓
+
+
+--==============================================================--
+--                       ABA MURDERER                            --
+--==============================================================--
+
+-- ==========================
+-- ABA MURDERER
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba Murderer aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba Murderer aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba Murderer aqui ↓
+
+
+--==============================================================--
+--                        ABA SHERIFF                            --
+--==============================================================--
+
+-- ==========================
+-- ABA SHERIFF
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba Sheriff aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba Sheriff aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba Sheriff aqui ↓
+
+
+--==============================================================--
+--                       ABA AUTO FARM                           --
+--==============================================================--
+
+-- ==========================
+-- ABA AUTO FARM
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba Auto Farm aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba Auto Farm aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba Auto Farm aqui ↓
+
+
+--==============================================================--
+--                          ABA ESP                              --
+--==============================================================--
+
+-- ==========================
+-- ABA ESP
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba ESP aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba ESP aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba ESP aqui ↓
+
+
+--==============================================================--
+--                    ABA LOCAL PLAYER                          --
+--==============================================================--
+
+-- ==========================
+-- ABA LOCAL PLAYER
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba Local Player aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba Local Player aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba Local Player aqui ↓
+
+
+--==============================================================--
+--                  ABA TELEPORT & FLING                        --
+--==============================================================--
+
+-- ==========================
+-- ABA TELEPORT & FLING
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba Teleport & Fling aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba Teleport & Fling aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba Teleport & Fling aqui ↓
+
+
+--==============================================================--
+--                      ABA KEYBINDS                            --
+--==============================================================--
+
+-- ==========================
+-- ABA KEYBINDS
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba Keybinds aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba Keybinds aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba Keybinds aqui ↓
+
+
+--==============================================================--
+--                    ABA MODIFICATIONS                         --
+--==============================================================--
+
+-- ==========================
+-- ABA MODIFICATIONS
+-- ==========================
+
+-- =============================
+-- // ——— == VARIÁVEIS == ——— \\ --
+-- =============================
+--→ Coloque variáveis da aba Modifications aqui ↓
+
+
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+--→ Coloque Botoes da aba Modifications aqui ↓
+
+
+-- =============================
+-- // ——— == SISTEMA == ——— \\ --
+-- =============================
+--→ Coloque Sistema da aba Modifications aqui ↓
+
+
+--==============================================================--
+--                   SIDEBAR EXPAND                             --
+--==============================================================--
+
+local function SetSidebarExpanded(State)
+
+	SidebarExpanded = State
+
+	local Width =
+		State and SIDEBAR_EXPANDED or SIDEBAR_COMPACT
+
+	local ContentX =
+		State and 156 or 63
+
+	local ContentWidth =
+		State and -162 or -66
+
+	TweenService:Create(
+		Sidebar,
+		TweenInfo.new(
+			.25,
+			Enum.EasingStyle.Quint,
+			Enum.EasingDirection.Out
+		),
+		{
+			Size = UDim2.new(
+				0,
+				Width,
+				1,
+				0
+			)
+		}
+	):Play()
+
+	TweenService:Create(
+		Content,
+		TweenInfo.new(
+			.25,
+			Enum.EasingStyle.Quint,
+			Enum.EasingDirection.Out
+		),
+		{
+			Position = UDim2.fromOffset(
+				ContentX,
+				0
+			),
+
+			Size = UDim2.new(
+				1,
+				ContentWidth,
+				1,
+				-10
+			)
+		}
+	):Play()
+
+	for _,Button in ipairs(TabButtons) do
+
+		local Label =
+			Button:FindFirstChild("Name")
+
+		if Label then
+
+			TweenService:Create(
+				Label,
+				TweenInfo.new(
+					.18,
+					Enum.EasingStyle.Quad,
+					Enum.EasingDirection.Out
+				),
+				{
+					TextTransparency =
+						State and 0 or 1
+				}
+			):Play()
+		end
+	end
+end
+
+MM2Button.Activated:Connect(function()
+
+	SetSidebarExpanded(
+		not SidebarExpanded
+	)
+
+end)
+
+--==============================================================--
+--                  CONFIRM OVERLAY                             --
+--==============================================================--
+
+local ConfirmOverlay = Instance.new("Frame")
+
+ConfirmOverlay.Size = UDim2.fromScale(1,1)
+ConfirmOverlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
+ConfirmOverlay.BackgroundTransparency = .35
+ConfirmOverlay.BorderSizePixel = 0
+ConfirmOverlay.Visible = false
+ConfirmOverlay.ZIndex = 200
+ConfirmOverlay.Parent = Window
+
+local ConfirmCard = Instance.new("Frame")
+
+ConfirmCard.Size = UDim2.fromOffset(280,135)
+ConfirmCard.AnchorPoint = Vector2.new(.5,.5)
+ConfirmCard.Position = UDim2.fromScale(.5,.5)
+ConfirmCard.BackgroundColor3 = Theme.Card
+ConfirmCard.BorderSizePixel = 0
+ConfirmCard.ZIndex = 201
+ConfirmCard.Parent = ConfirmOverlay
+
+local ConfirmCorner = Instance.new("UICorner")
+ConfirmCorner.CornerRadius = UDim.new(0,14)
+ConfirmCorner.Parent = ConfirmCard
+
+local ConfirmStroke = Instance.new("UIStroke")
+ConfirmStroke.Color = Theme.Border
+ConfirmStroke.Thickness = 1
+ConfirmStroke.Parent = ConfirmCard
+
+local ConfirmTitle = Instance.new("TextLabel")
+
+ConfirmTitle.Size = UDim2.new(1,-30,0,26)
+ConfirmTitle.Position = UDim2.fromOffset(15,12)
+ConfirmTitle.BackgroundTransparency = 1
+ConfirmTitle.Text = "Walk Nyx"
+ConfirmTitle.TextColor3 = Theme.Text
+ConfirmTitle.TextSize = 14
+ConfirmTitle.Font = Enum.Font.GothamBold
+ConfirmTitle.TextXAlignment = Enum.TextXAlignment.Left
+ConfirmTitle.ZIndex = 202
+ConfirmTitle.Parent = ConfirmCard
+
+local ConfirmText = Instance.new("TextLabel")
+
+ConfirmText.Size = UDim2.new(1,-30,0,40)
+ConfirmText.Position = UDim2.fromOffset(15,38)
+ConfirmText.BackgroundTransparency = 1
+ConfirmText.Text = "Are you sure you want to close Walk Nyx completely?"
+ConfirmText.TextColor3 = Theme.Secondary
+ConfirmText.TextSize = 10
+ConfirmText.Font = Enum.Font.GothamMedium
+ConfirmText.TextWrapped = true
+ConfirmText.TextXAlignment = Enum.TextXAlignment.Left
+ConfirmText.TextYAlignment = Enum.TextYAlignment.Center
+ConfirmText.ZIndex = 202
+ConfirmText.Parent = ConfirmCard
+
+--==============================================================--
+--                       YES BUTTON                             --
+--==============================================================--
+
+local ConfirmYes = Instance.new("TextButton")
+
+ConfirmYes.Size = UDim2.fromOffset(110,32)
+ConfirmYes.Position = UDim2.new(0,15,1,-45)
+ConfirmYes.BackgroundColor3 = SelectedColor
+ConfirmYes.BorderSizePixel = 0
+ConfirmYes.Text = "YES"
+ConfirmYes.TextColor3 = Color3.fromRGB(255,255,255)
+ConfirmYes.TextSize = 11
+ConfirmYes.Font = Enum.Font.GothamBold
+ConfirmYes.AutoButtonColor = false
+ConfirmYes.ZIndex = 202
+ConfirmYes.Parent = ConfirmCard
+
+local YesCorner = Instance.new("UICorner")
+YesCorner.CornerRadius = UDim.new(0,10)
+YesCorner.Parent = ConfirmYes
+
+RegisterAccent(ConfirmYes,"BackgroundColor3")
+
+--==============================================================--
+--                        NO BUTTON                             --
+--==============================================================--
+
+local ConfirmNo = Instance.new("TextButton")
+
+ConfirmNo.Size = UDim2.fromOffset(110,32)
+ConfirmNo.Position = UDim2.new(1,-125,1,-45)
+ConfirmNo.BackgroundColor3 = Theme.Window
+ConfirmNo.BorderSizePixel = 0
+ConfirmNo.Text = "NO"
+ConfirmNo.TextColor3 = Theme.Text
+ConfirmNo.TextSize = 11
+ConfirmNo.Font = Enum.Font.GothamBold
+ConfirmNo.AutoButtonColor = false
+ConfirmNo.ZIndex = 202
+ConfirmNo.Parent = ConfirmCard
+
+local NoCorner = Instance.new("UICorner")
+NoCorner.CornerRadius = UDim.new(0,10)
+NoCorner.Parent = ConfirmNo
+
+local NoStroke = Instance.new("UIStroke")
+NoStroke.Color = Theme.Border
+NoStroke.Thickness = 1
+NoStroke.Parent = ConfirmNo
+
+--==============================================================--
+--                         CLOSE                                --
+--==============================================================--
+
+CloseButton.Activated:Connect(function()
+
+	if WindowAnimating or ScriptClosed then
+		return
+	end
+
+	ColorMenu.Visible = false
+	ConfirmOverlay.Visible = true
+
+	ConfirmCard.Size = UDim2.fromOffset(240,115)
+
+	TweenService:Create(
+		ConfirmCard,
+		TweenInfo.new(
+			.22,
+			Enum.EasingStyle.Back,
+			Enum.EasingDirection.Out
+		),
+		{
+			Size = UDim2.fromOffset(280,135)
+		}
+	):Play()
+end)
+
+--==============================================================--
+--                         CANCEL                               --
+--==============================================================--
+
+ConfirmNo.Activated:Connect(function()
+
+	ConfirmOverlay.Visible = false
+
+	ConfirmCard.Size = UDim2.fromOffset(280,135)
+
+end)
+
+--==============================================================--
+--                       CONFIRM CLOSE                          --
+--==============================================================--
+
+ConfirmYes.Activated:Connect(function()
+
+	ScriptClosed = true
+
+	if ScreenGui then
+		ScreenGui:Destroy()
+	end
+
+	if FloatGui then
+		FloatGui:Destroy()
+	end
+end)
+
+--==============================================================--
+--                         KEY INPUT                             --
+--==============================================================--
+
+UserInputService.InputBegan:Connect(function(Input,GameProcessed)
+
+	if GameProcessed or ScriptClosed then
+		return
+	end
+
+	if UserInputService:GetFocusedTextBox() then
+		return
+	end
+
+	if Input.KeyCode == OpenKey then
+
+		if WindowOpen then
+			HideWindow()
+		else
+			ShowWindow()
+		end
+	end
+end)
+
+--==============================================================--
+--                    INITIAL ICON COLORS                       --
+--==============================================================--
+
+for Index,Icon in ipairs(TabIcons) do
+
+	if Icon and Icon.Parent then
+
+		Icon.ImageColor3 =
+			Index == CurrentTab
+			and SelectedColor
+			or Theme.Secondary
+	end
+end
+
+--==============================================================--
+--                       INITIAL STATE                          --
+--==============================================================--
+
+FloatMovementLocked = true
+
+MovementToggle.BackgroundColor3 = SelectedColor
+MovementCheck.Visible = true
+
+FloatButtonHidden = false
+
+HideToggle.BackgroundColor3 = Theme.Window
+HideCheck.Visible = false
+
+UpdateFloatSize(FloatButtonSize)
+
+SetSidebarExpanded(false)
+
+--==============================================================--
+--                    FINAL TOP LINE REFRESH                   --
+--==============================================================--
+
+UpdateTopAccent()
