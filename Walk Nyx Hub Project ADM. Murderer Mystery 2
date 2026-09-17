@@ -1906,6 +1906,369 @@ local resultadoUltimoCheckBolsa = false
 local HitboxOriginal = {}
 local ParouAteNovaPartida = false
 
+-- =============================
+-- // ——— == BOTOES == ——— \\ --
+-- =============================
+
+--==============================================================--
+--                    CONTAINER DOS CARDS                       --
+--==============================================================--
+
+AutoFarmContainer = Instance.new("Frame")
+AutoFarmContainer.Name = "AutoFarmContainer"
+AutoFarmContainer.Size = UDim2.new(1, -12, 0, 174)
+AutoFarmContainer.Position = UDim2.new(0, 6, 0, 6)
+AutoFarmContainer.BackgroundTransparency = 1
+AutoFarmContainer.BorderSizePixel = 0
+AutoFarmContainer.Parent = AutoFarmPage
+
+AutoFarmLayout = Instance.new("UIListLayout")
+AutoFarmLayout.FillDirection = Enum.FillDirection.Vertical
+AutoFarmLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+AutoFarmLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+AutoFarmLayout.Padding = UDim.new(0, 8)
+AutoFarmLayout.SortOrder = Enum.SortOrder.LayoutOrder
+AutoFarmLayout.Parent = AutoFarmContainer
+
+--==============================================================--
+--                           METHOD                             --
+--==============================================================--
+
+MethodCard = Instance.new("Frame")
+MethodCard.Name = "MethodCard"
+MethodCard.LayoutOrder = 1
+MethodCard.Size = UDim2.new(1, 0, 0, 50)
+MethodCard.BackgroundColor3 = Theme.Card
+MethodCard.BorderSizePixel = 0
+MethodCard.Parent = AutoFarmContainer
+
+local MethodCorner = Instance.new("UICorner")
+MethodCorner.CornerRadius = UDim.new(0, 10)
+MethodCorner.Parent = MethodCard
+
+local MethodStroke = Instance.new("UIStroke")
+MethodStroke.Color = Theme.Border
+MethodStroke.Thickness = 1
+MethodStroke.Parent = MethodCard
+
+local MethodTitle = Instance.new("TextLabel")
+MethodTitle.Name = "Title"
+MethodTitle.Size = UDim2.new(0, 120, 1, 0)
+MethodTitle.Position = UDim2.new(0, 14, 0, 0)
+MethodTitle.BackgroundTransparency = 1
+MethodTitle.Text = "Method"
+MethodTitle.TextColor3 = Theme.Text
+MethodTitle.TextSize = 11
+MethodTitle.Font = Enum.Font.GothamMedium
+MethodTitle.TextXAlignment = Enum.TextXAlignment.Left
+MethodTitle.Parent = MethodCard
+
+MethodBox = Instance.new("TextButton")
+MethodBox.Name = "MethodBox"
+MethodBox.Size = UDim2.new(0, 125, 0, 32)
+MethodBox.Position = UDim2.new(1, -140, 0.5, -16)
+MethodBox.BackgroundColor3 = Theme.Window
+MethodBox.BorderSizePixel = 0
+MethodBox.Text = ""
+MethodBox.AutoButtonColor = false
+MethodBox.Parent = MethodCard
+
+local MethodBoxCorner = Instance.new("UICorner")
+MethodBoxCorner.CornerRadius = UDim.new(0, 8)
+MethodBoxCorner.Parent = MethodBox
+
+local MethodBoxStroke = Instance.new("UIStroke")
+MethodBoxStroke.Color = Theme.Border
+MethodBoxStroke.Thickness = 1
+MethodBoxStroke.Parent = MethodBox
+
+MethodValue = Instance.new("TextLabel")
+MethodValue.Name = "Value"
+MethodValue.Size = UDim2.new(1, -30, 1, 0)
+MethodValue.Position = UDim2.new(0, 10, 0, 0)
+MethodValue.BackgroundTransparency = 1
+MethodValue.Text = MethodSelected
+MethodValue.TextColor3 = SelectedColor
+MethodValue.TextSize = 10
+MethodValue.Font = Enum.Font.GothamMedium
+MethodValue.TextXAlignment = Enum.TextXAlignment.Left
+MethodValue.Parent = MethodBox
+
+MethodArrow = Instance.new("TextLabel")
+MethodArrow.Name = "Arrow"
+MethodArrow.Size = UDim2.new(0, 22, 1, 0)
+MethodArrow.Position = UDim2.new(1, -27, 0, 0)
+MethodArrow.BackgroundTransparency = 1
+MethodArrow.Text = "⌄"
+MethodArrow.TextColor3 = SelectedColor
+MethodArrow.TextSize = 16
+MethodArrow.Font = Enum.Font.GothamBold
+MethodArrow.Parent = MethodBox
+
+--==============================================================--
+--                       METHOD MENU                            --
+--==============================================================--
+
+MethodMenu = Instance.new("Frame")
+MethodMenu.Name = "MethodMenu"
+MethodMenu.Size = UDim2.new(0, 155, 0, 0)
+MethodMenu.BackgroundColor3 = Theme.Card
+MethodMenu.BorderSizePixel = 0
+MethodMenu.Visible = false
+MethodMenu.ClipsDescendants = true
+MethodMenu.ZIndex = 500
+MethodMenu.Parent = AutoFarmPage
+
+local MethodMenuCorner = Instance.new("UICorner")
+MethodMenuCorner.CornerRadius = UDim.new(0, 10)
+MethodMenuCorner.Parent = MethodMenu
+
+local MethodMenuStroke = Instance.new("UIStroke")
+MethodMenuStroke.Color = Theme.Border
+MethodMenuStroke.Thickness = 1
+MethodMenuStroke.Parent = MethodMenu
+
+MethodTween = Instance.new("TextButton")
+MethodTween.Name = "Tween"
+MethodTween.Size = UDim2.new(1, -15, 0, 40)
+MethodTween.Position = UDim2.new(0, 15, 0, 5)
+MethodTween.BackgroundTransparency = 1
+MethodTween.Text = "Tween"
+MethodTween.TextColor3 = SelectedColor
+MethodTween.TextSize = 10
+MethodTween.Font = Enum.Font.GothamMedium
+MethodTween.TextXAlignment = Enum.TextXAlignment.Left
+MethodTween.AutoButtonColor = false
+MethodTween.ZIndex = 501
+MethodTween.Parent = MethodMenu
+
+MethodCframe = Instance.new("TextButton")
+MethodCframe.Name = "Cframe"
+MethodCframe.Size = UDim2.new(1, -15, 0, 40)
+MethodCframe.Position = UDim2.new(0, 15, 0, 45)
+MethodCframe.BackgroundTransparency = 1
+MethodCframe.Text = "Cframe"
+MethodCframe.TextColor3 = Theme.Secondary
+MethodCframe.TextSize = 10
+MethodCframe.Font = Enum.Font.GothamMedium
+MethodCframe.TextXAlignment = Enum.TextXAlignment.Left
+MethodCframe.AutoButtonColor = false
+MethodCframe.ZIndex = 501
+MethodCframe.Parent = MethodMenu
+
+MethodLine = Instance.new("Frame")
+MethodLine.Name = "SelectedLine"
+MethodLine.Size = UDim2.new(0, 3, 0, 20)
+MethodLine.Position = UDim2.new(0, 6, 0, 15)
+MethodLine.BackgroundColor3 = SelectedColor
+MethodLine.BorderSizePixel = 0
+MethodLine.ZIndex = 502
+MethodLine.Parent = MethodMenu
+
+local MethodLineCorner = Instance.new("UICorner")
+MethodLineCorner.CornerRadius = UDim.new(1, 0)
+MethodLineCorner.Parent = MethodLine
+
+--==============================================================--
+--                          POSITION                            --
+--==============================================================--
+
+PositionCard = Instance.new("Frame")
+PositionCard.Name = "PositionCard"
+PositionCard.LayoutOrder = 2
+PositionCard.Size = UDim2.new(1, 0, 0, 50)
+PositionCard.BackgroundColor3 = Theme.Card
+PositionCard.BorderSizePixel = 0
+PositionCard.Parent = AutoFarmContainer
+
+local PositionCorner = Instance.new("UICorner")
+PositionCorner.CornerRadius = UDim.new(0, 10)
+PositionCorner.Parent = PositionCard
+
+local PositionStroke = Instance.new("UIStroke")
+PositionStroke.Color = Theme.Border
+PositionStroke.Thickness = 1
+PositionStroke.Parent = PositionCard
+
+local PositionTitle = Instance.new("TextLabel")
+PositionTitle.Name = "Title"
+PositionTitle.Size = UDim2.new(0, 120, 1, 0)
+PositionTitle.Position = UDim2.new(0, 14, 0, 0)
+PositionTitle.BackgroundTransparency = 1
+PositionTitle.Text = "Position"
+PositionTitle.TextColor3 = Theme.Text
+PositionTitle.TextSize = 11
+PositionTitle.Font = Enum.Font.GothamMedium
+PositionTitle.TextXAlignment = Enum.TextXAlignment.Left
+PositionTitle.Parent = PositionCard
+
+PositionBox = Instance.new("TextButton")
+PositionBox.Name = "PositionBox"
+PositionBox.Size = UDim2.new(0, 125, 0, 32)
+PositionBox.Position = UDim2.new(1, -140, 0.5, -16)
+PositionBox.BackgroundColor3 = Theme.Window
+PositionBox.BorderSizePixel = 0
+PositionBox.Text = ""
+PositionBox.AutoButtonColor = false
+PositionBox.Parent = PositionCard
+
+local PositionBoxCorner = Instance.new("UICorner")
+PositionBoxCorner.CornerRadius = UDim.new(0, 8)
+PositionBoxCorner.Parent = PositionBox
+
+local PositionBoxStroke = Instance.new("UIStroke")
+PositionBoxStroke.Color = Theme.Border
+PositionBoxStroke.Thickness = 1
+PositionBoxStroke.Parent = PositionBox
+
+PositionValue = Instance.new("TextLabel")
+PositionValue.Name = "Value"
+PositionValue.Size = UDim2.new(1, -30, 1, 0)
+PositionValue.Position = UDim2.new(0, 10, 0, 0)
+PositionValue.BackgroundTransparency = 1
+PositionValue.Text = PositionSelected
+PositionValue.TextColor3 = SelectedColor
+PositionValue.TextSize = 10
+PositionValue.Font = Enum.Font.GothamMedium
+PositionValue.TextXAlignment = Enum.TextXAlignment.Left
+PositionValue.Parent = PositionBox
+
+PositionArrow = Instance.new("TextLabel")
+PositionArrow.Name = "Arrow"
+PositionArrow.Size = UDim2.new(0, 22, 1, 0)
+PositionArrow.Position = UDim2.new(1, -27, 0, 0)
+PositionArrow.BackgroundTransparency = 1
+PositionArrow.Text = "⌄"
+PositionArrow.TextColor3 = SelectedColor
+PositionArrow.TextSize = 16
+PositionArrow.Font = Enum.Font.GothamBold
+PositionArrow.Parent = PositionBox
+
+--==============================================================--
+--                     POSITION MENU                           --
+--==============================================================--
+
+PositionMenu = Instance.new("Frame")
+PositionMenu.Name = "PositionMenu"
+PositionMenu.Size = UDim2.new(0, 155, 0, 0)
+PositionMenu.BackgroundColor3 = Theme.Card
+PositionMenu.BorderSizePixel = 0
+PositionMenu.Visible = false
+PositionMenu.ClipsDescendants = true
+PositionMenu.ZIndex = 500
+PositionMenu.Parent = AutoFarmPage
+
+local PositionMenuCorner = Instance.new("UICorner")
+PositionMenuCorner.CornerRadius = UDim.new(0, 10)
+PositionMenuCorner.Parent = PositionMenu
+
+local PositionMenuStroke = Instance.new("UIStroke")
+PositionMenuStroke.Color = Theme.Border
+PositionMenuStroke.Thickness = 1
+PositionMenuStroke.Parent = PositionMenu
+
+PositionDeitado = Instance.new("TextButton")
+PositionDeitado.Name = "Deitado"
+PositionDeitado.Size = UDim2.new(1, -15, 0, 40)
+PositionDeitado.Position = UDim2.new(0, 15, 0, 5)
+PositionDeitado.BackgroundTransparency = 1
+PositionDeitado.Text = "Deitado"
+PositionDeitado.TextColor3 = SelectedColor
+PositionDeitado.TextSize = 10
+PositionDeitado.Font = Enum.Font.GothamMedium
+PositionDeitado.TextXAlignment = Enum.TextXAlignment.Left
+PositionDeitado.AutoButtonColor = false
+PositionDeitado.ZIndex = 501
+PositionDeitado.Parent = PositionMenu
+
+PositionLevantado = Instance.new("TextButton")
+PositionLevantado.Name = "Levantado"
+PositionLevantado.Size = UDim2.new(1, -15, 0, 40)
+PositionLevantado.Position = UDim2.new(0, 15, 0, 45)
+PositionLevantado.BackgroundTransparency = 1
+PositionLevantado.Text = "Levantado"
+PositionLevantado.TextColor3 = Theme.Secondary
+PositionLevantado.TextSize = 10
+PositionLevantado.Font = Enum.Font.GothamMedium
+PositionLevantado.TextXAlignment = Enum.TextXAlignment.Left
+PositionLevantado.AutoButtonColor = false
+PositionLevantado.ZIndex = 501
+PositionLevantado.Parent = PositionMenu
+
+PositionLine = Instance.new("Frame")
+PositionLine.Name = "SelectedLine"
+PositionLine.Size = UDim2.new(0, 3, 0, 20)
+PositionLine.Position = UDim2.new(0, 6, 0, 15)
+PositionLine.BackgroundColor3 = SelectedColor
+PositionLine.BorderSizePixel = 0
+PositionLine.ZIndex = 502
+PositionLine.Parent = PositionMenu
+
+local PositionLineCorner = Instance.new("UICorner")
+PositionLineCorner.CornerRadius = UDim.new(1, 0)
+PositionLineCorner.Parent = PositionLine
+
+--==============================================================--
+--                         AUTO FARM                            --
+--==============================================================--
+
+AutoFarmCard = Instance.new("Frame")
+AutoFarmCard.Name = "AutoFarmCard"
+AutoFarmCard.LayoutOrder = 3
+AutoFarmCard.Size = UDim2.new(1, 0, 0, 50)
+AutoFarmCard.BackgroundColor3 = Theme.Card
+AutoFarmCard.BorderSizePixel = 0
+AutoFarmCard.Parent = AutoFarmContainer
+
+local AutoFarmCorner = Instance.new("UICorner")
+AutoFarmCorner.CornerRadius = UDim.new(0, 10)
+AutoFarmCorner.Parent = AutoFarmCard
+
+local AutoFarmStroke = Instance.new("UIStroke")
+AutoFarmStroke.Color = Theme.Border
+AutoFarmStroke.Thickness = 1
+AutoFarmStroke.Parent = AutoFarmCard
+
+local AutoFarmTitle = Instance.new("TextLabel")
+AutoFarmTitle.Name = "Title"
+AutoFarmTitle.Size = UDim2.new(1, -55, 1, 0)
+AutoFarmTitle.Position = UDim2.new(0, 14, 0, 0)
+AutoFarmTitle.BackgroundTransparency = 1
+AutoFarmTitle.Text = "Auto Farm"
+AutoFarmTitle.TextColor3 = Theme.Text
+AutoFarmTitle.TextSize = 11
+AutoFarmTitle.Font = Enum.Font.GothamMedium
+AutoFarmTitle.TextXAlignment = Enum.TextXAlignment.Left
+AutoFarmTitle.Parent = AutoFarmCard
+
+--→ Toggle
+AutoFarmToggle = Instance.new("TextButton")
+AutoFarmToggle.Name = "Toggle"
+AutoFarmToggle.Size = UDim2.new(0, 26, 0, 26)
+AutoFarmToggle.Position = UDim2.new(1, -40, 0.5, -13)
+AutoFarmToggle.BackgroundColor3 = Theme.Window
+AutoFarmToggle.BorderSizePixel = 0
+AutoFarmToggle.Text = ""
+AutoFarmToggle.AutoButtonColor = false
+AutoFarmToggle.Parent = AutoFarmCard
+
+local AutoFarmToggleCorner = Instance.new("UICorner")
+AutoFarmToggleCorner.CornerRadius = UDim.new(0, 7)
+AutoFarmToggleCorner.Parent = AutoFarmToggle
+
+local AutoFarmToggleStroke = Instance.new("UIStroke")
+AutoFarmToggleStroke.Color = SelectedColor
+AutoFarmToggleStroke.Thickness = 1
+AutoFarmToggleStroke.Parent = AutoFarmToggle
+
+--→ Ícone COINS
+AutoFarmIcon = CreateLucideIcon(
+    AutoFarmToggle,
+    "coins",
+    SelectedColor,
+    15
+)
+AutoFarmIcon.ZIndex = 10
 
 -- =============================
 -- // ——— == VARIÁVEIS == ——— \\ --
