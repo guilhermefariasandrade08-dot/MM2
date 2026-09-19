@@ -1,404 +1,524 @@
 --==============================================================--
---                    WALK NYX HUB                             --
---                  INTERFACE + LOCAL PLAYER                   --
+--                    WALK NYX HUB PROJECT                     --
+--                         WINDUI / FTGS                        --
 --==============================================================--
 
+local success, WindUI = pcall(function()
+    return loadstring(game:HttpGet(
+        "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"
+    ))()
+end)
+
+if not success or not WindUI then
+    warn("[Walk Nyx Hub] Failed to load WindUI library!")
+    return
+end
 
 --==============================================================--
--- 1. SERVIÇOS
---==============================================================--
-
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-
-
---==============================================================--
--- 2. CARREGAR WINDUI
---==============================================================--
-
-local WindUI = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
-))()
-
-
---==============================================================--
--- 3. VARIÁVEIS GERAIS
---==============================================================--
-
-local TamanhoBotao = 1.0
-
-local OpenButton = nil
-local EscalaBotao = nil
-
-
---==============================================================--
--- 4. VARIÁVEIS — MOVEMENT PLAYER
---==============================================================--
-
-local SpeedAtivo = false
-local SpeedValor = 16
-
-local JumpPowerAtivo = false
-local JumpPowerValor = 50
-
-
---==============================================================--
--- 5. CRIAR WINDOW
+--                           WINDOW                             --
 --==============================================================--
 
 local Window = WindUI:CreateWindow({
-
-    Title = "Murderer Mystery 2",
-
-    Icon = "sparkles",
-
-    Author = "Walk Nyx Project",
-
-    Size = UDim2.fromOffset(520, 360),
-
-    MinSize = Vector2.new(420, 300),
-
-    MaxSize = Vector2.new(600, 430),
-
-    Resizable = true,
-
-    Transparent = true,
-
-    Theme = "Dark",
-
-    SideBarWidth = 145,
-
-    HasOutline = true,
-
-    HideSearchBar = false,
-
-    ScrollBarEnabled = true,
-
-    User = {
-        Enabled = true,
-        Anonymous = false,
-    },
-
-})
-
-
---==============================================================--
--- 6. BOTÃO FLUTUANTE
---==============================================================--
-
-OpenButton = Window:EditOpenButton({
-
-    Title = "Murderer Mystery 2",
-
-    Icon = "sparkles",
-
-    CornerRadius = UDim.new(0, 12),
-
-    StrokeThickness = 2,
-
-    Color = ColorSequence.new({
-
-        ColorSequenceKeypoint.new(
-            0,
-            Color3.fromRGB(0, 0, 0)
-        ),
-
-        ColorSequenceKeypoint.new(
-            1,
-            Color3.fromRGB(255, 255, 255)
-        ),
-
-    }),
-
-    Draggable = true,
-
-})
-
-
---==============================================================--
--- 7. TAMANHO DO BOTÃO FLUTUANTE
---==============================================================--
-
-task.wait(1)
-
-pcall(function()
-
-    if OpenButton and OpenButton:IsA("GuiObject") then
-
-        EscalaBotao =
-            OpenButton:FindFirstChildOfClass("UIScale")
-
-        if not EscalaBotao then
-
-            EscalaBotao = Instance.new("UIScale")
-
-            EscalaBotao.Scale = TamanhoBotao
-
-            EscalaBotao.Parent = OpenButton
-
-        end
-
-    end
-
-end)
-
-
---==============================================================--
--- 8. ABA MURDERER
--- VAZIA
---==============================================================--
-
-local Aba_Murderer = Window:Tab({
-
-    Title = "Murderer",
-
-    Icon = "swords",
-
-})
-
-
---==============================================================--
--- 9. ABA SHERIFF
--- VAZIA
---==============================================================--
-
-local Aba_Sheriff = Window:Tab({
-
-    Title = "Sheriff",
-
-    Icon = "crosshair",
-
-})
-
-
---==============================================================--
--- 10. ABA AUTO FARM
--- VAZIA
---==============================================================--
-
-local Aba_AutoFarm = Window:Tab({
-
-    Title = "Auto Farm",
-
+    Title = "Walk Nyx Hub Project",
     Icon = "coins",
-
+    Folder = "WalkNyxHubProject",
 })
 
-
 --==============================================================--
--- 11. ABA ESP
--- VAZIA
+--                     CONFIGURATION VARIABLES                  --
 --==============================================================--
 
-local Aba_ESP = Window:Tab({
+local CONFIG_FARM = {
+    Active = false,
+    Posture = "Lying",
+    Movement = "CFrame",
+    Speed = 18,
+    FullDestination = "Map",
+    MaxDistance = 500,
+    MurdererDangerRadius = 30
+}
 
+--==============================================================--
+--                     MAPS CUSTOM POSITIONS                    --
+--==============================================================--
+
+local MAP_SAFE_POSITIONS = {
+    ["Mansion2"]  = Vector3.new(75.37, 277.62, 8987.54),
+    ["Hotel2014"] = Vector3.new(414.55, 7.59, 722.01),
+    ["Factory"]   = Vector3.new(-62.90, 291.94, 8961.11),
+    ["House2"]    = Vector3.new(21.84, 266.00, 9034.20),
+    ["MilBase"]   = Vector3.new(-22.30, 242.23, 9109.38),
+}
+
+--==============================================================--
+--                           TABS                               --
+--==============================================================--
+
+local MainTab = Window:Tab({
+    Title = "Main",
+    Icon = "home",
+})
+
+local MurdererTab = Window:Tab({
+    Title = "Murderer",
+    Icon = "sword",
+})
+
+local SheriffTab = Window:Tab({
+    Title = "Sheriff",
+    Icon = "shield",
+})
+
+local FarmCoin = Window:Tab({
+    Title = "Farm Coin",
+    Icon = "coins",
+})
+
+local ESPTab = Window:Tab({
     Title = "ESP",
-
     Icon = "eye",
-
 })
 
-
---==============================================================--
--- 12. ABA TELEPORT
--- VAZIA
---==============================================================--
-
-local Aba_Teleport = Window:Tab({
-
-    Title = "Teleport",
-
-    Icon = "map-pin",
-
-})
-
-
---==============================================================--
--- 13. ABA LOCAL PLAYER
---==============================================================--
-
-local Aba_LocalPlayer = Window:Tab({
-
+local LocalPlayerTab = Window:Tab({
     Title = "Local Player",
-
-    Icon = "user-round",
-
+    Icon = "user",
 })
 
-
-Aba_LocalPlayer:Section({
-
-    Title = "Movement Player",
-
+local ModificationsTab = Window:Tab({
+    Title = "Modifications",
+    Icon = "settings",
 })
 
+--==============================================================--
+--                     FARM COIN INTERFACE                      --
+--==============================================================--
 
-Aba_LocalPlayer:Toggle({
-
-    Title = "Speed",
-
-    Default = false,
-
-    Callback = function(state)
-
-        SpeedAtivo = state
-
-    end,
-
-})
-
-
-Aba_LocalPlayer:Slider({
-
-    Title = "Speed Value",
-
-    Value = {
-
-        Min = 16,
-
-        Max = 45,
-
-        Default = 16,
-
+FarmCoin:Dropdown({
+    Title = "Posture",
+    Values = {
+        "Lying",
+        "Standing",
     },
-
-    Step = 1,
-
+    Value = "Lying",
     Callback = function(value)
-
-        SpeedValor = value
-
+        CONFIG_FARM.Posture = value
     end,
-
 })
 
-Aba_LocalPlayer:Toggle({
-
-    Title = "Power Jump",
-
-    Default = false,
-
-    Callback = function(state)
-
-        JumpPowerAtivo = state
-
-    end,
-
-})
-
-
-Aba_LocalPlayer:Slider({
-
-    Title = "Jump Power",
-
-    Value = {
-
-        Min = 50,
-
-        Max = 120,
-
-        Default = 50,
-
+FarmCoin:Dropdown({
+    Title = "Movement",
+    Values = {
+        "CFrame",
+        "Tween",
     },
-
-    Step = 5,
-
+    Value = "CFrame",
     Callback = function(value)
-
-        JumpPowerValor = value
-
+        CONFIG_FARM.Movement = value
     end,
-
 })
 
-Aba_LocalPlayer:Section({
-    Title = "Extras",
+FarmCoin:Dropdown({
+    Title = "Destination When Full",
+    Values = {
+        "Map",
+        "Safe",
+    },
+    Value = "Map",
+    Callback = function(value)
+        CONFIG_FARM.FullDestination = value
+    end,
 })
 
-Aba_LocalPlayer:Toggle({
-    Title = "Speed Glitch",
-    Desc = "Aplica velocidade 300 ao pular e volta ao normal quando encostar no chão",
-    Default = false,
-    Callback = function(Ativo)
-        _G.SpeedNoPulo = Ativo
+local function RestaurarColisoes()
+    local char = game:GetService("Players").LocalPlayer.Character
+    if char then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = (part.Name == "HumanoidRootPart" or part.Name == "Head" or part.Name == "UpperTorso" or part.Name == "LowerTorso")
+            end
+        end
     end
+end
+
+FarmCoin:Toggle({
+    Title = "Auto Farm Coins",
+    Value = false,
+    Callback = function(state)
+        CONFIG_FARM.Active = state
+        if not state then
+            RestaurarColisoes()
+        end
+    end,
 })
 
+FarmCoin:Slider({
+    Title = "Speed",
+    Step = 1,
+    Value = {
+        Min = 16,
+        Max = 25,
+        Default = 18,
+    },
+    Callback = function(value)
+        CONFIG_FARM.Speed = value
+    end,
+})
 
--- ==================================
--- 📦 VARIÁVEIS — SPEED GLITCH
--- ==================================
-_G.SpeedNoPulo = false
-local VelocidadeNoPulo = 300
+--==============================================================--
+--         🎯 AUTO FARM LOGIC + SEGURAR FIRME NO TP            --
+--==============================================================--
 
--- ==================================
--- ⚡ SISTEMA SPEED GLITCH
--- ==================================
-RunService.Stepped:Connect(function()
-    local Char = player.Character
-    if not Char or not Char:FindFirstChild("Humanoid") then return end
-    local Hum = Char.Humanoid
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
-    -- ✈️ No ar = velocidade alta | 🦶 No chão = velocidade normal
-    if _G.SpeedNoPulo then
-        if Hum.FloorMaterial == Enum.Material.Air then
-            Hum.WalkSpeed = VelocidadeNoPulo
-        else
-            Hum.WalkSpeed = VelocidadePadrao
+local Player = Players.LocalPlayer
+local collectedCoins = {}
+local cachedCoinContainer = nil
+local HitboxOriginal = {}
+local StoppedUntilNewRound = false
+local bagFullByEvent = false
+local lastBagCheck = 0
+local lastBagCheckResult = false
+local safePlatformInstance = nil
+
+task.spawn(function()
+    local p = Instance.new("Part")
+    p.Name = "SafePlatform_NyxHub"
+    p.Size = Vector3.new(30, 1, 30)
+    p.Position = Vector3.new(0, 5000, 0)
+    p.Anchored = true
+    p.CanCollide = true
+    p.Transparency = 0.5
+    p.Parent = Workspace
+    safePlatformInstance = p
+end)
+
+local function GetMurderer()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local char = p.Character
+            local hum = char:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
+                local hasKnife = char:FindFirstChild("Knife") or (p:FindFirstChild("Backpack") and p.Backpack:FindFirstChild("Knife"))
+                if p:GetAttribute("Role") == "Murderer" or hasKnife then return char end
+            end
+        end
+    end
+    return nil
+end
+
+local function ResetFarmState()
+    table.clear(collectedCoins)
+    cachedCoinContainer = nil
+    table.clear(HitboxOriginal)
+    StoppedUntilNewRound = false
+    bagFullByEvent = false
+    RestaurarColisoes()
+    local c = Player.Character
+    local hum = c and c:FindFirstChildOfClass("Humanoid")
+    if hum then hum.PlatformStand = false end
+end
+
+Player.CharacterAdded:Connect(ResetFarmState)
+
+Player:GetAttributeChangedSignal("Alive"):Connect(function()
+    if Player:GetAttribute("Alive") == true then
+        ResetFarmState()
+    end
+end)
+
+task.spawn(function()
+    local remotes = ReplicatedStorage:FindFirstChild("Remotes", true) or ReplicatedStorage:FindFirstChild("Gameplay", true)
+    if remotes then
+        for _, remote in ipairs(remotes:GetDescendants()) do
+            if remote:IsA("RemoteEvent") and (string.find(string.lower(remote.Name), "coin") or string.find(string.lower(remote.Name), "collect")) then
+                remote.OnClientEvent:Connect(function(collector, current, maximum)
+                    if collector == Player or (typeof(collector) == "string" and collector == Player.Name) then
+                        if tonumber(current) and tonumber(maximum) then
+                            bagFullByEvent = (tonumber(current) >= tonumber(maximum))
+                            if bagFullByEvent then
+                                StoppedUntilNewRound = false
+                            end
+                        end
+                    end
+                end)
+            end
         end
     end
 end)
 
---==============================================================--
--- 20. SISTEMA POWER JUMP
---==============================================================--
+local function CheckBagFullText()
+    if bagFullByEvent then return true end
+    local now = os.clock()
+    if now - lastBagCheck < 0.3 then return lastBagCheckResult end
+    lastBagCheck = now
 
-RunService.Heartbeat:Connect(function()
+    local playerGui = Player:FindFirstChild("PlayerGui")
+    if not playerGui then return false end
+    local mainGui = playerGui:FindFirstChild("MainGUI") or playerGui:FindFirstChild("GUI")
+    if not mainGui then return false end
 
-    local Character = Player.Character
-
-    if not Character then
-        return
+    for _, gui in ipairs(mainGui:GetDescendants()) do
+        if gui:IsA("TextLabel") and gui.Visible and gui.Text ~= "" then
+            local text = string.lower(gui.Text)
+            if (string.find(text, "bag") and string.find(text, "full")) or
+               string.find(text, "full coin") or string.find(text, "max coins") or
+               (string.find(text, "saco") and string.find(text, "cheio")) then
+                lastBagCheckResult = true
+                return true
+            end
+        end
     end
+    lastBagCheckResult = false
+    return false
+end
 
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+local function InGame()
+    local c = Player.Character
+    if not c or not c:FindFirstChild("Humanoid") or c.Humanoid.Health <= 0 then return false end
+    if not c:FindFirstChild("HumanoidRootPart") then return false end
 
-    if not Humanoid then
-        return
+    local aliveAttr = Player:GetAttribute("Alive")
+    if aliveAttr ~= nil and aliveAttr == false then return false end
+
+    if Workspace:FindFirstChild("Lobby") then
+        local lobbyDist = (c.HumanoidRootPart.Position - Workspace.Lobby:GetPivot().Position).Magnitude
+        if lobbyDist < 100 then return false end
     end
+    return true
+end
 
-    -- Faz o Humanoid usar JumpPower
-    Humanoid.UseJumpPower = true
-
-    if JumpPowerAtivo then
-
-        -- Ligado = valor do slider
-        Humanoid.JumpPower = JumpPowerValor
-
-    else
-
-        -- Desligado = padrão 50
-        Humanoid.JumpPower = 50
-
+local function GetSafePlatformCFrame()
+    if not safePlatformInstance or not safePlatformInstance.Parent then
+        local p = Instance.new("Part")
+        p.Name = "SafePlatform_NyxHub"
+        p.Size = Vector3.new(30, 1, 30)
+        p.Position = Vector3.new(0, 5000, 0)
+        p.Anchored = true
+        p.CanCollide = true
+        p.Transparency = 0.5
+        p.Parent = Workspace
+        safePlatformInstance = p
     end
+    return safePlatformInstance.CFrame + Vector3.new(0, 3.5, 0)
+end
 
+local function GetSafeMapSpawn()
+    local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
+    if coinContainer and coinContainer.Parent then
+        local map = coinContainer.Parent
+        local mapName = map.Name
+
+        if MAP_SAFE_POSITIONS[mapName] then
+            local pos = MAP_SAFE_POSITIONS[mapName]
+            return CFrame.new(pos) + Vector3.new(0, 3.5, 0)
+        end
+    end
+    return nil
+end
+
+local function GetNearestCoin(myPos)
+    local bestCoin, shortestDist = nil, math.huge
+    if not cachedCoinContainer or not cachedCoinContainer.Parent then
+        cachedCoinContainer = Workspace:FindFirstChild("CoinContainer", true)
+    end
+    if not cachedCoinContainer then return nil end
+
+    local charMurderer = GetMurderer()
+    local hrpMurderer = charMurderer and charMurderer:FindFirstChild("HumanoidRootPart")
+
+    for _, coin in ipairs(cachedCoinContainer:GetChildren()) do
+        if coin:IsA("BasePart") and coin.Name == "Coin_Server" and coin:FindFirstChild("TouchInterest") and not collectedCoins[coin] and not coin:GetAttribute("Collected") then
+            if not HitboxOriginal[coin] then
+                HitboxOriginal[coin] = coin.Size
+                coin.Size = Vector3.new(5, 15, 5)
+                coin.Transparency = 1
+                coin.CanCollide = false
+            end
+            if hrpMurderer then
+                if (coin.Position - hrpMurderer.Position).Magnitude <= CONFIG_FARM.MurdererDangerRadius then continue end
+            end
+            local distVal = (myPos - coin.Position).Magnitude
+            if distVal < CONFIG_FARM.MaxDistance and distVal < shortestDist then
+                shortestDist = distVal
+                bestCoin = coin
+            end
+        end
+    end
+    return bestCoin
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.3)
+        local isBagFull = CheckBagFullText()
+
+        local currentCoinContainer = Workspace:FindFirstChild("CoinContainer", true)
+        if currentCoinContainer ~= cachedCoinContainer then
+            cachedCoinContainer = currentCoinContainer
+            StoppedUntilNewRound = false
+            bagFullByEvent = false
+        end
+
+        if not InGame() then
+            StoppedUntilNewRound = false
+        end
+
+        if not StoppedUntilNewRound and InGame() and isBagFull then
+            RestaurarColisoes()
+            
+            task.wait(0.3)
+
+            if InGame() then
+                local char = Player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                local finalDestination = nil
+                if CONFIG_FARM.FullDestination == "Map" then
+                    finalDestination = GetSafeMapSpawn()
+                else
+                    finalDestination = GetSafePlatformCFrame()
+                end
+
+                if finalDestination then
+                    StoppedUntilNewRound = true
+                    if hum then hum.PlatformStand = true end
+                    
+                    local holdStart = os.clock()
+                    while os.clock() - holdStart < 0.5 and InGame() do
+                        hrp.CFrame = finalDestination
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        RunService.Heartbeat:Wait()
+                    end
+                    
+                    if hum and InGame() then
+                        hum.PlatformStand = false
+                    end
+                end
+            end
+        end
+    end
 end)
 
+task.spawn(function()
+    while true do
+        if CONFIG_FARM.Active and not StoppedUntilNewRound then
+            local c = Player.Character
+            local hrp = c and c:FindFirstChild("HumanoidRootPart")
+            local humanoid = c and c:FindFirstChildOfClass("Humanoid")
 
---==============================================================--
--- 21. ABA MODIFICATIONS
--- VAZIA
---==============================================================--
+            if not InGame() or not hrp or not humanoid then
+                RestaurarColisoes()
+                if humanoid then humanoid.PlatformStand = false end
+                task.wait(0.4)
+                continue
+            end
 
-local Aba_Modifications = Window:Tab({
+            if CheckBagFullText() then
+                RestaurarColisoes()
+                humanoid.PlatformStand = false
+                task.wait(0.2)
+                continue
+            end
 
-    Title = "Modifications",
+            local target = GetNearestCoin(hrp.Position)
+            if target then
+                while CONFIG_FARM.Active and not StoppedUntilNewRound and InGame() and target and target.Parent
+                and not CheckBagFullText() and not target:GetAttribute("Collected") and not collectedCoins[target] do
 
-    Icon = "wand-sparkles",
+                    humanoid.PlatformStand = true
 
-})
+                    local currentPos = hrp.Position
+                    local nearestNow = GetNearestCoin(currentPos)
+                    if nearestNow and nearestNow ~= target then
+                        target = nearestNow
+                    end
+
+                    if not target:IsDescendantOf(Workspace) or target:GetAttribute("Collected") or CheckBagFullText() then
+                        break
+                    end
+
+                    local heightOffset = (CONFIG_FARM.Posture == "Lying") and Vector3.new(0, 4, 0) or Vector3.new(0, 0, 0)
+                    local targetPos = target.Position - heightOffset
+                    local direction = (targetPos - currentPos)
+                    local distance = direction.Magnitude
+
+                    if CONFIG_FARM.Movement == "Tween" then
+                        local travelSpeed = math.clamp(CONFIG_FARM.Speed, 1, 50)
+                        local travelTime = distance / travelSpeed
+                        if travelTime < 0.1 then travelTime = 0.1 end
+                        
+                        local targetCFrame = (CONFIG_FARM.Posture == "Lying") 
+                            and (CFrame.new(targetPos) * CFrame.Angles(math.rad(90), 0, 0)) 
+                            or CFrame.new(targetPos)
+
+                        local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
+                        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+                        tween:Play()
+
+                        local startTime = os.clock()
+                        while tween.PlaybackState == Enum.PlaybackState.Playing and CONFIG_FARM.Active and not StoppedUntilNewRound do
+                            if not InGame() or not target.Parent or target:GetAttribute("Collected") or CheckBagFullText() then
+                                tween:Cancel()
+                                break
+                            end
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            RunService.Heartbeat:Wait()
+                            if os.clock() - startTime > (travelTime + 1) then
+                                tween:Cancel()
+                                break
+                            end
+                        end
+
+                        collectedCoins[target] = true
+                        break
+                    else
+                        if distance <= 0.8 then
+                            local waitStart = os.clock()
+                            local fixedRotation = (CONFIG_FARM.Posture == "Lying") 
+                                and (CFrame.new(targetPos) * CFrame.Angles(math.rad(90), 0, 0)) 
+                                or CFrame.new(targetPos)
+
+                            while CONFIG_FARM.Active and not StoppedUntilNewRound and os.clock() - waitStart < 3 do
+                                if not InGame() or not target.Parent or target:GetAttribute("Collected") or CheckBagFullText() then break end
+                                hrp.CFrame = fixedRotation
+                                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                RunService.Heartbeat:Wait()
+                            end
+
+                            collectedCoins[target] = true
+                            break
+                        end
+
+                        local currentSpeed = math.clamp(CONFIG_FARM.Speed, 16, 25)
+                        local dt = RunService.Heartbeat:Wait()
+                        local step = math.min(currentSpeed * dt, distance)
+                        local newPos = currentPos + (direction.Unit * step)
+
+                        hrp.CFrame = (CONFIG_FARM.Posture == "Lying") 
+                            and (CFrame.new(newPos) * CFrame.Angles(math.rad(90), 0, 0)) 
+                            or CFrame.new(newPos)
+                            
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    end
+                end
+
+                humanoid.PlatformStand = false
+            else
+                RestaurarColisoes()
+                humanoid.PlatformStand = false
+                task.wait(0.3)
+            end
+        else
+            RestaurarColisoes()
+            local c = Player.Character
+            local hum = c and c:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = false end
+            task.wait(0.4)
+        end
+    end
+end)
