@@ -43,13 +43,15 @@ local CONFIG_FARM = {
 --==============================================================--
 
 local MAP_SAFE_POSITIONS = {
-    ["Mansion2"]     = Vector3.new(75.37, 277.62, 8987.54),
-    ["Hotel2014"]    = Vector3.new(414.55, 7.59, 722.01),
-    ["Factory"]      = Vector3.new(-62.90, 291.94, 8961.11),
-    ["House2"]       = Vector3.new(21.84, 266.00, 9034.20),
-    ["MilBase"]      = Vector3.new(-22.30, 242.23, 9109.38),
-    ["BioLab"]       = Vector3.new(552.83, 283.26, 9677.74),
-    ["Hospital2014"] = Vector3.new(490.39, 7.59, 493.15),
+    ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
+    ["Hotel2014"]        = Vector3.new(414.55, 7.59, 722.01),
+    ["Factory"]          = Vector3.new(-62.90, 291.94, 8961.11),
+    ["House2"]           = Vector3.new(21.84, 266.00, 9034.20),
+    ["MilBase"]          = Vector3.new(-22.30, 242.23, 9109.38),
+    ["BioLab"]           = Vector3.new(552.83, 283.26, 9677.74),
+    ["Hospital2014"]     = Vector3.new(490.39, 7.59, 493.15),
+    ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
+    ["ResearchFacility"] = Vector3.new(-50.81, 301.80, 9152.87),
 }
 
 --==============================================================--
