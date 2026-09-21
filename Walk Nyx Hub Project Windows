@@ -54,6 +54,8 @@ local MAP_SAFE_POSITIONS = {
     ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
     ["ResearchFacility"] = Vector3.new(-50.81, 301.80, 9152.87),
     ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95), -- Novo mapa adicionado!
+    ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
+
 }
 
 --==============================================================--
