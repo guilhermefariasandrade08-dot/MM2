@@ -31,12 +31,13 @@ local Window = WindUI:CreateWindow({
 local CONFIG_FARM = {
     Active = false,
     Posture = "Lying",
-    Movement = "CFrame",
     Speed = 18,
     FullDestination = "Map",
     MaxDistance = 500,
     MurdererDangerRadius = 30
 }
+
+local LOBBY_SAFE_POS = Vector3.new(13.89, 504.52, -11.44)
 
 --==============================================================--
 --                     MAPS CUSTOM POSITIONS                    --
@@ -52,46 +53,20 @@ local MAP_SAFE_POSITIONS = {
     ["Hospital2014"]     = Vector3.new(490.39, 7.59, 493.15),
     ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
     ["ResearchFacility"] = Vector3.new(-50.81, 301.80, 9152.87),
+    ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95), -- Novo mapa adicionado!
 }
 
 --==============================================================--
 --                           TABS                               --
 --==============================================================--
 
-local MainTab = Window:Tab({
-    Title = "Main",
-    Icon = "home",
-})
-
-local MurdererTab = Window:Tab({
-    Title = "Murderer",
-    Icon = "sword",
-})
-
-local SheriffTab = Window:Tab({
-    Title = "Sheriff",
-    Icon = "shield",
-})
-
-local FarmCoin = Window:Tab({
-    Title = "Farm Coin",
-    Icon = "coins",
-})
-
-local ESPTab = Window:Tab({
-    Title = "ESP",
-    Icon = "eye",
-})
-
-local LocalPlayerTab = Window:Tab({
-    Title = "Local Player",
-    Icon = "user",
-})
-
-local ModificationsTab = Window:Tab({
-    Title = "Modifications",
-    Icon = "settings",
-})
+local MainTab = Window:Tab({ Title = "Main", Icon = "home" })
+local MurdererTab = Window:Tab({ Title = "Murderer", Icon = "sword" })
+local SheriffTab = Window:Tab({ Title = "Sheriff", Icon = "shield" })
+local FarmCoin = Window:Tab({ Title = "Farm Coin", Icon = "coins" })
+local ESPTab = Window:Tab({ Title = "ESP", Icon = "eye" })
+local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
+local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 --==============================================================--
 --                     FARM COIN INTERFACE                      --
@@ -99,38 +74,16 @@ local ModificationsTab = Window:Tab({
 
 FarmCoin:Dropdown({
     Title = "Posture",
-    Values = {
-        "Lying",
-        "Standing",
-    },
+    Values = { "Lying", "Standing" },
     Value = "Lying",
-    Callback = function(value)
-        CONFIG_FARM.Posture = value
-    end,
-})
-
-FarmCoin:Dropdown({
-    Title = "Movement",
-    Values = {
-        "CFrame",
-        "Tween",
-    },
-    Value = "CFrame",
-    Callback = function(value)
-        CONFIG_FARM.Movement = value
-    end,
+    Callback = function(value) CONFIG_FARM.Posture = value end,
 })
 
 FarmCoin:Dropdown({
     Title = "Destination When Full",
-    Values = {
-        "Map",
-        "Safe",
-    },
+    Values = { "Map", "Safe", "Lobby" },
     Value = "Map",
-    Callback = function(value)
-        CONFIG_FARM.FullDestination = value
-    end,
+    Callback = function(value) CONFIG_FARM.FullDestination = value end,
 })
 
 local function RestaurarColisoes()
@@ -149,34 +102,60 @@ FarmCoin:Toggle({
     Value = false,
     Callback = function(state)
         CONFIG_FARM.Active = state
-        if not state then
-            RestaurarColisoes()
-        end
+        if not state then RestaurarColisoes() end
     end,
 })
 
 FarmCoin:Slider({
     Title = "Speed",
     Step = 1,
-    Value = {
-        Min = 16,
-        Max = 25,
-        Default = 18,
-    },
-    Callback = function(value)
-        CONFIG_FARM.Speed = value
+    Value = { Min = 16, Max = 25, Default = 18 },
+    Callback = function(value) CONFIG_FARM.Speed = value end,
+})
+
+-- Botão para copiar o nome do mapa e a posição atual do jogador
+FarmCoin:Button({
+    Title = "Copiar Posição e Mapa",
+    Desc = "Copia para o clipboard o nome do mapa atual e suas coordenadas exatas.",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local Workspace = game:GetService("Workspace")
+        local player = Players.LocalPlayer
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        
+        if not hrp then
+            WindUI:Notify({ Title = "Erro", Content = "Personagem não encontrado!", Duration = 3 })
+            return
+        end
+
+        local mapName = "Desconhecido"
+        local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
+        if coinContainer and coinContainer.Parent then
+            mapName = coinContainer.Parent.Name
+        end
+
+        local pos = hrp.Position
+        local resultString = string.format('["%s"] = Vector3.new(%.2f, %.2f, %.2f),', mapName, pos.X, pos.Y, pos.Z)
+        
+        if setclipboard then
+            setclipboard(resultString)
+            WindUI:Notify({ Title = "Sucesso!", Content = "Copiado: " .. resultString, Duration = 4 })
+        else
+            WindUI:Notify({ Title = "Aviso", Content = "Seu executor não suporta setclipboard automático.", Duration = 4 })
+            print("[Walk Nyx Hub] Posição: " .. resultString)
+        end
     end,
 })
 
 --==============================================================--
---         🎯 AUTO FARM LOGIC + SEGURAR FIRME NO TP            --
+--         🎯 AUTO FARM LOGIC (EXCLUSIVO CFRAME)               --
 --==============================================================--
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
 local collectedCoins = {}
@@ -227,11 +206,8 @@ local function ResetFarmState()
 end
 
 Player.CharacterAdded:Connect(ResetFarmState)
-
 Player:GetAttributeChangedSignal("Alive"):Connect(function()
-    if Player:GetAttribute("Alive") == true then
-        ResetFarmState()
-    end
+    if Player:GetAttribute("Alive") == true then ResetFarmState() end
 end)
 
 task.spawn(function()
@@ -243,9 +219,7 @@ task.spawn(function()
                     if collector == Player or (typeof(collector) == "string" and collector == Player.Name) then
                         if tonumber(current) and tonumber(maximum) then
                             bagFullByEvent = (tonumber(current) >= tonumber(maximum))
-                            if bagFullByEvent then
-                                StoppedUntilNewRound = false
-                            end
+                            if bagFullByEvent then StoppedUntilNewRound = true end
                         end
                     end
                 end)
@@ -355,9 +329,10 @@ local function GetNearestCoin(myPos)
     return bestCoin
 end
 
+-- Loop de checagem imediata de bolsa cheia
 task.spawn(function()
     while true do
-        task.wait(0.3)
+        task.wait(0.1)
         local isBagFull = CheckBagFullText()
 
         local currentCoinContainer = Workspace:FindFirstChild("CoinContainer", true)
@@ -373,44 +348,43 @@ task.spawn(function()
 
         if not StoppedUntilNewRound and InGame() and isBagFull then
             RestaurarColisoes()
+            StoppedUntilNewRound = true
             
-            task.wait(0.3)
+            local char = Player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            
+            local finalDestination = nil
+            if CONFIG_FARM.FullDestination == "Map" then
+                finalDestination = GetSafeMapSpawn()
+            elseif CONFIG_FARM.FullDestination == "Lobby" then
+                finalDestination = CFrame.new(LOBBY_SAFE_POS)
+            else
+                finalDestination = GetSafePlatformCFrame()
+            end
 
-            if InGame() then
-                local char = Player.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if finalDestination and hrp then
+                if hum then hum.PlatformStand = true end
                 
-                local finalDestination = nil
-                if CONFIG_FARM.FullDestination == "Map" then
-                    finalDestination = GetSafeMapSpawn()
-                else
-                    finalDestination = GetSafePlatformCFrame()
+                local holdStart = os.clock()
+                while os.clock() - holdStart < 1.5 and InGame() do
+                    hrp.CFrame = finalDestination
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    RunService.Heartbeat:Wait()
                 end
-
-                if finalDestination then
-                    StoppedUntilNewRound = true
-                    if hum then hum.PlatformStand = true end
-                    
-                    local holdStart = os.clock()
-                    while os.clock() - holdStart < 0.5 and InGame() do
-                        hrp.CFrame = finalDestination
-                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        RunService.Heartbeat:Wait()
-                    end
-                    
-                    if hum and InGame() then
-                        hum.PlatformStand = false
-                    end
+                
+                if hum and InGame() then
+                    hum.PlatformStand = false
                 end
             end
         end
     end
 end)
 
+-- Loop principal CFrame
 task.spawn(function()
     while true do
-        if CONFIG_FARM.Active and not StoppedUntilNewRound then
+        if CONFIG_FARM.Active and not StoppedUntilNewRound and not CheckBagFullText() then
             local c = Player.Character
             local hrp = c and c:FindFirstChild("HumanoidRootPart")
             local humanoid = c and c:FindFirstChildOfClass("Humanoid")
@@ -422,107 +396,43 @@ task.spawn(function()
                 continue
             end
 
-            if CheckBagFullText() then
-                RestaurarColisoes()
-                humanoid.PlatformStand = false
-                task.wait(0.2)
-                continue
-            end
-
             local target = GetNearestCoin(hrp.Position)
-            if target then
-                while CONFIG_FARM.Active and not StoppedUntilNewRound and InGame() and target and target.Parent
-                and not CheckBagFullText() and not target:GetAttribute("Collected") and not collectedCoins[target] do
+            if target and not StoppedUntilNewRound and not CheckBagFullText() then
+                humanoid.PlatformStand = true
 
-                    humanoid.PlatformStand = true
+                local heightOffset = (CONFIG_FARM.Posture == "Lying") and Vector3.new(0, 4, 0) or Vector3.new(0, 0, 0)
+                local targetPos = target.Position - heightOffset
+                local currentPos = hrp.Position
+                local direction = (targetPos - currentPos)
+                local distance = direction.Magnitude
 
-                    local currentPos = hrp.Position
-                    local nearestNow = GetNearestCoin(currentPos)
-                    if nearestNow and nearestNow ~= target then
-                        target = nearestNow
-                    end
+                if distance <= 0.8 then
+                    collectedCoins[target] = true
+                else
+                    local currentSpeed = math.clamp(CONFIG_FARM.Speed, 16, 25)
+                    local dt = RunService.Heartbeat:Wait()
+                    local step = math.min(currentSpeed * dt, distance)
+                    local newPos = currentPos + (direction.Unit * step)
 
-                    if not target:IsDescendantOf(Workspace) or target:GetAttribute("Collected") or CheckBagFullText() then
-                        break
-                    end
-
-                    local heightOffset = (CONFIG_FARM.Posture == "Lying") and Vector3.new(0, 4, 0) or Vector3.new(0, 0, 0)
-                    local targetPos = target.Position - heightOffset
-                    local direction = (targetPos - currentPos)
-                    local distance = direction.Magnitude
-
-                    if CONFIG_FARM.Movement == "Tween" then
-                        local travelSpeed = math.clamp(CONFIG_FARM.Speed, 1, 50)
-                        local travelTime = distance / travelSpeed
-                        if travelTime < 0.1 then travelTime = 0.1 end
+                    hrp.CFrame = (CONFIG_FARM.Posture == "Lying") 
+                        and (CFrame.new(newPos) * CFrame.Angles(math.rad(90), 0, 0)) 
+                        or CFrame.new(newPos)
                         
-                        local targetCFrame = (CONFIG_FARM.Posture == "Lying") 
-                            and (CFrame.new(targetPos) * CFrame.Angles(math.rad(90), 0, 0)) 
-                            or CFrame.new(targetPos)
-
-                        local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
-                        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
-                        tween:Play()
-
-                        local startTime = os.clock()
-                        while tween.PlaybackState == Enum.PlaybackState.Playing and CONFIG_FARM.Active and not StoppedUntilNewRound do
-                            if not InGame() or not target.Parent or target:GetAttribute("Collected") or CheckBagFullText() then
-                                tween:Cancel()
-                                break
-                            end
-                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                            RunService.Heartbeat:Wait()
-                            if os.clock() - startTime > (travelTime + 1) then
-                                tween:Cancel()
-                                break
-                            end
-                        end
-
-                        collectedCoins[target] = true
-                        break
-                    else
-                        if distance <= 0.8 then
-                            local waitStart = os.clock()
-                            local fixedRotation = (CONFIG_FARM.Posture == "Lying") 
-                                and (CFrame.new(targetPos) * CFrame.Angles(math.rad(90), 0, 0)) 
-                                or CFrame.new(targetPos)
-
-                            while CONFIG_FARM.Active and not StoppedUntilNewRound and os.clock() - waitStart < 3 do
-                                if not InGame() or not target.Parent or target:GetAttribute("Collected") or CheckBagFullText() then break end
-                                hrp.CFrame = fixedRotation
-                                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                                RunService.Heartbeat:Wait()
-                            end
-
-                            collectedCoins[target] = true
-                            break
-                        end
-
-                        local currentSpeed = math.clamp(CONFIG_FARM.Speed, 16, 25)
-                        local dt = RunService.Heartbeat:Wait()
-                        local step = math.min(currentSpeed * dt, distance)
-                        local newPos = currentPos + (direction.Unit * step)
-
-                        hrp.CFrame = (CONFIG_FARM.Posture == "Lying") 
-                            and (CFrame.new(newPos) * CFrame.Angles(math.rad(90), 0, 0)) 
-                            or CFrame.new(newPos)
-                            
-                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    end
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
 
                 humanoid.PlatformStand = false
             else
                 RestaurarColisoes()
                 humanoid.PlatformStand = false
-                task.wait(0.3)
+                task.wait(0.2)
             end
         else
             RestaurarColisoes()
             local c = Player.Character
             local hum = c and c:FindFirstChildOfClass("Humanoid")
             if hum then hum.PlatformStand = false end
-            task.wait(0.4)
+            task.wait(0.5)
         end
     end
 end)
