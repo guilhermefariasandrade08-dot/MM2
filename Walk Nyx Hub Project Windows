@@ -293,6 +293,163 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 --==============================================================--
+--                SISTEMA DE NAME ESP / BILLBOARD               --
+--==============================================================--
+
+local NameESPConfig = {
+    Active = false,
+    Mode = "Simple", -- Opções: Simple, Customized
+}
+
+local NameESPList = {}
+
+local function LimparNameESP()
+    for _, espObj in pairs(NameESPList) do
+        if espObj and espObj.Parent then
+            espObj:Destroy()
+        end
+    end
+    table.clear(NameESPList)
+end
+
+local function CriarBillboardPlayer(p)
+    if NameESPList[p] then
+        NameESPList[p]:Destroy()
+        NameESPList[p] = nil
+    end
+
+    if not NameESPConfig.Active then return end
+
+    local char = p.Character
+    if not char or not char:FindFirstChild("Head") then return end
+
+    local head = char.Head
+    
+    -- Cria o BillboardGui principal acima da cabeça
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "WalkNyx_NameESP"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.ResetOnSpawn = false
+
+    if NameESPConfig.Mode == "Simple" then
+        -- Modo Simples: Apenas o texto com o nome
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "NameLabel"
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = p.Name
+        nameLabel.TextColor3 = ObterCorCargo(p.Name)
+        nameLabel.TextScaled = false
+        nameLabel.TextSize = 14
+        nameLabel.Font = Enum.Font.SourceSansBold
+        nameLabel.TextStrokeTransparency = 0 -- Borda preta para legibilidade
+        nameLabel.Parent = billboard
+
+    elseif NameESPConfig.Mode == "Customized" then
+        -- Modo Customizado: Retângulo com bordas arredondadas, círculo de perfil e nome
+        local container = Instance.new("Frame")
+        container.Name = "CustomContainer"
+        container.Size = UDim2.new(0, 0, 0, 30) -- Começa pequeno, ajusta pelo tamanho do texto
+        container.Position = UDim2.new(0.5, 0, 0.5, 0)
+        container.AnchorPoint = Vector2.new(0.5, 0.5)
+        container.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        container.BackgroundTransparency = 0.3
+        container.BorderSizePixel = 0
+        container.Parent = billboard
+
+        -- Arredondar bordas do retângulo principal
+        local uiCorner = Instance.new("UICorner")
+        uiCorner.CornerRadius = UDim.new(1, 0)
+        uiCorner.Parent = container
+
+        -- Círculo de perfil à esquerda
+        local avatarCircle = Instance.new("ImageLabel")
+        avatarCircle.Name = "AvatarCircle"
+        avatarCircle.Size = UDim2.new(0, 24, 0, 24)
+        avatarCircle.Position = UDim2.new(0, 3, 0.5, 0)
+        avatarCircle.AnchorPoint = Vector2.new(0, 0.5)
+        avatarCircle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        avatarCircle.Image = "rbxthumb://type=AvatarHeadShot&id=" .. p.UserId .. "&w=150&h=150"
+        avatarCircle.Parent = container
+
+        local avatarCorner = Instance.new("UICorner")
+        avatarCorner.CornerRadius = UDim.new(1, 0)
+        avatarCorner.Parent = avatarCircle
+
+        -- Texto do Nome na frente
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "CustomNameLabel"
+        nameLabel.Size = UDim2.new(0, 0, 1, 0)
+        nameLabel.Position = UDim2.new(0, 32, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = p.Name
+        nameLabel.TextColor3 = ObterCorCargo(p.Name)
+        nameLabel.TextSize = 13
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.AutomaticSize = Enum.AutomaticSize.X
+        nameLabel.Parent = container
+
+        -- Ajusta dinamicamente a largura do retângulo com base no tamanho do nome
+        task.spawn(function()
+            task.wait(0.05)
+            if container and nameLabel then
+                container.Size = UDim2.new(0, nameLabel.AbsoluteSize.X + 38, 0, 28)
+            end
+        end)
+    end
+
+    billboard.Parent = head
+    NameESPList[p] = billboard
+end
+
+RunService.RenderStepped:Connect(function()
+    if not NameESPConfig.Active then return end
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local char = p.Character
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            
+            if hum and hum.Health > 0 and hrp then
+                local billboard = NameESPList[p]
+                if not billboard or billboard.Parent ~= char:FindFirstChild("Head") then
+                    CriarBillboardPlayer(p)
+                else
+                    -- Atualiza dinamicamente a cor do cargo em tempo real
+                    local novaCor = ObterCorCargo(p.Name)
+                    if NameESPConfig.Mode == "Simple" then
+                        local lbl = billboard:FindFirstChild("NameLabel")
+                        if lbl then lbl.TextColor3 = novaCor end
+                    elseif NameESPConfig.Mode == "Customized" then
+                        local cont = billboard:FindFirstChild("CustomContainer")
+                        if cont then
+                            local lbl = cont:FindFirstChild("CustomNameLabel")
+                            if lbl then lbl.TextColor3 = novaCor end
+                        end
+                    end
+                end
+            else
+                if NameESPList[p] then
+                    NameESPList[p]:Destroy()
+                    NameESPList[p] = nil
+                end
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if NameESPList[p] then
+        NameESPList[p]:Destroy()
+        NameESPList[p] = nil
+    end
+end)
+
+--==============================================================--
 --                     BOTOES DA ABA AUTO FARM                   --
 --==============================================================--
 
@@ -774,4 +931,34 @@ ESPTab:Toggle({
     end,
 })
 
+--==============================================================--
+--        BOTÕES E CONFIGURAÇÕES DA ABA ESP (NAME ESP)          --
+--==============================================================--
+
+ESPTab:Section({
+    Title = "Name ESP"
+})
+
+ESPTab:Dropdown({
+    Title = "Name ESP Mode",
+    Values = { "Simple", "Customized" },
+    Value = "Simple",
+    Callback = function(value)
+        NameESPConfig.Mode = value
+        if NameESPConfig.Active then
+            LimparNameESP()
+        end
+    end,
+})
+
+ESPTab:Toggle({
+    Title = "Ligar Name ESP",
+    Value = false,
+    Callback = function(state)
+        NameESPConfig.Active = state
+        if not state then
+            LimparNameESP()
+        end
+    end,
+})
 
