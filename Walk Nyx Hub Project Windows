@@ -70,12 +70,10 @@ local ESPTab = Window:Tab({ Title = "ESP", Icon = "eye" })
 local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
-
 --==============================================================--
 --            BOTÕES E LISTA DA INTERFACE (WINDUI)              --
 --==============================================================--
 
--- Certifique-se de que a variável 'ESPTab' já foi criada na sua janela do WindUI
 ESPTab:Section({
     Title = "ESP players"
 })
@@ -87,7 +85,7 @@ ESPTab:Dropdown({
     Callback = function(value)
         ESPConfig.Mode = value
         if ESPConfig.Active then
-            LimparEsp() -- Reseta para aplicar o novo estilo instantaneamente
+            LimparEsp()
         end
     end,
 })
@@ -238,14 +236,20 @@ local LocalPlayer = Players.LocalPlayer
 
 local ESPConfig = {
     Active = false,
-    Mode = "Highlight" -- "Highlight" ou "Outline"
+    Mode = "Highlight"
 }
 
 local Highlights = {}
 local DadosCargos = {}
 local UltimaChecagemCargo = 0
 
--- Função para buscar os cargos do servidor do MM2
+local function LimparEsp()
+    for _, highlight in pairs(Highlights) do
+        if highlight then highlight:Destroy() end
+    end
+    table.clear(Highlights)
+end
+
 local function PegarCargos()
     if tick() - UltimaChecagemCargo < 2 then return end
     UltimaChecagemCargo = tick()
@@ -261,34 +265,24 @@ local function PegarCargos()
     end)
 end
 
--- Função para limpar os ESPs criados
-local function LimparEsp()
-    for _, highlight in pairs(Highlights) do
-        if highlight then highlight:Destroy() end
-    end
-    table.clear(Highlights)
-end
-
--- Função que define a cor baseada no cargo (Branco para quem está no lobby/fora)
 local function ObterCorCargo(nomeJogador)
     local Info = DadosCargos[nomeJogador]
-    local Cor = Color3.fromRGB(255, 255, 255) -- Padrão Lobby / Não participante (Branco)
+    local Cor = Color3.fromRGB(255, 255, 255) -- Branco para Lobby / Fora da partida
     
     if Info and not Info.Killed and not Info.Dead then
         if Info.Role == "Murderer" then
-            Cor = Color3.fromRGB(220, 50, 50) -- Murderer (Vermelho)
+            Cor = Color3.fromRGB(220, 50, 50) -- Vermelho
         elseif Info.Role == "Sheriff" then
-            Cor = Color3.fromRGB(0, 85, 255) -- Sheriff (Azul)
+            Cor = Color3.fromRGB(0, 85, 255) -- Azul
         elseif Info.Role == "Hero" then
-            Cor = Color3.fromRGB(255, 215, 0) -- Herói (Amarelo)
+            Cor = Color3.fromRGB(255, 215, 0) -- Amarelo
         elseif Info.Role == "Innocent" then
-            Cor = Color3.fromRGB(60, 200, 80) -- Inocente (Verde)
+            Cor = Color3.fromRGB(60, 200, 80) -- Verde
         end
     end
     return Cor
 end
 
--- Atualiza o ESP de cada jogador
 local function AtualizarEspJogador(p)
     if p == LocalPlayer then return end
     
@@ -314,7 +308,7 @@ local function AtualizarEspJogador(p)
     if ESPConfig.Mode == "Highlight" then
         highlight.FillTransparency = 0.4        
         highlight.OutlineTransparency = 0       
-    else -- Modo Outline (Preenchimento invisível, apenas contorno)
+    else 
         highlight.FillTransparency = 1          
         highlight.OutlineTransparency = 0       
     end
@@ -323,7 +317,6 @@ local function AtualizarEspJogador(p)
     Highlights[p] = highlight
 end
 
--- Loop principal do ESP atualizando em tempo real
 RunService.RenderStepped:Connect(function()
     if not ESPConfig.Active then return end
     PegarCargos()
@@ -356,7 +349,6 @@ Players.PlayerRemoving:Connect(function(p)
         Highlights[p] = nil
     end
 end)
-
 
 --==============================================================--
 --         AUTO FARM LOGICA CFRAME              --
