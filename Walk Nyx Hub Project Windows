@@ -76,6 +76,7 @@ local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings"
 --                  INTERFACE ESP (WINDUI)                       --
 -- ==============================================================--
 
+-- Certifique-se de que a variável 'ESPTab' já foi criada na sua janela do WindUI
 ESPTab:Section({
     Title = "ESP players"
 })
@@ -87,7 +88,7 @@ ESPTab:Dropdown({
     Callback = function(value)
         ESPConfig.Mode = value
         if ESPConfig.Active then
-            LimparEsp()
+            LimparEsp() -- Reseta para aplicar o novo estilo instantaneamente
         end
     end,
 })
@@ -231,8 +232,13 @@ end
 --          SISTEMA DA ABA ESP            --
 --==============================================================--
 
+--==============================================================--
+--                SISTEMA DE ESP (MM2 / CARGOS)                 --
+--==============================================================--
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 local ESPConfig = {
@@ -240,21 +246,60 @@ local ESPConfig = {
     Mode = "Highlight" -- "Highlight" ou "Outline"
 }
 
-local EspContainers = {}
+local Highlights = {}
+local DadosCargos = {}
+local UltimaChecagemCargo = 0
 
-local function LimparEsp()
-    for _, obj in pairs(EspContainers) do
-        if obj then obj:Destroy() end
-    end
-    EspContainers = {}
+-- Função para buscar os cargos do servidor do MM2
+local function PegarCargos()
+    if tick() - UltimaChecagemCargo < 2 then return end
+    UltimaChecagemCargo = tick()
+    task.spawn(function()
+        local R = ReplicatedStorage:FindFirstChild("GetPlayerData", true)
+        if not R then return end
+        local ok, d = pcall(function()
+            return R:InvokeServer()
+        end)
+        if ok and d then
+            DadosCargos = d
+        end
+    end)
 end
 
+-- Função para limpar os ESPs criados
+local function LimparEsp()
+    for _, highlight in pairs(Highlights) do
+        if highlight then highlight:Destroy() end
+    end
+    table.clear(Highlights)
+end
+
+-- Função que define a cor baseada no cargo (Branco para quem está no lobby/fora)
+local function ObterCorCargo(nomeJogador)
+    local Info = DadosCargos[nomeJogador]
+    local Cor = Color3.fromRGB(255, 255, 255) -- Padrão Lobby / Não participante (Branco)
+    
+    if Info and not Info.Killed and not Info.Dead then
+        if Info.Role == "Murderer" then
+            Cor = Color3.fromRGB(220, 50, 50) -- Murderer (Vermelho)
+        elseif Info.Role == "Sheriff" then
+            Cor = Color3.fromRGB(0, 85, 255) -- Sheriff (Azul)
+        elseif Info.Role == "Hero" then
+            Cor = Color3.fromRGB(255, 215, 0) -- Herói (Amarelo)
+        elseif Info.Role == "Innocent" then
+            Cor = Color3.fromRGB(60, 200, 80) -- Inocente (Verde)
+        end
+    end
+    return Cor
+end
+
+-- Atualiza o ESP de cada jogador
 local function AtualizarEspJogador(p)
     if p == LocalPlayer then return end
     
-    if EspContainers[p] then
-        EspContainers[p]:Destroy()
-        EspContainers[p] = nil
+    if Highlights[p] then
+        Highlights[p]:Destroy()
+        Highlights[p] = nil
     end
 
     if not ESPConfig.Active then return end
@@ -262,48 +307,58 @@ local function AtualizarEspJogador(p)
     local char = p.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
 
-    -- Sistema de cor padrão ou puxando do seu Hub se houver
-    local cor = Color3.fromRGB(60, 200, 80)
-    pcall(function()
-        if ObterCargoECor then
-            _, cor = ObterCargoECor(p)
-        end
-    end)
+    local cor = ObterCorCargo(p.Name)
 
     local highlight = Instance.new("Highlight")
     highlight.Name = "WalkNyx_ESP"
     highlight.Adornee = char
     highlight.FillColor = cor
     highlight.OutlineColor = cor
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     
     if ESPConfig.Mode == "Highlight" then
-        highlight.FillTransparency = 0.4        -- Preenche o corpo inteiro
-        highlight.OutlineTransparency = 0       -- Mantém a borda
-    else -- Modo Outline
-        highlight.FillTransparency = 1          -- Corpo invisível por dentro
-        highlight.OutlineTransparency = 0       -- Apenas a linha em volta
+        highlight.FillTransparency = 0.4        
+        highlight.OutlineTransparency = 0       
+    else -- Modo Outline (Preenchimento invisível, apenas contorno)
+        highlight.FillTransparency = 1          
+        highlight.OutlineTransparency = 0       
     end
 
     highlight.Parent = char
-    EspContainers[p] = highlight
+    Highlights[p] = highlight
 end
 
+-- Loop principal do ESP atualizando em tempo real
 RunService.RenderStepped:Connect(function()
     if not ESPConfig.Active then return end
+    PegarCargos()
+    
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
-            local highlight = EspContainers[p]
+            local highlight = Highlights[p]
             if not highlight or highlight.Parent ~= p.Character then
                 AtualizarEspJogador(p)
+            else
+                local novaCor = ObterCorCargo(p.Name)
+                highlight.FillColor = novaCor
+                highlight.OutlineColor = novaCor
+                
+                if ESPConfig.Mode == "Highlight" then
+                    highlight.FillTransparency = 0.4        
+                    highlight.OutlineTransparency = 0       
+                else 
+                    highlight.FillTransparency = 1          
+                    highlight.OutlineTransparency = 0       
+                end
             end
         end
     end
 end)
 
 Players.PlayerRemoving:Connect(function(p)
-    if EspContainers[p] then
-        EspContainers[p]:Destroy()
-        EspContainers[p] = nil
+    if Highlights[p] then
+        Highlights[p]:Destroy()
+        Highlights[p] = nil
     end
 end)
 
