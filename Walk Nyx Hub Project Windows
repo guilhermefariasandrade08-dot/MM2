@@ -204,6 +204,93 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
+--==============================================================--
+--                SISTEMA DE TRACERS (LINHAS ESP)               --
+--==============================================================--
+
+local Camera = workspace.CurrentCamera
+local TracersConfig = {
+    Active = false,
+    Position = "Bottom", -- Opções: Top, Middle, Bottom
+    Thickness = 1
+}
+
+local TracersList = {}
+
+local function LimparTracers()
+    for _, line in pairs(TracersList) do
+        if line then line:Remove() end
+    end
+    table.clear(TracersList)
+end
+
+RunService.RenderStepped:Connect(function()
+    if not TracersConfig.Active then
+        LimparTracers()
+        return
+    end
+
+    local screenSize = Camera.ViewportSize
+    local originPoint = Vector2.new(screenSize.X / 2, screenSize.Y) -- Bottom (Padrão)
+
+    if TracersConfig.Position == "Top" then
+        originPoint = Vector2.new(screenSize.X / 2, 0)
+    elseif TracersConfig.Position == "Middle" then
+        originPoint = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
+    elseif TracersConfig.Position == "Bottom" then
+        originPoint = Vector2.new(screenSize.X / 2, screenSize.Y)
+    end
+
+    local jogadoresAtivos = {}
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local char = p.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            -- Verifica se o jogador está vivo e na partida (usa a mesma lógica de cargo)
+            if hrp and hum and hum.Health > 0 then
+                jogadoresAtivos[p] = true
+                
+                -- Cria a linha se não existir
+                if not TracersList[p] then
+                    local line = Drawing.new("Line")
+                    line.Visible = false
+                    TracersList[p] = line
+                end
+
+                local line = TracersList[p]
+                local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+
+                if onScreen then
+                    line.From = originPoint
+                    line.To = Vector2.new(vector.X, vector.Y)
+                    line.Color = ObterCorCargo(p.Name) -- Pega a mesma cor do sistema de cargos do ESP
+                    line.Thickness = TracersConfig.Thickness
+                    line.Visible = true
+                else
+                    line.Visible = false
+                end
+            end
+        end
+    end
+
+    -- Remove linhas de jogadores que saíram, morreram ou resetaram
+    for p, line in pairs(TracersList) do
+        if not jogadoresAtivos[p] or not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
+            if line then line:Remove() end
+            TracersList[p] = nil
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if TracersList[p] then
+        TracersList[p]:Remove()
+        TracersList[p] = nil
+    end
+end)
 
 --==============================================================--
 --         AUTO FARM LOGICA CFRAME              --
@@ -535,6 +622,42 @@ ESPTab:Toggle({
     end,
 })
 
+--==============================================================--
+--        BOTÕES E CONFIGURAÇÕES DA ABA ESP (TRACERS)           --
+--==============================================================--
+
+ESPTab:Section({
+    Title = "Tracers (Linhas)"
+})
+
+ESPTab:Dropdown({
+    Title = "Tracer Position",
+    Values = { "Top", "Middle", "Bottom" },
+    Value = "Bottom",
+    Callback = function(value)
+        TracersConfig.Position = value
+    end,
+})
+
+ESPTab:Slider({
+    Title = "Tracer Thickness",
+    Step = 1,
+    Value = { Min = 1, Max = 5, Default = 1 },
+    Callback = function(value)
+        TracersConfig.Thickness = value
+    end,
+})
+
+ESPTab:Toggle({
+    Title = "Ligar Tracers",
+    Value = false,
+    Callback = function(state)
+        TracersConfig.Active = state
+        if not state then
+            LimparTracers()
+        end
+    end,
+})
 
 --==============================================================--
 --                     BOTOES DA ABA AUTO FARM                   --
