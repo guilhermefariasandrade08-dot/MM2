@@ -72,6 +72,36 @@ local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings"
 
 
 
+-- ==============================================================--
+--                  INTERFACE ESP (WINDUI)                       --
+-- ==============================================================--
+
+ESPTab:Section({
+    Title = "ESP players"
+})
+
+ESPTab:Dropdown({
+    Title = "Estilo do ESP",
+    Values = { "Highlight", "Outline" },
+    Value = "Highlight",
+    Callback = function(value)
+        ESPConfig.Mode = value
+        if ESPConfig.Active then
+            LimparEsp()
+        end
+    end,
+})
+
+ESPTab:Toggle({
+    Title = "Ligar ESP",
+    Value = false,
+    Callback = function(state)
+        ESPConfig.Active = state
+        if not state then
+            LimparEsp()
+        end
+    end,
+})
 
 --==============================================================--
 --                     BOTOES DA ABA AUTO FARM                   --
@@ -201,6 +231,81 @@ end
 --          SISTEMA DA ABA ESP            --
 --==============================================================--
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local ESPConfig = {
+    Active = false,
+    Mode = "Highlight" -- "Highlight" ou "Outline"
+}
+
+local EspContainers = {}
+
+local function LimparEsp()
+    for _, obj in pairs(EspContainers) do
+        if obj then obj:Destroy() end
+    end
+    EspContainers = {}
+end
+
+local function AtualizarEspJogador(p)
+    if p == LocalPlayer then return end
+    
+    if EspContainers[p] then
+        EspContainers[p]:Destroy()
+        EspContainers[p] = nil
+    end
+
+    if not ESPConfig.Active then return end
+
+    local char = p.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+    -- Sistema de cor padrão ou puxando do seu Hub se houver
+    local cor = Color3.fromRGB(60, 200, 80)
+    pcall(function()
+        if ObterCargoECor then
+            _, cor = ObterCargoECor(p)
+        end
+    end)
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "WalkNyx_ESP"
+    highlight.Adornee = char
+    highlight.FillColor = cor
+    highlight.OutlineColor = cor
+    
+    if ESPConfig.Mode == "Highlight" then
+        highlight.FillTransparency = 0.4        -- Preenche o corpo inteiro
+        highlight.OutlineTransparency = 0       -- Mantém a borda
+    else -- Modo Outline
+        highlight.FillTransparency = 1          -- Corpo invisível por dentro
+        highlight.OutlineTransparency = 0       -- Apenas a linha em volta
+    end
+
+    highlight.Parent = char
+    EspContainers[p] = highlight
+end
+
+RunService.RenderStepped:Connect(function()
+    if not ESPConfig.Active then return end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local highlight = EspContainers[p]
+            if not highlight or highlight.Parent ~= p.Character then
+                AtualizarEspJogador(p)
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if EspContainers[p] then
+        EspContainers[p]:Destroy()
+        EspContainers[p] = nil
+    end
+end)
 
 --==============================================================--
 --         AUTO FARM LOGICA CFRAME              --
