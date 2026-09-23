@@ -70,152 +70,6 @@ local ESPTab = Window:Tab({ Title = "ESP", Icon = "eye" })
 local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
---==============================================================--
---            BOTÕES E LISTA DA INTERFACE (WINDUI)              --
---==============================================================--
-
-ESPTab:Section({
-    Title = "ESP players"
-})
-
-ESPTab:Dropdown({
-    Title = "Estilo do ESP",
-    Values = { "Highlight", "Outline" },
-    Value = "Highlight",
-    Callback = function(value)
-        ESPConfig.Mode = value
-        if ESPConfig.Active then
-            LimparEsp()
-        end
-    end,
-})
-
-ESPTab:Toggle({
-    Title = "Ligar ESP",
-    Value = false,
-    Callback = function(state)
-        ESPConfig.Active = state
-        if not state then
-            LimparEsp()
-        end
-    end,
-})
-
---==============================================================--
---                     BOTOES DA ABA AUTO FARM                   --
---==============================================================--
-
--- TÍTULO
-FarmCoin:Section({
-    Title = "Auto Farm Coin"
-})
-
-FarmCoin:Toggle({
-    Title = "Auto Farm Coins",
-    Value = false,
-    Callback = function(state)
-        CONFIG_FARM.Active = state
-        if not state then 
-            RestaurarColisoes() 
-        else
-            -- Se o botão for ligado e a bolsa já estiver cheia (durante a partida), teleporta/para na hora
-            if InGame() and CheckBagFullText() then
-                StoppedUntilNewRound = true
-                local char = Player.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                
-                local finalDestination = nil
-                if CONFIG_FARM.FullDestination == "Map" then
-                    finalDestination = GetSafeMapSpawn()
-                elseif CONFIG_FARM.FullDestination == "Lobby" then
-                    finalDestination = CFrame.new(LOBBY_SAFE_POS)
-                else
-                    finalDestination = GetSafePlatformCFrame()
-                end
-
-                if finalDestination and hrp then
-                    if hum then hum.PlatformStand = true end
-                    local holdStart = os.clock()
-                    while os.clock() - holdStart < 1.0 and InGame() and CONFIG_FARM.Active do
-                        hrp.CFrame = finalDestination
-                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        RunService.Heartbeat:Wait()
-                    end
-                    if hum and InGame() then
-                        hum.PlatformStand = false
-                    end
-                end
-            end
-        end
-    end,
-})
-
-FarmCoin:Dropdown({
-    Title = "Posture",
-    Values = { "Lying", "Standing" },
-    Value = "Lying",
-    Callback = function(value) CONFIG_FARM.Posture = value end,
-})
-
-FarmCoin:Dropdown({
-    Title = "Destination When Full",
-    Values = { "Map", "Safe", "Lobby" },
-    Value = "Map",
-    Callback = function(value) CONFIG_FARM.FullDestination = value end,
-})
-
-FarmCoin:Slider({
-    Title = "Speed",
-    Step = 1,
-    Value = { Min = 16, Max = 25, Default = 18 },
-    Callback = function(value) CONFIG_FARM.Speed = value end,
-})
-
--- Botão para copiar o nome do mapa e a posição atual do jogador
-FarmCoin:Button({
-    Title = "Copiar Posição e Mapa",
-    Desc = "Copia para o clipboard o nome do mapa atual e suas coordenadas exatas.",
-    Callback = function()
-        local player = Players.LocalPlayer
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        
-        if not hrp then
-            WindUI:Notify({ Title = "Erro", Content = "Personagem não encontrado!", Duration = 3 })
-            return
-        end
-
-        local mapName = "Desconhecido"
-        local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
-        if coinContainer and coinContainer.Parent then
-            mapName = coinContainer.Parent.Name
-        end
-
-        local pos = hrp.Position
-        local resultString = string.format('["%s"] = Vector3.new(%.2f, %.2f, %.2f),', mapName, pos.X, pos.Y, pos.Z)
-        
-        if setclipboard then
-            setclipboard(resultString)
-            WindUI:Notify({ Title = "Sucesso!", Content = "Copiado: " .. resultString, Duration = 4 })
-        else
-            WindUI:Notify({ Title = "Aviso", Content = "Seu executor não suporta setclipboard automático.", Duration = 4 })
-            print("[Walk Nyx Hub] Posição: " .. resultString)
-        end
-    end,
-})
-
-local function RestaurarColisoes()
-    local char = game:GetService("Players").LocalPlayer.Character
-    if char then
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = (part.Name == "HumanoidRootPart" or part.Name == "Head" or part.Name == "UpperTorso" or part.Name == "LowerTorso")
-            end
-        end
-    end
-end
-
 
 --==============================================================--
 --          SISTEMA DA ABA MURDERER            --
@@ -349,6 +203,7 @@ Players.PlayerRemoving:Connect(function(p)
         Highlights[p] = nil
     end
 end)
+
 
 --==============================================================--
 --         AUTO FARM LOGICA CFRAME              --
@@ -648,3 +503,150 @@ task.spawn(function()
         end
     end
 end)
+
+--==============================================================--
+--            BOTÕES DA ABA ESP                  --
+--==============================================================--
+
+ESPTab:Section({
+    Title = "ESP players"
+})
+
+ESPTab:Dropdown({
+    Title = "Estilo do ESP",
+    Values = { "Highlight", "Outline" },
+    Value = "Highlight",
+    Callback = function(value)
+        ESPConfig.Mode = value
+        if ESPConfig.Active then
+            LimparEsp()
+        end
+    end,
+})
+
+ESPTab:Toggle({
+    Title = "Ligar ESP",
+    Value = false,
+    Callback = function(state)
+        ESPConfig.Active = state
+        if not state then
+            LimparEsp()
+        end
+    end,
+})
+
+
+--==============================================================--
+--                     BOTOES DA ABA AUTO FARM                   --
+--==============================================================--
+
+-- TÍTULO
+FarmCoin:Section({
+    Title = "Auto Farm Coin"
+})
+
+FarmCoin:Toggle({
+    Title = "Auto Farm Coins",
+    Value = false,
+    Callback = function(state)
+        CONFIG_FARM.Active = state
+        if not state then 
+            RestaurarColisoes() 
+        else
+            -- Se o botão for ligado e a bolsa já estiver cheia (durante a partida), teleporta/para na hora
+            if InGame() and CheckBagFullText() then
+                StoppedUntilNewRound = true
+                local char = Player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                local finalDestination = nil
+                if CONFIG_FARM.FullDestination == "Map" then
+                    finalDestination = GetSafeMapSpawn()
+                elseif CONFIG_FARM.FullDestination == "Lobby" then
+                    finalDestination = CFrame.new(LOBBY_SAFE_POS)
+                else
+                    finalDestination = GetSafePlatformCFrame()
+                end
+
+                if finalDestination and hrp then
+                    if hum then hum.PlatformStand = true end
+                    local holdStart = os.clock()
+                    while os.clock() - holdStart < 1.0 and InGame() and CONFIG_FARM.Active do
+                        hrp.CFrame = finalDestination
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        RunService.Heartbeat:Wait()
+                    end
+                    if hum and InGame() then
+                        hum.PlatformStand = false
+                    end
+                end
+            end
+        end
+    end,
+})
+
+FarmCoin:Dropdown({
+    Title = "Posture",
+    Values = { "Lying", "Standing" },
+    Value = "Lying",
+    Callback = function(value) CONFIG_FARM.Posture = value end,
+})
+
+FarmCoin:Dropdown({
+    Title = "Destination When Full",
+    Values = { "Map", "Safe", "Lobby" },
+    Value = "Map",
+    Callback = function(value) CONFIG_FARM.FullDestination = value end,
+})
+
+FarmCoin:Slider({
+    Title = "Speed",
+    Step = 1,
+    Value = { Min = 16, Max = 25, Default = 18 },
+    Callback = function(value) CONFIG_FARM.Speed = value end,
+})
+
+-- Botão para copiar o nome do mapa e a posição atual do jogador
+FarmCoin:Button({
+    Title = "Copiar Posição e Mapa",
+    Desc = "Copia para o clipboard o nome do mapa atual e suas coordenadas exatas.",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        
+        if not hrp then
+            WindUI:Notify({ Title = "Erro", Content = "Personagem não encontrado!", Duration = 3 })
+            return
+        end
+
+        local mapName = "Desconhecido"
+        local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
+        if coinContainer and coinContainer.Parent then
+            mapName = coinContainer.Parent.Name
+        end
+
+        local pos = hrp.Position
+        local resultString = string.format('["%s"] = Vector3.new(%.2f, %.2f, %.2f),', mapName, pos.X, pos.Y, pos.Z)
+        
+        if setclipboard then
+            setclipboard(resultString)
+            WindUI:Notify({ Title = "Sucesso!", Content = "Copiado: " .. resultString, Duration = 4 })
+        else
+            WindUI:Notify({ Title = "Aviso", Content = "Seu executor não suporta setclipboard automático.", Duration = 4 })
+            print("[Walk Nyx Hub] Posição: " .. resultString)
+        end
+    end,
+})
+
+local function RestaurarColisoes()
+    local char = game:GetService("Players").LocalPlayer.Character
+    if char then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = (part.Name == "HumanoidRootPart" or part.Name == "Head" or part.Name == "UpperTorso" or part.Name == "LowerTorso")
+            end
+        end
+    end
+end
