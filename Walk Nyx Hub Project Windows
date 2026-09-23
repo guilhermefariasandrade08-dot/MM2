@@ -50,12 +50,12 @@ local MAP_SAFE_POSITIONS = {
     ["House2"]           = Vector3.new(21.84, 266.00, 9034.20),
     ["MilBase"]          = Vector3.new(-22.30, 242.23, 9109.38),
     ["BioLab"]           = Vector3.new(552.83, 283.26, 9677.74),
-    ["Hospital2014"]     = Vector3.new(490.39, 7.59, 493.15),
+    ["Hospital2014"]     = Vector3.new(458.15, 7.59, 436.82), -- Atualizado!
     ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
     ["ResearchFacility"] = Vector3.new(-50.81, 301.80, 9152.87),
-    ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95), -- Novo mapa adicionado!
+    ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95),
     ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
-
+    ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98), -- Novo mapa adicionado!
 }
 
 --==============================================================--
@@ -70,9 +70,58 @@ local ESPTab = Window:Tab({ Title = "ESP", Icon = "eye" })
 local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
+
+
+
 --==============================================================--
---                     FARM COIN INTERFACE                      --
+--                     BOTOES DA ABA AUTO FARM                   --
 --==============================================================--
+
+-- TÍTULO
+FarmCoin:Section({
+    Title = "Auto Farm Coin"
+})
+
+FarmCoin:Toggle({
+    Title = "Auto Farm Coins",
+    Value = false,
+    Callback = function(state)
+        CONFIG_FARM.Active = state
+        if not state then 
+            RestaurarColisoes() 
+        else
+            -- Se o botão for ligado e a bolsa já estiver cheia (durante a partida), teleporta/para na hora
+            if InGame() and CheckBagFullText() then
+                StoppedUntilNewRound = true
+                local char = Player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                local finalDestination = nil
+                if CONFIG_FARM.FullDestination == "Map" then
+                    finalDestination = GetSafeMapSpawn()
+                elseif CONFIG_FARM.FullDestination == "Lobby" then
+                    finalDestination = CFrame.new(LOBBY_SAFE_POS)
+                else
+                    finalDestination = GetSafePlatformCFrame()
+                end
+
+                if finalDestination and hrp then
+                    if hum then hum.PlatformStand = true end
+                    local holdStart = os.clock()
+                    while os.clock() - holdStart < 1.0 and InGame() and CONFIG_FARM.Active do
+                        hrp.CFrame = finalDestination
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        RunService.Heartbeat:Wait()
+                    end
+                    if hum and InGame() then
+                        hum.PlatformStand = false
+                    end
+                end
+            end
+        end
+    end,
+})
 
 FarmCoin:Dropdown({
     Title = "Posture",
@@ -88,26 +137,6 @@ FarmCoin:Dropdown({
     Callback = function(value) CONFIG_FARM.FullDestination = value end,
 })
 
-local function RestaurarColisoes()
-    local char = game:GetService("Players").LocalPlayer.Character
-    if char then
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = (part.Name == "HumanoidRootPart" or part.Name == "Head" or part.Name == "UpperTorso" or part.Name == "LowerTorso")
-            end
-        end
-    end
-end
-
-FarmCoin:Toggle({
-    Title = "Auto Farm Coins",
-    Value = false,
-    Callback = function(state)
-        CONFIG_FARM.Active = state
-        if not state then RestaurarColisoes() end
-    end,
-})
-
 FarmCoin:Slider({
     Title = "Speed",
     Step = 1,
@@ -120,8 +149,6 @@ FarmCoin:Button({
     Title = "Copiar Posição e Mapa",
     Desc = "Copia para o clipboard o nome do mapa atual e suas coordenadas exatas.",
     Callback = function()
-        local Players = game:GetService("Players")
-        local Workspace = game:GetService("Workspace")
         local player = Players.LocalPlayer
         local char = player.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -150,8 +177,33 @@ FarmCoin:Button({
     end,
 })
 
+local function RestaurarColisoes()
+    local char = game:GetService("Players").LocalPlayer.Character
+    if char then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = (part.Name == "HumanoidRootPart" or part.Name == "Head" or part.Name == "UpperTorso" or part.Name == "LowerTorso")
+            end
+        end
+    end
+end
+
+
 --==============================================================--
---         🎯 AUTO FARM LOGIC (EXCLUSIVO CFRAME)               --
+--          SISTEMA DA ABA MURDERER            --
+--==============================================================--
+ 
+--==============================================================--
+--          SISTEMA DA ABA SHERIFF            --
+--==============================================================--
+
+--==============================================================--
+--          SISTEMA DA ABA ESP            --
+--==============================================================--
+
+
+--==============================================================--
+--         AUTO FARM LOGICA CFRAME              --
 --==============================================================--
 
 local Players = game:GetService("Players")
@@ -264,6 +316,9 @@ local function InGame()
     local aliveAttr = Player:GetAttribute("Alive")
     if aliveAttr ~= nil and aliveAttr == false then return false end
 
+    local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
+    if not coinContainer or not coinContainer.Parent then return false end
+
     if Workspace:FindFirstChild("Lobby") then
         local lobbyDist = (c.HumanoidRootPart.Position - Workspace.Lobby:GetPivot().Position).Magnitude
         if lobbyDist < 100 then return false end
@@ -331,10 +386,17 @@ local function GetNearestCoin(myPos)
     return bestCoin
 end
 
--- Loop de checagem imediata de bolsa cheia
+-- Loop de checagem contínua de bolsa cheia (Apenas roda QUANDO ESTIVER EM JOGO/PARTIDA ACONTECENDO)
 task.spawn(function()
     while true do
         task.wait(0.1)
+        
+        -- Se não estiver em partida, pula a verificação para economizar desempenho
+        if not InGame() then
+            StoppedUntilNewRound = false
+            continue
+        end
+
         local isBagFull = CheckBagFullText()
 
         local currentCoinContainer = Workspace:FindFirstChild("CoinContainer", true)
@@ -344,49 +406,49 @@ task.spawn(function()
             bagFullByEvent = false
         end
 
-        if not InGame() then
-            StoppedUntilNewRound = false
-        end
-
-        if not StoppedUntilNewRound and InGame() and isBagFull then
-            RestaurarColisoes()
+        -- Se a bolsa encheu durante a partida, marca como parado
+        if not StoppedUntilNewRound and isBagFull then
             StoppedUntilNewRound = true
             
-            local char = Player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            
-            local finalDestination = nil
-            if CONFIG_FARM.FullDestination == "Map" then
-                finalDestination = GetSafeMapSpawn()
-            elseif CONFIG_FARM.FullDestination == "Lobby" then
-                finalDestination = CFrame.new(LOBBY_SAFE_POS)
-            else
-                finalDestination = GetSafePlatformCFrame()
-            end
-
-            if finalDestination and hrp then
-                if hum then hum.PlatformStand = true end
+            -- Se o usuário estiver com o botão ligado, manda para o refúgio
+            if CONFIG_FARM.Active then
+                RestaurarColisoes()
+                local char = Player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
                 
-                local holdStart = os.clock()
-                while os.clock() - holdStart < 1.5 and InGame() do
-                    hrp.CFrame = finalDestination
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    RunService.Heartbeat:Wait()
+                local finalDestination = nil
+                if CONFIG_FARM.FullDestination == "Map" then
+                    finalDestination = GetSafeMapSpawn()
+                elseif CONFIG_FARM.FullDestination == "Lobby" then
+                    finalDestination = CFrame.new(LOBBY_SAFE_POS)
+                else
+                    finalDestination = GetSafePlatformCFrame()
                 end
-                
-                if hum and InGame() then
-                    hum.PlatformStand = false
+
+                if finalDestination and hrp then
+                    if hum then hum.PlatformStand = true end
+                    
+                    local holdStart = os.clock()
+                    while os.clock() - holdStart < 1.5 and InGame() and CONFIG_FARM.Active do
+                        hrp.CFrame = finalDestination
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        RunService.Heartbeat:Wait()
+                    end
+                    
+                    if hum and InGame() then
+                        hum.PlatformStand = false
+                    end
                 end
             end
         end
     end
 end)
 
--- Loop principal CFrame
+-- Loop principal CFrame (Respeita o botão ligado e se está em jogo)
 task.spawn(function()
     while true do
-        if CONFIG_FARM.Active and not StoppedUntilNewRound and not CheckBagFullText() then
+        if CONFIG_FARM.Active and not StoppedUntilNewRound and not CheckBagFullText() and InGame() then
             local c = Player.Character
             local hrp = c and c:FindFirstChild("HumanoidRootPart")
             local humanoid = c and c:FindFirstChildOfClass("Humanoid")
