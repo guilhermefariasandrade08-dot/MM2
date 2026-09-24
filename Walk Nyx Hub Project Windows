@@ -1101,15 +1101,15 @@ LocalPlayer.CharacterAdded:Connect(function()
 end)
 
 -- ==================================
--- VARIÁVEIS GLOBAIS DE CONTROLE
+-- VARIÁVEis GLOBAIS
 -- ==================================
 local WalkFlingAtivo = false
 local FlingConnection = nil
-local FlingPower = 10000 -- Valor padrão para a potência do fling
-_G.AntiFling = false     -- Variável de estado do Anti-Fling
+local FlingPower = 10000 
+local _G_AntiFling = false -- Variável segura para o Anti-Fling
 
 -- ==================================
--- SISTEMA WALK FLING (EXATO QUE VOCÊ MANDOU)
+-- SISTEMA WALK FLING (OTIMIZADO E SEM TRAVAR)
 -- ==================================
 local function ToggleWalkFling(state)
     WalkFlingAtivo = state
@@ -1122,42 +1122,46 @@ local function ToggleWalkFling(state)
         return
     end
 
-    FlingConnection = RunService.Heartbeat:Connect(function()
-        if not WalkFlingAtivo then return end
+    -- Substituído o Heartbeat travado por um loop leve com task.wait()
+    FlingConnection = task.spawn(function()
+        while WalkFlingAtivo do
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+            if hrp and humanoid then
+                for _, part in ipairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
 
-        if hrp and humanoid then
-            for _, part in ipairs(char:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
+                local oldCFrame = hrp.CFrame
+                local vel = hrp.AssemblyLinearVelocity
+
+                -- Aplica o Fling de forma segura
+                hrp.CFrame = oldCFrame * CFrame.Angles(0, math.rad(math.random(1, 360)), 0)
+                hrp.AssemblyAngularVelocity = Vector3.new(0, FlingPower, 0)
+
+                task.wait() -- Evita crashar o jogo / travar a thread principal
+
+                if hrp and hrp.Parent then
+                    hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                    if humanoid.MoveDirection.Magnitude > 0 then
+                        hrp.AssemblyLinearVelocity = vel
+                    else
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    end
                 end
             end
-
-            local oldCFrame = hrp.CFrame
-            local vel = hrp.AssemblyLinearVelocity
-
-            -- Aplica a velocidade fixa extrema
-            hrp.CFrame = oldCFrame * CFrame.Angles(0, math.rad(math.random(1, 360)), 0)
-            hrp.AssemblyAngularVelocity = Vector3.new(0, FlingPower, 0)
-
-            RunService.RenderStepped:Wait()
-            if hrp then
-                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                if humanoid.MoveDirection.Magnitude > 0 then
-                    hrp.AssemblyLinearVelocity = vel
-                else
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                end
-            end
+            task.wait()
         end
     end)
 end
 
 player.CharacterAdded:Connect(function()
     if WalkFlingAtivo then
+        WalkFlingAtivo = false
         task.wait(1.5)
         ToggleWalkFling(true)
     end
@@ -1165,11 +1169,11 @@ end)
 
 
 -- =============================
--- ANTI-FLING (EXATO QUE VOCÊ MANDOU)
+-- ANTI-FLING (OTIMIZADO PARA NÃO CONGELAR)
 -- =============================
 task.spawn(function()
     while true do
-        if _G.AntiFling then
+        if _G_AntiFling then
             pcall(function()
                 for _, OtherPlayer in ipairs(game:GetService("Players"):GetPlayers()) do
                     if OtherPlayer ~= player and OtherPlayer.Character then
@@ -1184,7 +1188,8 @@ task.spawn(function()
                 end
             end)
         end
-        game:GetService("RunService").Stepped:Wait()
+        -- Aguarda alguns frames antes de rodar de novo, aliviando o processamento do Hub
+        task.wait(0.1) 
     end
 end)
 
@@ -1545,9 +1550,9 @@ LocalPlayerTab:Toggle({
     end,
 })
 
--- 2. Slider para regular a Potência do Fling (FlingPower)
+-- 2. Slider para regular a Potência do Fling
 LocalPlayerTab:Slider({
-    Title = "Potência do Fling (Power)",
+    Title = "Potência do Fling",
     Step = 1000,
     Value = { Min = 5000, Max = 50000, Default = 10000 },
     Callback = function(value)
@@ -1560,6 +1565,8 @@ LocalPlayerTab:Toggle({
     Title = "Anti-Fling",
     Value = false,
     Callback = function(state)
-        _G.AntiFling = state
+        _G_AntiFling = state
     end,
 })
+
+
