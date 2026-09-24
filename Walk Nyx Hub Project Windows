@@ -933,6 +933,35 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Configuração do Air Speed / Speed Glitch
+local AirSpeedConfig = {
+    Active = false,
+    Value = 100 -- Valor padrão inicial dentro do novo range
+}
+
+-- Loop para verificar se o player está no ar e aplicar a velocidade
+RunService.RenderStepped:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hum or not hrp then return end
+
+    if AirSpeedConfig.Active then
+        -- Verifica se o player está no ar checando a velocidade vertical (AssemblyLinearVelocity.Y) 
+        -- ou o estado do Humanoid (Freefall / Jumping)
+        local isInAir = (hum:GetState() == Enum.HumanoidStateType.Freefall) or 
+                        (hum:GetState() == Enum.HumanoidStateType.Jumping) or
+                        (math.abs(hrp.AssemblyLinearVelocity.Y) > 0.5)
+
+        if isInAir then
+            hum.WalkSpeed = AirSpeedConfig.Value
+        else
+            hum.WalkSpeed = 16 -- Retorna ao normal ao tocar o chão
+        end
+    end
+end)
 
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
@@ -1172,7 +1201,7 @@ FarmCoin:Button({
 
 -- Seção e Controles de Velocidade
 LocalPlayerTab:Section({
-    Title = "Velocidade"
+    Title = "Moviment player"
 })
 
 LocalPlayerTab:Slider({
@@ -1195,11 +1224,6 @@ LocalPlayerTab:Toggle({
             if hum then hum.WalkSpeed = 16 end
         end
     end,
-})
-
--- Seção e Controles de Pulo
-LocalPlayerTab:Section({
-    Title = "Pulo"
 })
 
 LocalPlayerTab:Slider({
@@ -1226,6 +1250,34 @@ LocalPlayerTab:Toggle({
         end
     end,
 })
+
+-- Seção e Controles do Air Speed (Speed Glitch)
+LocalPlayerTab:Section({
+    Title = "Extras)"
+})
+
+LocalPlayerTab:Slider({
+    Title = "Air Speed Value",
+    Step = 5,
+    Value = { Min = 100, Max = 500, Default = 100 },
+    Callback = function(value)
+        AirSpeedConfig.Value = value
+    end,
+})
+
+LocalPlayerTab:Toggle({
+    Title = "Ligar Air Speed",
+    Value = false,
+    Callback = function(state)
+        AirSpeedConfig.Active = state
+        if not state then
+            local char = LocalPlayer.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = 16 end
+        end
+    end,
+})
+
 
 
 
