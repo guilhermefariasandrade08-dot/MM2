@@ -1100,6 +1100,52 @@ LocalPlayer.CharacterAdded:Connect(function()
     end
 end)
 
+-- ============================
+-- SISTEMA DO WALK FLING
+-- ============================
+local FlingAtivo = false
+local flingConnection = nil
+
+local function ToggleWalkFling(state)
+    FlingAtivo = state
+    
+    if FlingAtivo then
+        if flingConnection then flingConnection:Disconnect() end
+        flingConnection = RunService.Heartbeat:Connect(function()
+            if not FlingAtivo then return end
+            
+            local c = LocalPlayer.Character
+            if not c then return end
+            local r = c:FindFirstChild("HumanoidRootPart")
+            if not r then return end
+            
+            -- Salva a velocidade atual para restaurar depois
+            local vel = r.Velocity
+            
+            -- Aplica uma força de rotação/velocidade extrema de forma segura
+            r.Velocity = Vector3.new(30000, 30000, 30000)
+            task.wait()
+            if r and r.Parent then
+                r.Velocity = vel
+            end
+        end)
+    else
+        if flingConnection then
+            flingConnection:Disconnect()
+            flingConnection = nil
+        end
+    end
+end
+
+-- Limpa a conexão se o jogador morrer/resetar
+LocalPlayer.CharacterAdded:Connect(function()
+    FlingAtivo = false
+    if flingConnection then
+        flingConnection:Disconnect()
+        flingConnection = nil
+    end
+end)
+
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
 --==============================================================--
@@ -1445,5 +1491,13 @@ LocalPlayerTab:Toggle({
     Value = false,
     Callback = function(state)
         InfiniteJumpConfig.Active = state
+    end,
+})
+
+LocalPlayerTab:Toggle({
+    Title = "Walk Fling (Arremessar andando)",
+    Value = false,
+    Callback = function(state)
+        ToggleWalkFling(state)
     end,
 })
