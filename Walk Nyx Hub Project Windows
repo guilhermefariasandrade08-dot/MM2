@@ -894,7 +894,7 @@ task.spawn(function()
 end)
 
 --==============================================================--
---            SISTEMA DA ABA LOCAL PLAYER                    --
+--            SISTEMA DA ABA LOCAL PLAYER (UNIFICADO)           --
 --==============================================================--
 
 -- Serviços e Variáveis Iniciais
@@ -905,54 +905,30 @@ local LocalPlayer = Players.LocalPlayer
 -- Configurações
 local SpeedConfig = { Active = false, Value = 16 }
 local JumpConfig = { Active = false, Value = 50 }
+local SpeedNoPuloConfig = { Active = false, Value = 100, DefaultSpeed = 16 }
 
--- Loop do Speed
-RunService.RenderStepped:Connect(function()
-    if SpeedConfig.Active then
-        local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.WalkSpeed = SpeedConfig.Value
-            end
-        end
-    end
-end)
-
--- Loop do Jump Power
-RunService.RenderStepped:Connect(function()
-    if JumpConfig.Active then
-        local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.UseJumpPower = true
-                hum.JumpPower = JumpConfig.Value
-            end
-        end
-    end
-end)
-
--- Configuração do Speed no Pulo (Speed Glitch)
-local SpeedNoPuloConfig = {
-    Active = false,
-    Value = 100,         -- Valor customizado pelo slider
-    DefaultSpeed = 16    -- Velocidade padrão no chão
-}
-
--- Loop Principal adaptado do seu modelo
+-- Loop Principal Unificado (Resolve o conflito entre Speed e Speed no Pulo)
 RunService.Stepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("Humanoid") then return end
     local Hum = Char.Humanoid
 
-    -- ✅ Velocidade no Pulo usando FloorMaterial == Air
-    if SpeedNoPuloConfig.Active then
-        if Hum.FloorMaterial == Enum.Material.Air then
-            Hum.WalkSpeed = SpeedNoPuloConfig.Value
-        else
-            Hum.WalkSpeed = SpeedNoPuloConfig.DefaultSpeed
-        end
+    -- 1. Gerenciamento de Movimentação (Speed e Speed no Pulo)
+    if SpeedNoPuloConfig.Active and Hum.FloorMaterial == Enum.Material.Air then
+        -- Se o Speed no Pulo estiver ligado e você estiver no ar, aplica o valor do glitch
+        Hum.WalkSpeed = SpeedNoPuloConfig.Value
+    elseif SpeedConfig.Active then
+        -- Se estiver no chão (ou o glitch não estiver agindo), aplica o Speed normal
+        Hum.WalkSpeed = SpeedConfig.Value
+    else
+        -- Se nenhum estiver ativo, mantém o padrão (16)
+        Hum.WalkSpeed = 16
+    end
+
+    -- 2. Gerenciamento do Jump Power
+    if JumpConfig.Active then
+        Hum.UseJumpPower = true
+        Hum.JumpPower = JumpConfig.Value
     end
 end)
 
