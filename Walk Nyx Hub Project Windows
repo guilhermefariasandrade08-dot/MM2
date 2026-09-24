@@ -932,6 +932,43 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- ==============================================================--
+--             SISTEMAS: PULO INFINITO E NOCLIP                 --
+--==============================================================--
+
+local UserInputService = game:GetService("UserInputService")
+
+-- Configurações
+local InfiniteJumpConfig = { Active = false }
+local NoclipConfig = { Active = false }
+
+-- 🟢 Lógica do Pulo Infinito
+UserInputService.JumpRequest:Connect(function()
+    if InfiniteJumpConfig.Active then
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end
+end)
+
+-- 🟢 Lógica do Noclip (Loop Contínuo)
+RunService.Stepped:Connect(function()
+    if NoclipConfig.Active then
+        local char = LocalPlayer.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end
+end)
+
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
 --==============================================================--
@@ -1248,6 +1285,32 @@ LocalPlayerTab:Slider({
     end,
 })
 
+LocalPlayerTab:Toggle({
+    Title = "Ligar Pulo Infinito",
+    Value = false,
+    Callback = function(state)
+        InfiniteJumpConfig.Active = state
+    end,
+})
+
+LocalPlayerTab:Toggle({
+    Title = "Ligar Noclip",
+    Value = false,
+    Callback = function(state)
+        NoclipConfig.Active = state
+        if not state then
+            -- Restaura as colisões padrão ao desligar
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = (part.Name == "HumanoidRootPart" or part.Name == "Head" or part.Name == "UpperTorso" or part.Name == "LowerTorso")
+                    end
+                end
+            end
+        end
+    end,
+})
 
 
 
