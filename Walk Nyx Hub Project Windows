@@ -955,6 +955,55 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
+-- ============================
+-- SISTEMA DO NOCLIP
+-- ============================
+local NoclipAtivo = false
+local noclipConnection = nil
+
+local function ToggleNoclip(state)
+    NoclipAtivo = state
+    
+    if NoclipAtivo then
+        if noclipConnection then noclipConnection:Disconnect() end
+        noclipConnection = RunService.Stepped:Connect(function()
+            if not NoclipAtivo then return end
+            local c = LocalPlayer.Character
+            if c then
+                for _, part in ipairs(c:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+        -- Opcional: Reativa a colisão do personagem ao desligar (caso resete, o jogo já faz isso automático)
+        local c = LocalPlayer.Character
+        if c then
+            for _, part in ipairs(c:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+end
+
+-- Limpa a conexão se o jogador morrer/resetar
+LocalPlayer.CharacterAdded:Connect(function()
+    NoclipAtivo = false
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+end)
+
+
 -- 🟢 Lógica do Noclip (Loop Contínuo)
 RunService.Stepped:Connect(function()
     if NoclipConfig.Active then
@@ -1367,14 +1416,6 @@ LocalPlayerTab:Slider({
 })
 
 LocalPlayerTab:Toggle({
-    Title = "Ligar Pulo Infinito",
-    Value = false,
-    Callback = function(state)
-        InfiniteJumpConfig.Active = state
-    end,
-})
-
-LocalPlayerTab:Toggle({
     Title = "Ligar Fly",
     Value = false,
     Callback = function(state)
@@ -1391,4 +1432,18 @@ LocalPlayerTab:Slider({
     end,
 })
 
+LocalPlayerTab:Toggle({
+    Title = "Atravessar Paredes (Noclip)",
+    Value = false,
+    Callback = function(state)
+        ToggleNoclip(state)
+    end,
+})
 
+LocalPlayerTab:Toggle({
+    Title = "Ligar Pulo Infinito",
+    Value = false,
+    Callback = function(state)
+        InfiniteJumpConfig.Active = state
+    end,
+})
