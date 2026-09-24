@@ -460,6 +460,158 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 --==============================================================--
+--                     CONFIGURAÇÃO DO BOX ESP                  --
+--==============================================================--
+
+local BoxESPConfig = {
+    Active = false,
+    Style = "Simple", -- Opções: Simple, Corner (o que você desenhou)
+}
+
+local BoxESPList = {}
+
+local function LimparBoxESP()
+    for _, boxObj in pairs(BoxESPList) do
+        if boxObj then
+            for _, drawing in pairs(boxObj) do
+                if drawing then drawing:Remove() end
+            end
+        end
+    end
+    table.clear(BoxESPList)
+end
+
+-- Função que calcula a posição 2D do player na tela para desenhar o retângulo
+RunService.RenderStepped:Connect(function()
+    if not BoxESPConfig.Active then
+        LimparBoxESP()
+        return
+    end
+
+    local jogadoresAtivos = {}
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local char = p.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                jogadoresAtivos[p] = true
+                
+                -- Cria a estrutura se não existir
+                if not BoxESPList[p] then
+                    local boxParts = {}
+                    if BoxESPConfig.Style == "Simple" then
+                        boxParts.Box = Drawing.new("Square")
+                        boxParts.Box.Visible = false
+                        boxParts.Box.Filled = false
+                        boxParts.Box.Thickness = 1
+                    else -- Corner (Estilo cantinhos)
+                        -- Precisamos de 8 linhas para formar os 4 cantos
+                        boxParts.Lines = {}
+                        for i = 1, 8 do
+                            local line = Drawing.new("Line")
+                            line.Visible = false
+                            line.Thickness = 1
+                            table.insert(boxParts.Lines, line)
+                        end
+                    end
+                    BoxESPList[p] = boxParts
+                end
+
+                local boxData = BoxESPList[p]
+                local corCargo = ObterCorCargo(p.Name)
+                
+                -- Pega a posição da cabeça e dos pés para dimensionar a caixa
+                local head = char:FindFirstChild("Head")
+                if head then
+                    local headPos, onScreenHead = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local legPos, onScreenLeg = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                    
+                    if onScreenHead or onScreenLeg then
+                        local height = math.abs(headPos.Y - legPos.Y)
+                        local width = height / 2
+                        local pos = Vector2.new(headPos.X - width / 2, headPos.Y)
+
+                        if BoxESPConfig.Style == "Simple" and boxData.Box then
+                            boxData.Box.Size = Vector2.new(width, height)
+                            boxData.Box.Position = pos
+                            boxData.Box.Color = corCargo
+                            boxData.Box.Visible = true
+                        elseif BoxESPConfig.Style == "Corner" and boxData.Lines then
+                            -- Lógica para desenhar os cantos (Bracket Box)
+                            local w = width
+                            local h = height
+                            local x = pos.X
+                            local y = pos.Y
+                            local lengthX = w / 4
+                            local lengthY = h / 4
+
+                            local lines = boxData.Lines
+                            -- Define a cor de todas as linhas do canto
+                            for _, l in ipairs(lines) do l.Color = corCargo end
+
+                            -- Top-Left (Horizontal e Vertical)
+                            lines[1].From = Vector2.new(x, y); lines[1].To = Vector2.new(x + lengthX, y)
+                            lines[2].From = Vector2.new(x, y); lines[2].To = Vector2.new(x, y + lengthY)
+                            -- Top-Right
+                            lines[3].From = Vector2.new(x + w, y); lines[3].To = Vector2.new(x + w - lengthX, y)
+                            lines[4].From = Vector2.new(x + w, y); lines[4].To = Vector2.new(x + w, y + lengthY)
+                            -- Bottom-Left
+                            lines[5].From = Vector2.new(x, y + h); lines[5].To = Vector2.new(x + lengthX, y + h)
+                            lines[6].From = Vector2.new(x, y + h); lines[6].To = Vector2.new(x, y + h - lengthY)
+                            -- Bottom-Right
+                            lines[7].From = Vector2.new(x + w, y + h); lines[7].To = Vector2.new(x + w - lengthX, y + h)
+                            lines[8].From = Vector2.new(x + w, y + h); lines[8].To = Vector2.new(x + w, y + h - lengthY)
+
+                            for _, l in ipairs(lines) do l.Visible = true end
+                        end
+                    else
+                        -- Esconde se sair da tela
+                        if boxData.Box then boxData.Box.Visible = false end
+                        if boxData.Lines then for _, l in ipairs(boxData.Lines) do l.Visible = false end end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Limpa jogadores que saíram do jogo
+    for p, boxObj in pairs(BoxESPList) do
+        if not jogadoresAtivos[p] then
+            if boxObj then
+                for _, drawing in pairs(boxObj) do
+                    if drawing then 
+                        if typeof(drawing) == "table" then
+                            for _, subLine in ipairs(drawing) do subLine:Remove() end
+                        else
+                            drawing:Remove() 
+                        end
+                    end
+                end
+            end
+            BoxESPList[p] = nil
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if BoxESPList[p] then
+        for _, drawing in pairs(BoxESPList[p]) do
+            if drawing then 
+                if typeof(drawing) == "table" then
+                    for _, subLine in ipairs(drawing) do subLine:Remove() end
+                else
+                    drawing:Remove() 
+                end
+            end
+        end
+        BoxESPList[p] = nil
+    end
+end)
+
+--==============================================================--
 --         AUTO FARM LOGICA CFRAME (FUNÇÕES BASE)               --
 --==============================================================--
 
@@ -861,6 +1013,31 @@ ESPTab:Toggle({
         NameESPConfig.Active = state
         if not state then
             LimparNameESP()
+        end
+    end,
+})
+
+ESPTab:Section({
+    Title = "Box ESP"
+})
+
+ESPTab:Dropdown({
+    Title = "Box Style",
+    Values = { "Simple", "Corner" },
+    Value = "Simple",
+    Callback = function(value)
+        BoxESPConfig.Style = value
+        LimparBoxESP() -- Limpa para recriar com o novo estilo selecionado
+    end,
+})
+
+ESPTab:Toggle({
+    Title = "Ligar Box ESP",
+    Value = false,
+    Callback = function(state)
+        BoxESPConfig.Active = state
+        if not state then
+            LimparBoxESP()
         end
     end,
 })
