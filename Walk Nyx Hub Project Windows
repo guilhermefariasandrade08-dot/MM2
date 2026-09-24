@@ -933,6 +933,28 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Configuração do Speed no Pulo (Speed Glitch)
+local SpeedNoPuloConfig = {
+    Active = false,
+    Value = 100,         -- Valor customizado pelo slider
+    DefaultSpeed = 16    -- Velocidade padrão no chão
+}
+
+-- Loop Principal adaptado do seu modelo
+RunService.Stepped:Connect(function()
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("Humanoid") then return end
+    local Hum = Char.Humanoid
+
+    -- ✅ Velocidade no Pulo usando FloorMaterial == Air
+    if SpeedNoPuloConfig.Active then
+        if Hum.FloorMaterial == Enum.Material.Air then
+            Hum.WalkSpeed = SpeedNoPuloConfig.Value
+        else
+            Hum.WalkSpeed = SpeedNoPuloConfig.DefaultSpeed
+        end
+    end
+end)
 
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
@@ -1175,15 +1197,6 @@ LocalPlayerTab:Section({
     Title = "Moviment player"
 })
 
-LocalPlayerTab:Slider({
-    Title = "Speed Value",
-    Step = 1,
-    Value = { Min = 16, Max = 50, Default = 16 },
-    Callback = function(value)
-        SpeedConfig.Value = value
-    end,
-})
-
 LocalPlayerTab:Toggle({
     Title = "Ligar Speed",
     Value = false,
@@ -1198,11 +1211,11 @@ LocalPlayerTab:Toggle({
 })
 
 LocalPlayerTab:Slider({
-    Title = "Jump Power Value",
+    Title = "Speed Value",
     Step = 1,
-    Value = { Min = 50, Max = 150, Default = 50 },
+    Value = { Min = 16, Max = 50, Default = 16 },
     Callback = function(value)
-        JumpConfig.Value = value
+        SpeedConfig.Value = value
     end,
 })
 
@@ -1222,8 +1235,42 @@ LocalPlayerTab:Toggle({
     end,
 })
 
+LocalPlayerTab:Slider({
+    Title = "Jump Power Value",
+    Step = 1,
+    Value = { Min = 50, Max = 150, Default = 50 },
+    Callback = function(value)
+        JumpConfig.Value = value
+    end,
+})
+
+-- Seção e Controles do Speed no Pulo
+LocalPlayerTab:Section({
+    Title = "Extras"
+})
+
+LocalPlayerTab:Toggle({
+    Title = "Ligar Speed no Pulo",
+    Value = false,
+    Callback = function(state)
+        SpeedNoPuloConfig.Active = state
+        if not state then
+            local char = LocalPlayer.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = SpeedNoPuloConfig.DefaultSpeed end
+        end
+    end,
+})
 
 
+LocalPlayerTab:Slider({
+    Title = "Speed no Pulo Value",
+    Step = 5,
+    Value = { Min = 100, Max = 500, Default = 100 },
+    Callback = function(value)
+        SpeedNoPuloConfig.Value = value
+    end,
+})
 
 
 
