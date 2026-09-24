@@ -970,71 +970,105 @@ RunService.Stepped:Connect(function()
 end)
 
 -- ==================================
--- SISTEMA FLY (MÓVEL / DIREÇÃO DA CÂMERA)
+-- SISTEMA FLY (MÓVEL / DIREÇÃO DA CÂMERA) - CORRIGIDO
 -- ==================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+-- Variáveis de controle locais (garanta que estão declaradas no seu escopo)
+-- FlyAtivo, FlyVelocidade, con, bv, bg devem existir no seu script principal
+
+local function StopFly()
+    FlyAtivo = false
+    
+    if con then 
+        con:Disconnect() 
+        con = nil 
+    end
+    
+    if bv then 
+        bv:Destroy() 
+        bv = nil 
+    end
+    
+    if bg then 
+        bg:Destroy() 
+        bg = nil 
+    end
+
+    local c = player.Character
+    if c then
+        local h = c:FindFirstChild("Humanoid")
+        if h then
+            h.PlatformStand = false
+        end
+    end
+end
+
 local function StartFly()
+    -- Garante que limpa qualquer instância anterior antes de criar novas para evitar duplicação/travamento
+    StopFly()
+    
+    FlyAtivo = true
     local c = player.Character
     if not c then return end
+    
     local h = c:FindFirstChild("Humanoid")
     local r = c:FindFirstChild("HumanoidRootPart")
     if not h or not r then return end
 
-    if bv then bv:Destroy() end
-    if bg then bg:Destroy() end
-
+    -- Criando BodyVelocity de forma segura
     bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    bv.MaxForce = Vector3.new(400000, 400000, 400000)
     bv.Velocity = Vector3.new(0, 0, 0)
-    bv.P = 3000
     bv.Parent = r
 
+    -- Criando BodyGyro de forma segura
     bg = Instance.new("BodyGyro")
-    bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    bg.P = 30000
-    bg.D = 500
+    bg.MaxTorque = Vector3.new(400000, 400000, 400000)
     bg.CFrame = r.CFrame
     bg.Parent = r
 
     h.PlatformStand = true
 
-    if con then con:Disconnect() end
+    -- Conexão protegida no Heartbeat para não travar a UI
     con = RunService.Heartbeat:Connect(function()
-        if not FlyAtivo or not bv or not bg then return end
-        local cam = workspace.CurrentCamera
-        local m = controls:GetMoveVector()
-        local dir = (cam.CFrame.RightVector * m.X) + (cam.CFrame.LookVector * -m.Z)
+        if not FlyAtivo or not c or not c.Parent or not h or h.Health <= 0 then
+            StopFly()
+            return
+        end
         
-        bv.Velocity = dir * FlyVelocidade
-        bg.CFrame = cam.CFrame
+        local cam = workspace.CurrentCamera
+        local controlsTable = player:FindFirstChild("PlayerScripts") and player.PlayerScripts:FindFirstChild("PlayerModule")
+        
+        -- Verificação segura de movimento para evitar erros de nil
+        if controls and typeof(controls.GetMoveVector) == "function" then
+            local m = controls:GetMoveVector()
+            local dir = (cam.CFrame.RightVector * m.X) + (cam.CFrame.LookVector * m.Z)
+            
+            if bv and bg then
+                bv.Velocity = dir * (FlyVelocidade or 50)
+                bg.CFrame = cam.CFrame
+            end
+        end
     end)
 end
 
-local function StopFly()
-    FlyAtivo = false
-    if con then con:Disconnect() con = nil end
-    if bv then bv:Destroy() bv = nil end
-    if bg then bg:Destroy() bg = nil end
-
-    local c = player.Character
-    if c and c:FindFirstChild("Humanoid") then
-        c.Humanoid.PlatformStand = false
-    end
-end
-
 local function ToggleFly(state)
-    FlyAtivo = state
-    if FlyAtivo then
+    if state then
         StartFly()
     else
         StopFly()
     end
 end
 
-player.CharacterAdded:Connect(function()
-    task.wait(0.8)
-    if FlyAtivo then 
-        StartFly() 
-    end
+-- Gerenciamento de morte/respawn do personagem de forma segura
+player.CharacterAdded:Connect(function(newChar)
+    StopFly()
+    task.wait(1)
+    -- Se quiser que ele continue voando após o reset, descomente a linha abaixo:
+    -- if FlyAtivo then StartFly() end
 end)
 
 --==============================================================--
