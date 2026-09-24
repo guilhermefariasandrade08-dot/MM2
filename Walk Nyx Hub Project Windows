@@ -39,6 +39,21 @@ local CONFIG_FARM = {
 
 local LOBBY_SAFE_POS = Vector3.new(13.89, 504.52, -11.44)
 
+-- Configurações do ESP
+local ESPConfig = {
+    Active = false,
+    Mode = "Highlight",
+    TargetType = "No ESP my player", -- Opções: My ESP player, No ESP my player
+    Transparency = 0.6
+}
+
+-- Configurações do Name ESP (separado para nunca mostrar em você)
+local NameESPConfig = {
+    Active = false,
+    Mode = "Simple",
+    IncludeSelf = false -- Mantém o nome oculto no seu próprio player
+}
+
 --==============================================================--
 --                     MAPS CUSTOM POSITIONS                    --
 --==============================================================--
@@ -50,12 +65,12 @@ local MAP_SAFE_POSITIONS = {
     ["House2"]           = Vector3.new(21.84, 266.00, 9034.20),
     ["MilBase"]          = Vector3.new(-22.30, 242.23, 9109.38),
     ["BioLab"]           = Vector3.new(552.83, 283.26, 9677.74),
-    ["Hospital2014"]     = Vector3.new(458.15, 7.59, 436.82), -- Atualizado!
+    ["Hospital2014"]     = Vector3.new(458.15, 7.59, 436.82),
     ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
     ["ResearchFacility"] = Vector3.new(-50.81, 301.80, 9152.87),
     ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95),
     ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
-    ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98), -- Novo mapa adicionado!
+    ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
 }
 
 --==============================================================--
@@ -70,15 +85,6 @@ local ESPTab = Window:Tab({ Title = "ESP", Icon = "eye" })
 local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
-
---==============================================================--
---          SISTEMA DA ABA MURDERER            --
---==============================================================--
- 
---==============================================================--
---          SISTEMA DA ABA SHERIFF            --
---==============================================================--
-
 --==============================================================--
 --                SISTEMA DE ESP (MM2 / CARGOS)                 --
 --==============================================================--
@@ -87,11 +93,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
-
-local ESPConfig = {
-    Active = false,
-    Mode = "Highlight"
-}
 
 local Highlights = {}
 local DadosCargos = {}
@@ -121,24 +122,30 @@ end
 
 local function ObterCorCargo(nomeJogador)
     local Info = DadosCargos[nomeJogador]
-    local Cor = Color3.fromRGB(255, 255, 255) -- Branco para Lobby / Fora da partida
+    local Cor = Color3.fromRGB(255, 255, 255)
     
     if Info and not Info.Killed and not Info.Dead then
         if Info.Role == "Murderer" then
-            Cor = Color3.fromRGB(220, 50, 50) -- Vermelho
+            Cor = Color3.fromRGB(220, 50, 50)
         elseif Info.Role == "Sheriff" then
-            Cor = Color3.fromRGB(0, 85, 255) -- Azul
+            Cor = Color3.fromRGB(0, 85, 255)
         elseif Info.Role == "Hero" then
-            Cor = Color3.fromRGB(255, 215, 0) -- Amarelo
+            Cor = Color3.fromRGB(255, 215, 0)
         elseif Info.Role == "Innocent" then
-            Cor = Color3.fromRGB(60, 200, 80) -- Verde
+            Cor = Color3.fromRGB(60, 200, 80)
         end
     end
     return Cor
 end
 
 local function AtualizarEspJogador(p)
-    if p == LocalPlayer then return end
+    if p == LocalPlayer and ESPConfig.TargetType == "No ESP my player" then 
+        if Highlights[p] then
+            Highlights[p]:Destroy()
+            Highlights[p] = nil
+        end
+        return 
+    end
     
     if Highlights[p] then
         Highlights[p]:Destroy()
@@ -160,11 +167,11 @@ local function AtualizarEspJogador(p)
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     
     if ESPConfig.Mode == "Highlight" then
-        highlight.FillTransparency = 0.4        
-        highlight.OutlineTransparency = 0       
+        highlight.FillTransparency = 1 - ESPConfig.Transparency        
+        highlight.OutlineTransparency = 1       
     else 
         highlight.FillTransparency = 1          
-        highlight.OutlineTransparency = 0       
+        highlight.OutlineTransparency = 0      
     end
 
     highlight.Parent = char
@@ -176,7 +183,15 @@ RunService.RenderStepped:Connect(function()
     PegarCargos()
     
     for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
+        if ESPConfig.TargetType == "No ESP my player" and p == LocalPlayer then 
+            if Highlights[p] then
+                Highlights[p]:Destroy()
+                Highlights[p] = nil
+            end
+            continue 
+        end
+        
+        if p.Character then
             local highlight = Highlights[p]
             if not highlight or highlight.Parent ~= p.Character then
                 AtualizarEspJogador(p)
@@ -186,8 +201,8 @@ RunService.RenderStepped:Connect(function()
                 highlight.OutlineColor = novaCor
                 
                 if ESPConfig.Mode == "Highlight" then
-                    highlight.FillTransparency = 0.4        
-                    highlight.OutlineTransparency = 0       
+                    highlight.FillTransparency = 1 - ESPConfig.Transparency        
+                    highlight.OutlineTransparency = 1       
                 else 
                     highlight.FillTransparency = 1          
                     highlight.OutlineTransparency = 0       
@@ -211,7 +226,7 @@ end)
 local Camera = workspace.CurrentCamera
 local TracersConfig = {
     Active = false,
-    Position = "Bottom", -- Opções: Top, Middle, Bottom
+    Position = "Bottom",
     Thickness = 1
 }
 
@@ -231,7 +246,7 @@ RunService.RenderStepped:Connect(function()
     end
 
     local screenSize = Camera.ViewportSize
-    local originPoint = Vector2.new(screenSize.X / 2, screenSize.Y) -- Bottom (Padrão)
+    local originPoint = Vector2.new(screenSize.X / 2, screenSize.Y)
 
     if TracersConfig.Position == "Top" then
         originPoint = Vector2.new(screenSize.X / 2, 0)
@@ -249,11 +264,9 @@ RunService.RenderStepped:Connect(function()
             local hrp = char:FindFirstChild("HumanoidRootPart")
             local hum = char:FindFirstChildOfClass("Humanoid")
             
-            -- Verifica se o jogador está vivo e na partida (usa a mesma lógica de cargo)
             if hrp and hum and hum.Health > 0 then
                 jogadoresAtivos[p] = true
                 
-                -- Cria a linha se não existir
                 if not TracersList[p] then
                     local line = Drawing.new("Line")
                     line.Visible = false
@@ -266,7 +279,7 @@ RunService.RenderStepped:Connect(function()
                 if onScreen then
                     line.From = originPoint
                     line.To = Vector2.new(vector.X, vector.Y)
-                    line.Color = ObterCorCargo(p.Name) -- Pega a mesma cor do sistema de cargos do ESP
+                    line.Color = ObterCorCargo(p.Name)
                     line.Thickness = TracersConfig.Thickness
                     line.Visible = true
                 else
@@ -276,7 +289,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Remove linhas de jogadores que saíram, morreram ou resetaram
     for p, line in pairs(TracersList) do
         if not jogadoresAtivos[p] or not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
             if line then line:Remove() end
@@ -296,11 +308,6 @@ end)
 --                SISTEMA DE NAME ESP / BILLBOARD               --
 --==============================================================--
 
-local NameESPConfig = {
-    Active = false,
-    Mode = "Simple", -- Opções: Simple, Customized
-}
-
 local NameESPList = {}
 
 local function LimparNameESP()
@@ -319,13 +326,15 @@ local function CriarBillboardPlayer(p)
     end
 
     if not NameESPConfig.Active then return end
+    
+    -- O nome NUNCA vai aparecer em você, independente da opção do Highlight
+    if p == LocalPlayer and not NameESPConfig.IncludeSelf then return end
 
     local char = p.Character
     if not char or not char:FindFirstChild("Head") then return end
 
     local head = char.Head
     
-    -- Cria o BillboardGui principal acima da cabeça
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "WalkNyx_NameESP"
     billboard.Adornee = head
@@ -335,7 +344,6 @@ local function CriarBillboardPlayer(p)
     billboard.ResetOnSpawn = false
 
     if NameESPConfig.Mode == "Simple" then
-        -- Modo Simples: Apenas o texto com o nome
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Name = "NameLabel"
         nameLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -345,14 +353,13 @@ local function CriarBillboardPlayer(p)
         nameLabel.TextScaled = false
         nameLabel.TextSize = 14
         nameLabel.Font = Enum.Font.SourceSansBold
-        nameLabel.TextStrokeTransparency = 0 -- Borda preta para legibilidade
+        nameLabel.TextStrokeTransparency = 0
         nameLabel.Parent = billboard
 
     elseif NameESPConfig.Mode == "Customized" then
-        -- Modo Customizado: Retângulo com bordas arredondadas, círculo de perfil e nome
         local container = Instance.new("Frame")
         container.Name = "CustomContainer"
-        container.Size = UDim2.new(0, 0, 0, 30) -- Começa pequeno, ajusta pelo tamanho do texto
+        container.Size = UDim2.new(0, 0, 0, 30)
         container.Position = UDim2.new(0.5, 0, 0.5, 0)
         container.AnchorPoint = Vector2.new(0.5, 0.5)
         container.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -360,12 +367,10 @@ local function CriarBillboardPlayer(p)
         container.BorderSizePixel = 0
         container.Parent = billboard
 
-        -- Arredondar bordas do retângulo principal
         local uiCorner = Instance.new("UICorner")
         uiCorner.CornerRadius = UDim.new(1, 0)
         uiCorner.Parent = container
 
-        -- Círculo de perfil à esquerda
         local avatarCircle = Instance.new("ImageLabel")
         avatarCircle.Name = "AvatarCircle"
         avatarCircle.Size = UDim2.new(0, 24, 0, 24)
@@ -379,7 +384,6 @@ local function CriarBillboardPlayer(p)
         avatarCorner.CornerRadius = UDim.new(1, 0)
         avatarCorner.Parent = avatarCircle
 
-        -- Texto do Nome na frente
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Name = "CustomNameLabel"
         nameLabel.Size = UDim2.new(0, 0, 1, 0)
@@ -392,7 +396,6 @@ local function CriarBillboardPlayer(p)
         nameLabel.AutomaticSize = Enum.AutomaticSize.X
         nameLabel.Parent = container
 
-        -- Ajusta dinamicamente a largura do retângulo com base no tamanho do nome
         task.spawn(function()
             task.wait(0.05)
             if container and nameLabel then
@@ -409,7 +412,15 @@ RunService.RenderStepped:Connect(function()
     if not NameESPConfig.Active then return end
 
     for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
+        if p == LocalPlayer and not NameESPConfig.IncludeSelf then 
+            if NameESPList[p] then
+                NameESPList[p]:Destroy()
+                NameESPList[p] = nil
+            end
+            continue 
+        end
+        
+        if p.Character then
             local char = p.Character
             local hum = char:FindFirstChildOfClass("Humanoid")
             local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -419,7 +430,6 @@ RunService.RenderStepped:Connect(function()
                 if not billboard or billboard.Parent ~= char:FindFirstChild("Head") then
                     CriarBillboardPlayer(p)
                 else
-                    -- Atualiza dinamicamente a cor do cargo em tempo real
                     local novaCor = ObterCorCargo(p.Name)
                     if NameESPConfig.Mode == "Simple" then
                         local lbl = billboard:FindFirstChild("NameLabel")
@@ -450,111 +460,11 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 --==============================================================--
---                     BOTOES DA ABA AUTO FARM                   --
+--         AUTO FARM LOGICA CFRAME (FUNÇÕES BASE)               --
 --==============================================================--
 
--- TÍTULO
-FarmCoin:Section({
-    Title = "Auto Farm Coin"
-})
-
-FarmCoin:Toggle({
-    Title = "Auto Farm Coins",
-    Value = false,
-    Callback = function(state)
-        CONFIG_FARM.Active = state
-        if not state then 
-            RestaurarColisoes() 
-        else
-            -- Se o botão for ligado e a bolsa já estiver cheia (durante a partida), teleporta/para na hora
-            if InGame() and CheckBagFullText() then
-                StoppedUntilNewRound = true
-                local char = Player.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                
-                local finalDestination = nil
-                if CONFIG_FARM.FullDestination == "Map" then
-                    finalDestination = GetSafeMapSpawn()
-                elseif CONFIG_FARM.FullDestination == "Lobby" then
-                    finalDestination = CFrame.new(LOBBY_SAFE_POS)
-                else
-                    finalDestination = GetSafePlatformCFrame()
-                end
-
-                if finalDestination and hrp then
-                    if hum then hum.PlatformStand = true end
-                    local holdStart = os.clock()
-                    while os.clock() - holdStart < 1.0 and InGame() and CONFIG_FARM.Active do
-                        hrp.CFrame = finalDestination
-                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        RunService.Heartbeat:Wait()
-                    end
-                    if hum and InGame() then
-                        hum.PlatformStand = false
-                    end
-                end
-            end
-        end
-    end,
-})
-
-FarmCoin:Dropdown({
-    Title = "Posture",
-    Values = { "Lying", "Standing" },
-    Value = "Lying",
-    Callback = function(value) CONFIG_FARM.Posture = value end,
-})
-
-FarmCoin:Dropdown({
-    Title = "Destination When Full",
-    Values = { "Map", "Safe", "Lobby" },
-    Value = "Map",
-    Callback = function(value) CONFIG_FARM.FullDestination = value end,
-})
-
-FarmCoin:Slider({
-    Title = "Speed",
-    Step = 1,
-    Value = { Min = 16, Max = 25, Default = 18 },
-    Callback = function(value) CONFIG_FARM.Speed = value end,
-})
-
--- Botão para copiar o nome do mapa e a posição atual do jogador
-FarmCoin:Button({
-    Title = "Copiar Posição e Mapa",
-    Desc = "Copia para o clipboard o nome do mapa atual e suas coordenadas exatas.",
-    Callback = function()
-        local player = Players.LocalPlayer
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        
-        if not hrp then
-            WindUI:Notify({ Title = "Erro", Content = "Personagem não encontrado!", Duration = 3 })
-            return
-        end
-
-        local mapName = "Desconhecido"
-        local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
-        if coinContainer and coinContainer.Parent then
-            mapName = coinContainer.Parent.Name
-        end
-
-        local pos = hrp.Position
-        local resultString = string.format('["%s"] = Vector3.new(%.2f, %.2f, %.2f),', mapName, pos.X, pos.Y, pos.Z)
-        
-        if setclipboard then
-            setclipboard(resultString)
-            WindUI:Notify({ Title = "Sucesso!", Content = "Copiado: " .. resultString, Duration = 4 })
-        else
-            WindUI:Notify({ Title = "Aviso", Content = "Seu executor não suporta setclipboard automático.", Duration = 4 })
-            print("[Walk Nyx Hub] Posição: " .. resultString)
-        end
-    end,
-})
-
 local function RestaurarColisoes()
-    local char = game:GetService("Players").LocalPlayer.Character
+    local char = LocalPlayer.Character
     if char then
         for _, part in ipairs(char:GetDescendants()) do
             if part:IsA("BasePart") then
@@ -564,16 +474,6 @@ local function RestaurarColisoes()
     end
 end
 
---==============================================================--
---         AUTO FARM LOGICA CFRAME              --
---==============================================================--
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Player = Players.LocalPlayer
 local collectedCoins = {}
 local cachedCoinContainer = nil
 local HitboxOriginal = {}
@@ -597,7 +497,7 @@ end)
 
 local function GetMurderer()
     for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local char = p.Character
             local hum = char:FindFirstChild("Humanoid")
             if hum and hum.Health > 0 then
@@ -616,14 +516,14 @@ local function ResetFarmState()
     StoppedUntilNewRound = false
     bagFullByEvent = false
     RestaurarColisoes()
-    local c = Player.Character
+    local c = LocalPlayer.Character
     local hum = c and c:FindFirstChildOfClass("Humanoid")
     if hum then hum.PlatformStand = false end
 end
 
-Player.CharacterAdded:Connect(ResetFarmState)
-Player:GetAttributeChangedSignal("Alive"):Connect(function()
-    if Player:GetAttribute("Alive") == true then ResetFarmState() end
+LocalPlayer.CharacterAdded:Connect(ResetFarmState)
+LocalPlayer:GetAttributeChangedSignal("Alive"):Connect(function()
+    if LocalPlayer:GetAttribute("Alive") == true then ResetFarmState() end
 end)
 
 task.spawn(function()
@@ -632,7 +532,7 @@ task.spawn(function()
         for _, remote in ipairs(remotes:GetDescendants()) do
             if remote:IsA("RemoteEvent") and (string.find(string.lower(remote.Name), "coin") or string.find(string.lower(remote.Name), "collect")) then
                 remote.OnClientEvent:Connect(function(collector, current, maximum)
-                    if collector == Player or (typeof(collector) == "string" and collector == Player.Name) then
+                    if collector == LocalPlayer or (typeof(collector) == "string" and collector == LocalPlayer.Name) then
                         if tonumber(current) and tonumber(maximum) then
                             bagFullByEvent = (tonumber(current) >= tonumber(maximum))
                             if bagFullByEvent then StoppedUntilNewRound = true end
@@ -650,7 +550,7 @@ local function CheckBagFullText()
     if now - lastBagCheck < 0.3 then return lastBagCheckResult end
     lastBagCheck = now
 
-    local playerGui = Player:FindFirstChild("PlayerGui")
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return false end
     local mainGui = playerGui:FindFirstChild("MainGUI") or playerGui:FindFirstChild("GUI")
     if not mainGui then return false end
@@ -671,11 +571,11 @@ local function CheckBagFullText()
 end
 
 local function InGame()
-    local c = Player.Character
+    local c = LocalPlayer.Character
     if not c or not c:FindFirstChild("Humanoid") or c.Humanoid.Health <= 0 then return false end
     if not c:FindFirstChild("HumanoidRootPart") then return false end
 
-    local aliveAttr = Player:GetAttribute("Alive")
+    local aliveAttr = LocalPlayer:GetAttribute("Alive")
     if aliveAttr ~= nil and aliveAttr == false then return false end
 
     local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
@@ -748,19 +648,15 @@ local function GetNearestCoin(myPos)
     return bestCoin
 end
 
--- Loop de checagem contínua de bolsa cheia (Apenas roda QUANDO ESTIVER EM JOGO/PARTIDA ACONTECENDO)
 task.spawn(function()
     while true do
         task.wait(0.1)
-        
-        -- Se não estiver em partida, pula a verificação para economizar desempenho
         if not InGame() then
             StoppedUntilNewRound = false
             continue
         end
 
         local isBagFull = CheckBagFullText()
-
         local currentCoinContainer = Workspace:FindFirstChild("CoinContainer", true)
         if currentCoinContainer ~= cachedCoinContainer then
             cachedCoinContainer = currentCoinContainer
@@ -768,14 +664,11 @@ task.spawn(function()
             bagFullByEvent = false
         end
 
-        -- Se a bolsa encheu durante a partida, marca como parado
         if not StoppedUntilNewRound and isBagFull then
             StoppedUntilNewRound = true
-            
-            -- Se o usuário estiver com o botão ligado, manda para o refúgio
             if CONFIG_FARM.Active then
                 RestaurarColisoes()
-                local char = Player.Character
+                local char = LocalPlayer.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 
@@ -790,14 +683,12 @@ task.spawn(function()
 
                 if finalDestination and hrp then
                     if hum then hum.PlatformStand = true end
-                    
                     local holdStart = os.clock()
                     while os.clock() - holdStart < 1.5 and InGame() and CONFIG_FARM.Active do
                         hrp.CFrame = finalDestination
                         hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                         RunService.Heartbeat:Wait()
                     end
-                    
                     if hum and InGame() then
                         hum.PlatformStand = false
                     end
@@ -807,11 +698,10 @@ task.spawn(function()
     end
 end)
 
--- Loop principal CFrame (Respeita o botão ligado e se está em jogo)
 task.spawn(function()
     while true do
         if CONFIG_FARM.Active and not StoppedUntilNewRound and not CheckBagFullText() and InGame() then
-            local c = Player.Character
+            local c = LocalPlayer.Character
             local hrp = c and c:FindFirstChild("HumanoidRootPart")
             local humanoid = c and c:FindFirstChildOfClass("Humanoid")
 
@@ -855,7 +745,7 @@ task.spawn(function()
             end
         else
             RestaurarColisoes()
-            local c = Player.Character
+            local c = LocalPlayer.Character
             local hum = c and c:FindFirstChildOfClass("Humanoid")
             if hum then hum.PlatformStand = false end
             task.wait(0.5)
@@ -864,11 +754,23 @@ task.spawn(function()
 end)
 
 --==============================================================--
---            BOTÕES DA ABA ESP                  --
+--            BOTÕES DA ABA ESP E TRACERS                        --
 --==============================================================--
 
 ESPTab:Section({
     Title = "ESP players"
+})
+
+ESPTab:Dropdown({
+    Title = "Player Target",
+    Values = { "My ESP player", "No ESP my player" },
+    Value = "No ESP my player",
+    Callback = function(value)
+        ESPConfig.TargetType = value
+        if ESPConfig.Active then
+            LimparEsp()
+        end
+    end,
 })
 
 ESPTab:Dropdown({
@@ -883,6 +785,15 @@ ESPTab:Dropdown({
     end,
 })
 
+ESPTab:Slider({
+    Title = "Highlight Transparency",
+    Step = 0.05,
+    Value = { Min = 0, Max = 1, Default = 0.6 },
+    Callback = function(value)
+        ESPConfig.Transparency = value
+    end,
+})
+
 ESPTab:Toggle({
     Title = "Ligar ESP",
     Value = false,
@@ -893,10 +804,6 @@ ESPTab:Toggle({
         end
     end,
 })
-
---==============================================================--
---        BOTÕES E CONFIGURAÇÕES DA ABA ESP (TRACERS)           --
---==============================================================--
 
 ESPTab:Section({
     Title = "Tracers (Linhas)"
@@ -931,10 +838,6 @@ ESPTab:Toggle({
     end,
 })
 
---==============================================================--
---        BOTÕES E CONFIGURAÇÕES DA ABA ESP (NAME ESP)          --
---==============================================================--
-
 ESPTab:Section({
     Title = "Name ESP"
 })
@@ -962,3 +865,102 @@ ESPTab:Toggle({
     end,
 })
 
+--==============================================================--
+--                     BOTÕES DA ABA AUTO FARM                  --
+--==============================================================--
+
+FarmCoin:Section({
+    Title = "Auto Farm Coin"
+})
+
+FarmCoin:Toggle({
+    Title = "Auto Farm Coins",
+    Value = false,
+    Callback = function(state)
+        CONFIG_FARM.Active = state
+        if not state then 
+            RestaurarColisoes() 
+        else
+            if InGame() and CheckBagFullText() then
+                StoppedUntilNewRound = true
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                local finalDestination = nil
+                if CONFIG_FARM.FullDestination == "Map" then
+                    finalDestination = GetSafeMapSpawn()
+                elseif CONFIG_FARM.FullDestination == "Lobby" then
+                    finalDestination = CFrame.new(LOBBY_SAFE_POS)
+                else
+                    finalDestination = GetSafePlatformCFrame()
+                end
+
+                if finalDestination and hrp then
+                    if hum then hum.PlatformStand = true end
+                    local holdStart = os.clock()
+                    while os.clock() - holdStart < 1.0 and InGame() and CONFIG_FARM.Active do
+                        hrp.CFrame = finalDestination
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        RunService.Heartbeat:Wait()
+                    end
+                    if hum and InGame() then
+                        hum.PlatformStand = false
+                    end
+                end
+            end
+        end
+    end,
+})
+
+FarmCoin:Dropdown({
+    Title = "Posture",
+    Values = { "Lying", "Standing" },
+    Value = "Lying",
+    Callback = function(value) CONFIG_FARM.Posture = value end,
+})
+
+FarmCoin:Dropdown({
+    Title = "Destination When Full",
+    Values = { "Map", "Safe", "Lobby" },
+    Value = "Map",
+    Callback = function(value) CONFIG_FARM.FullDestination = value end,
+})
+
+FarmCoin:Slider({
+    Title = "Speed",
+    Step = 1,
+    Value = { Min = 16, Max = 25, Default = 18 },
+    Callback = function(value) CONFIG_FARM.Speed = value end,
+})
+
+FarmCoin:Button({
+    Title = "Copiar Posição e Mapa",
+    Desc = "Copia para o clipboard o nome do mapa atual e suas coordenadas exatas.",
+    Callback = function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        
+        if not hrp then
+            WindUI:Notify({ Title = "Erro", Content = "Personagem não encontrado!", Duration = 3 })
+            return
+        end
+
+        local mapName = "Desconhecido"
+        local coinContainer = Workspace:FindFirstChild("CoinContainer", true)
+        if coinContainer and coinContainer.Parent then
+            mapName = coinContainer.Parent.Name
+        end
+
+        local pos = hrp.Position
+        local resultString = string.format('["%s"] = Vector3.new(%.2f, %.2f, %.2f),', mapName, pos.X, pos.Y, pos.Z)
+        
+        if setclipboard then
+            setclipboard(resultString)
+            WindUI:Notify({ Title = "Sucesso!", Content = "Copiado: " .. resultString, Duration = 4 })
+        else
+            WindUI:Notify({ Title = "Aviso", Content = "Seu executor não suporta setclipboard automático.", Duration = 4 })
+            print("[Walk Nyx Hub] Posição: " .. resultString)
+        end
+    end,
+})
