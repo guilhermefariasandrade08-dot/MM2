@@ -1188,6 +1188,64 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
+-- ==================================
+-- VARIÁVEIS INICIAIS (CÂMERA)
+-- ==================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local fovAtivo = false
+local fovAtual = 70
+local fovConnection = nil
+
+-- ==================================
+-- SISTEMAS DE CÂMERA (LÓGICA)
+-- ==================================
+
+-- 1. Sistema de Zoom Infinito
+local function ToggleZoomInfinito(state)
+    if state then
+        LocalPlayer.CameraMaxZoomDistance = math.huge
+    else
+        LocalPlayer.CameraMaxZoomDistance = 400 -- Padrão do Roblox
+    end
+end
+
+-- 2. Sistema de FOV (Toggle + Slider)
+local function ToggleFOV(state)
+    fovAtivo = state
+    if fovAtivo then
+        Camera.FieldOfView = fovAtual
+        
+        -- Mantém o FOV aplicado caso o jogo tente resetar
+        if fovConnection then fovConnection:Disconnect() end
+        fovConnection = RunService.RenderStepped:Connect(function()
+            if fovAtivo and Camera then
+                Camera.FieldOfView = fovAtual
+            end
+        end)
+    else
+        if fovConnection then
+            fovConnection:Disconnect()
+            fovConnection = nil
+        end
+        Camera.FieldOfView = 70 -- Valor padrão do Roblox
+    end
+end
+
+-- 3. Sistema de Câmera Atravessar Paredes (Sem Colisão)
+local function ToggleCameraNoCollision(state)
+    if state then
+        -- Remove o bloqueio da câmera batendo nas paredes
+        LocalPlayer.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Empty
+    else
+        -- Volta ao normal (aproxima ao encostar na parede)
+        LocalPlayer.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Zoom
+    end
+end
+
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
 --==============================================================--
@@ -1564,3 +1622,50 @@ LocalPlayerTab:Toggle({
     end,
 })
 
+-- ==================================
+-- BOTOES DA ABA MODIFICATIONS
+-- ==================================
+
+ModificationsTab:Section({
+    Title = "Modificações de Câmera"
+})
+
+-- Botão Zoom Infinito
+ModificationsTab:Toggle({
+    Title = "Zoom Infinito",
+    Value = false,
+    Callback = function(state)
+        ToggleZoomInfinito(state)
+    end,
+})
+
+-- Botão Ativar FOV
+ModificationsTab:Toggle({
+    Title = "Ativar FOV Personalizado",
+    Value = false,
+    Callback = function(state)
+        ToggleFOV(state)
+    end,
+})
+
+-- Slider do FOV (Logo abaixo do botão do FOV)
+ModificationsTab:Slider({
+    Title = "Valor do FOV",
+    Step = 1,
+    Value = { Min = 30, Max = 120, Default = 70 },
+    Callback = function(value)
+        fovAtual = value
+        if fovAtivo and Camera then
+            Camera.FieldOfView = fovAtual
+        end
+    end,
+})
+
+-- Botão Câmera Atravessar Paredes
+ModificationsTab:Toggle({
+    Title = "Câmera Atravessar Paredes",
+    Value = false,
+    Callback = function(state)
+        ToggleCameraNoCollision(state)
+    end,
+})
