@@ -43,15 +43,22 @@ local LOBBY_SAFE_POS = Vector3.new(13.89, 504.52, -11.44)
 local ESPConfig = {
     Active = false,
     Mode = "Highlight",
-    TargetType = "No ESP my player", -- Opções: My ESP player, No ESP my player
+    TargetType = "No ESP my player",
     Transparency = 0.6
 }
 
--- Configurações do Name ESP (separado para nunca mostrar em você)
+-- Configurações do Name ESP
 local NameESPConfig = {
     Active = false,
     Mode = "Simple",
-    IncludeSelf = false -- Mantém o nome oculto no seu próprio player
+    IncludeSelf = false
+}
+
+-- Configurações do Box ESP
+local BoxESPConfig = {
+    Active = false,
+    Style = "Simple", -- Simple ou Corner
+    Thickness = 1
 }
 
 --==============================================================--
@@ -86,24 +93,17 @@ local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 --==============================================================--
---                SISTEMA DE ESP (MM2 / CARGOS)                 --
+--                SISTEMA DE CARGOS COMPARTILHADO               --
 --==============================================================--
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
-local Highlights = {}
 local DadosCargos = {}
 local UltimaChecagemCargo = 0
-
-local function LimparEsp()
-    for _, highlight in pairs(Highlights) do
-        if highlight then highlight:Destroy() end
-    end
-    table.clear(Highlights)
-end
 
 local function PegarCargos()
     if tick() - UltimaChecagemCargo < 2 then return end
@@ -138,44 +138,24 @@ local function ObterCorCargo(nomeJogador)
     return Cor
 end
 
-local function AtualizarEspJogador(p)
-    if p == LocalPlayer and ESPConfig.TargetType == "No ESP my player" then 
-        if Highlights[p] then
-            Highlights[p]:Destroy()
-            Highlights[p] = nil
-        end
-        return 
+-- Loop global para garantir que os cargos são puxados mesmo sem o Highlight ligado
+RunService.RenderStepped:Connect(function()
+    if ESPConfig.Active or BoxESPConfig.Active or NameESPConfig.Active or TracersConfig_Active_Check then
+        PegarCargos()
     end
-    
-    if Highlights[p] then
-        Highlights[p]:Destroy()
-        Highlights[p] = nil
+end)
+
+--==============================================================--
+--                SISTEMA DE ESP (MM2 / CARGOS)                 --
+--==============================================================--
+
+local Highlights = {}
+
+local function LimparEsp()
+    for _, highlight in pairs(Highlights) do
+        if highlight then highlight:Destroy() end
     end
-
-    if not ESPConfig.Active then return end
-
-    local char = p.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-
-    local cor = ObterCorCargo(p.Name)
-
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "WalkNyx_ESP"
-    highlight.Adornee = char
-    highlight.FillColor = cor
-    highlight.OutlineColor = cor
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    
-    if ESPConfig.Mode == "Highlight" then
-        highlight.FillTransparency = 1 - ESPConfig.Transparency        
-        highlight.OutlineTransparency = 1       
-    else 
-        highlight.FillTransparency = 1          
-        highlight.OutlineTransparency = 0      
-    end
-
-    highlight.Parent = char
-    Highlights[p] = highlight
+    table.clear(Highlights)
 end
 
 RunService.RenderStepped:Connect(function()
@@ -193,12 +173,31 @@ RunService.RenderStepped:Connect(function()
         
         if p.Character then
             local highlight = Highlights[p]
+            local cor = ObterCorCargo(p.Name)
+
             if not highlight or highlight.Parent ~= p.Character then
-                AtualizarEspJogador(p)
+                if highlight then highlight:Destroy() end
+
+                local newHighlight = Instance.new("Highlight")
+                newHighlight.Name = "WalkNyx_ESP"
+                newHighlight.Adornee = p.Character
+                newHighlight.FillColor = cor
+                newHighlight.OutlineColor = cor
+                newHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                
+                if ESPConfig.Mode == "Highlight" then
+                    newHighlight.FillTransparency = 1 - ESPConfig.Transparency        
+                    newHighlight.OutlineTransparency = 1       
+                else 
+                    newHighlight.FillTransparency = 1          
+                    newHighlight.OutlineTransparency = 0      
+                end
+
+                newHighlight.Parent = p.Character
+                Highlights[p] = newHighlight
             else
-                local novaCor = ObterCorCargo(p.Name)
-                highlight.FillColor = novaCor
-                highlight.OutlineColor = novaCor
+                highlight.FillColor = cor
+                highlight.OutlineColor = cor
                 
                 if ESPConfig.Mode == "Highlight" then
                     highlight.FillTransparency = 1 - ESPConfig.Transparency        
@@ -223,7 +222,6 @@ end)
 --                SISTEMA DE TRACERS (LINHAS ESP)               --
 --==============================================================--
 
-local Camera = workspace.CurrentCamera
 local TracersConfig = {
     Active = false,
     Position = "Bottom",
@@ -240,6 +238,7 @@ local function LimparTracers()
 end
 
 RunService.RenderStepped:Connect(function()
+    TracersConfig_Active_Check = TracersConfig.Active
     if not TracersConfig.Active then
         LimparTracers()
         return
@@ -305,6 +304,152 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 --==============================================================--
+--                     SISTEMA DE BOX ESP                       --
+--==============================================================--
+
+local BoxESPList = {}
+
+local function LimparBoxESP()
+    for _, boxObj in pairs(BoxESPList) do
+        if boxObj then
+            if boxObj.Box then boxObj.Box:Remove() end
+            if boxObj.Lines then
+                for _, line in ipairs(boxObj.Lines) do
+                    if line then line:Remove() end
+                end
+            end
+        end
+    end
+    table.clear(BoxESPList)
+end
+
+RunService.RenderStepped:Connect(function()
+    if not BoxESPConfig.Active then
+        LimparBoxESP()
+        return
+    end
+
+    local jogadoresAtivos = {}
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local char = p.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                jogadoresAtivos[p] = true
+                
+                -- Se o estilo mudou, destrói o antigo para recriar do jeito certo
+                if BoxESPList[p] and BoxESPList[p].Style ~= BoxESPConfig.Style then
+                    if BoxESPList[p].Box then BoxESPList[p].Box:Remove() end
+                    if BoxESPList[p].Lines then
+                        for _, l in ipairs(BoxESPList[p].Lines) do l:Remove() end
+                    end
+                    BoxESPList[p] = nil
+                end
+
+                if not BoxESPList[p] then
+                    local boxParts = { Style = BoxESPConfig.Style }
+                    if BoxESPConfig.Style == "Simple" then
+                        boxParts.Box = Drawing.new("Square")
+                        boxParts.Box.Visible = false
+                        boxParts.Box.Filled = false
+                        boxParts.Box.Thickness = BoxESPConfig.Thickness
+                    else
+                        boxParts.Lines = {}
+                        for i = 1, 8 do
+                            local line = Drawing.new("Line")
+                            line.Visible = false
+                            line.Thickness = BoxESPConfig.Thickness
+                            table.insert(boxParts.Lines, line)
+                        end
+                    end
+                    BoxESPList[p] = boxParts
+                end
+
+                local boxData = BoxESPList[p]
+                local corCargo = ObterCorCargo(p.Name)
+                local head = char:FindFirstChild("Head")
+                
+                if head then
+                    local headPos, onScreenHead = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local legPos, onScreenLeg = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                    
+                    if onScreenHead or onScreenLeg then
+                        local height = math.abs(headPos.Y - legPos.Y)
+                        local width = height / 2
+                        local pos = Vector2.new(headPos.X - width / 2, headPos.Y)
+
+                        if BoxESPConfig.Style == "Simple" and boxData.Box then
+                            boxData.Box.Size = Vector2.new(width, height)
+                            boxData.Box.Position = pos
+                            boxData.Box.Color = corCargo
+                            boxData.Box.Thickness = BoxESPConfig.Thickness
+                            boxData.Box.Visible = true
+                            
+                            if boxData.Lines then
+                                for _, l in ipairs(boxData.Lines) do l.Visible = false end
+                            end
+                        elseif BoxESPConfig.Style == "Corner" and boxData.Lines then
+                            if boxData.Box then boxData.Box.Visible = false end
+                            
+                            local w = width
+                            local h = height
+                            local x = pos.X
+                            local y = pos.Y
+                            local lengthX = w / 4
+                            local lengthY = h / 4
+
+                            local lines = boxData.Lines
+                            for _, l in ipairs(lines) do 
+                                l.Color = corCargo 
+                                l.Thickness = BoxESPConfig.Thickness
+                            end
+
+                            lines[1].From = Vector2.new(x, y); lines[1].To = Vector2.new(x + lengthX, y)
+                            lines[2].From = Vector2.new(x, y); lines[2].To = Vector2.new(x, y + lengthY)
+                            
+                            lines[3].From = Vector2.new(x + w, y); lines[3].To = Vector2.new(x + w - lengthX, y)
+                            lines[4].From = Vector2.new(x + w, y); lines[4].To = Vector2.new(x + w, y + lengthY)
+                            
+                            lines[5].From = Vector2.new(x, y + h); lines[5].To = Vector2.new(x + lengthX, y + h)
+                            lines[6].From = Vector2.new(x, y + h); lines[6].To = Vector2.new(x, y + h - lengthY)
+                            
+                            lines[7].From = Vector2.new(x + w, y + h); lines[7].To = Vector2.new(x + w - lengthX, y + h)
+                            lines[8].From = Vector2.new(x + w, y + h); lines[8].To = Vector2.new(x + w, y + h - lengthY)
+
+                            for _, l in ipairs(lines) do l.Visible = true end
+                        end
+                    else
+                        if boxData.Box then boxData.Box.Visible = false end
+                        if boxData.Lines then for _, l in ipairs(boxData.Lines) do l.Visible = false end end
+                    end
+                end
+            end
+        end
+    end
+
+    for p, boxObj in pairs(BoxESPList) do
+        if not jogadoresAtivos[p] then
+            if boxObj then
+                if boxObj.Box then boxObj.Box:Remove() end
+                if boxObj.Lines then for _, l in ipairs(boxObj.Lines) do l:Remove() end end
+            end
+            BoxESPList[p] = nil
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if BoxESPList[p] then
+        if BoxESPList[p].Box then BoxESPList[p].Box:Remove() end
+        if BoxESPList[p].Lines then for _, l in ipairs(BoxESPList[p].Lines) do l:Remove() end end
+        BoxESPList[p] = nil
+    end
+end)
+
+--==============================================================--
 --                SISTEMA DE NAME ESP / BILLBOARD               --
 --==============================================================--
 
@@ -326,15 +471,12 @@ local function CriarBillboardPlayer(p)
     end
 
     if not NameESPConfig.Active then return end
-    
-    -- O nome NUNCA vai aparecer em você, independente da opção do Highlight
     if p == LocalPlayer and not NameESPConfig.IncludeSelf then return end
 
     local char = p.Character
     if not char or not char:FindFirstChild("Head") then return end
 
     local head = char.Head
-    
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "WalkNyx_NameESP"
     billboard.Adornee = head
@@ -350,12 +492,10 @@ local function CriarBillboardPlayer(p)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = p.Name
         nameLabel.TextColor3 = ObterCorCargo(p.Name)
-        nameLabel.TextScaled = false
         nameLabel.TextSize = 14
         nameLabel.Font = Enum.Font.SourceSansBold
         nameLabel.TextStrokeTransparency = 0
         nameLabel.Parent = billboard
-
     elseif NameESPConfig.Mode == "Customized" then
         local container = Instance.new("Frame")
         container.Name = "CustomContainer"
@@ -456,158 +596,6 @@ Players.PlayerRemoving:Connect(function(p)
     if NameESPList[p] then
         NameESPList[p]:Destroy()
         NameESPList[p] = nil
-    end
-end)
-
---==============================================================--
---                     CONFIGURAÇÃO DO BOX ESP                  --
---==============================================================--
-
-local BoxESPConfig = {
-    Active = false,
-    Style = "Simple", -- Opções: Simple, Corner (o que você desenhou)
-}
-
-local BoxESPList = {}
-
-local function LimparBoxESP()
-    for _, boxObj in pairs(BoxESPList) do
-        if boxObj then
-            for _, drawing in pairs(boxObj) do
-                if drawing then drawing:Remove() end
-            end
-        end
-    end
-    table.clear(BoxESPList)
-end
-
--- Função que calcula a posição 2D do player na tela para desenhar o retângulo
-RunService.RenderStepped:Connect(function()
-    if not BoxESPConfig.Active then
-        LimparBoxESP()
-        return
-    end
-
-    local jogadoresAtivos = {}
-
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local char = p.Character
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            
-            if hrp and hum and hum.Health > 0 then
-                jogadoresAtivos[p] = true
-                
-                -- Cria a estrutura se não existir
-                if not BoxESPList[p] then
-                    local boxParts = {}
-                    if BoxESPConfig.Style == "Simple" then
-                        boxParts.Box = Drawing.new("Square")
-                        boxParts.Box.Visible = false
-                        boxParts.Box.Filled = false
-                        boxParts.Box.Thickness = 1
-                    else -- Corner (Estilo cantinhos)
-                        -- Precisamos de 8 linhas para formar os 4 cantos
-                        boxParts.Lines = {}
-                        for i = 1, 8 do
-                            local line = Drawing.new("Line")
-                            line.Visible = false
-                            line.Thickness = 1
-                            table.insert(boxParts.Lines, line)
-                        end
-                    end
-                    BoxESPList[p] = boxParts
-                end
-
-                local boxData = BoxESPList[p]
-                local corCargo = ObterCorCargo(p.Name)
-                
-                -- Pega a posição da cabeça e dos pés para dimensionar a caixa
-                local head = char:FindFirstChild("Head")
-                if head then
-                    local headPos, onScreenHead = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-                    local legPos, onScreenLeg = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
-                    
-                    if onScreenHead or onScreenLeg then
-                        local height = math.abs(headPos.Y - legPos.Y)
-                        local width = height / 2
-                        local pos = Vector2.new(headPos.X - width / 2, headPos.Y)
-
-                        if BoxESPConfig.Style == "Simple" and boxData.Box then
-                            boxData.Box.Size = Vector2.new(width, height)
-                            boxData.Box.Position = pos
-                            boxData.Box.Color = corCargo
-                            boxData.Box.Visible = true
-                        elseif BoxESPConfig.Style == "Corner" and boxData.Lines then
-                            -- Lógica para desenhar os cantos (Bracket Box)
-                            local w = width
-                            local h = height
-                            local x = pos.X
-                            local y = pos.Y
-                            local lengthX = w / 4
-                            local lengthY = h / 4
-
-                            local lines = boxData.Lines
-                            -- Define a cor de todas as linhas do canto
-                            for _, l in ipairs(lines) do l.Color = corCargo end
-
-                            -- Top-Left (Horizontal e Vertical)
-                            lines[1].From = Vector2.new(x, y); lines[1].To = Vector2.new(x + lengthX, y)
-                            lines[2].From = Vector2.new(x, y); lines[2].To = Vector2.new(x, y + lengthY)
-                            -- Top-Right
-                            lines[3].From = Vector2.new(x + w, y); lines[3].To = Vector2.new(x + w - lengthX, y)
-                            lines[4].From = Vector2.new(x + w, y); lines[4].To = Vector2.new(x + w, y + lengthY)
-                            -- Bottom-Left
-                            lines[5].From = Vector2.new(x, y + h); lines[5].To = Vector2.new(x + lengthX, y + h)
-                            lines[6].From = Vector2.new(x, y + h); lines[6].To = Vector2.new(x, y + h - lengthY)
-                            -- Bottom-Right
-                            lines[7].From = Vector2.new(x + w, y + h); lines[7].To = Vector2.new(x + w - lengthX, y + h)
-                            lines[8].From = Vector2.new(x + w, y + h); lines[8].To = Vector2.new(x + w, y + h - lengthY)
-
-                            for _, l in ipairs(lines) do l.Visible = true end
-                        end
-                    else
-                        -- Esconde se sair da tela
-                        if boxData.Box then boxData.Box.Visible = false end
-                        if boxData.Lines then for _, l in ipairs(boxData.Lines) do l.Visible = false end end
-                    end
-                end
-            end
-        end
-    end
-
-    -- Limpa jogadores que saíram do jogo
-    for p, boxObj in pairs(BoxESPList) do
-        if not jogadoresAtivos[p] then
-            if boxObj then
-                for _, drawing in pairs(boxObj) do
-                    if drawing then 
-                        if typeof(drawing) == "table" then
-                            for _, subLine in ipairs(drawing) do subLine:Remove() end
-                        else
-                            drawing:Remove() 
-                        end
-                    end
-                end
-            end
-            BoxESPList[p] = nil
-        end
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(p)
-    if BoxESPList[p] then
-        for _, drawing in pairs(BoxESPList[p]) do
-            if drawing then 
-                if typeof(drawing) == "table" then
-                    for _, subLine in ipairs(drawing) do subLine:Remove() end
-                else
-                    drawing:Remove() 
-                end
-            end
-        end
-        BoxESPList[p] = nil
     end
 end)
 
@@ -906,7 +894,7 @@ task.spawn(function()
 end)
 
 --==============================================================--
---            BOTÕES DA ABA ESP E TRACERS                        --
+--            INTERFACE DE BOTÕES DA ABA ESP                    --
 --==============================================================--
 
 ESPTab:Section({
@@ -919,9 +907,7 @@ ESPTab:Dropdown({
     Value = "No ESP my player",
     Callback = function(value)
         ESPConfig.TargetType = value
-        if ESPConfig.Active then
-            LimparEsp()
-        end
+        if ESPConfig.Active then LimparEsp() end
     end,
 })
 
@@ -931,9 +917,7 @@ ESPTab:Dropdown({
     Value = "Highlight",
     Callback = function(value)
         ESPConfig.Mode = value
-        if ESPConfig.Active then
-            LimparEsp()
-        end
+        if ESPConfig.Active then LimparEsp() end
     end,
 })
 
@@ -951,9 +935,7 @@ ESPTab:Toggle({
     Value = false,
     Callback = function(state)
         ESPConfig.Active = state
-        if not state then
-            LimparEsp()
-        end
+        if not state then LimparEsp() end
     end,
 })
 
@@ -984,36 +966,7 @@ ESPTab:Toggle({
     Value = false,
     Callback = function(state)
         TracersConfig.Active = state
-        if not state then
-            LimparTracers()
-        end
-    end,
-})
-
-ESPTab:Section({
-    Title = "Name ESP"
-})
-
-ESPTab:Dropdown({
-    Title = "Name ESP Mode",
-    Values = { "Simple", "Customized" },
-    Value = "Simple",
-    Callback = function(value)
-        NameESPConfig.Mode = value
-        if NameESPConfig.Active then
-            LimparNameESP()
-        end
-    end,
-})
-
-ESPTab:Toggle({
-    Title = "Ligar Name ESP",
-    Value = false,
-    Callback = function(state)
-        NameESPConfig.Active = state
-        if not state then
-            LimparNameESP()
-        end
+        if not state then LimparTracers() end
     end,
 })
 
@@ -1027,7 +980,16 @@ ESPTab:Dropdown({
     Value = "Simple",
     Callback = function(value)
         BoxESPConfig.Style = value
-        LimparBoxESP() -- Limpa para recriar com o novo estilo selecionado
+        LimparBoxESP()
+    end,
+})
+
+ESPTab:Slider({
+    Title = "Box Thickness",
+    Step = 1,
+    Value = { Min = 1, Max = 5, Default = 1 },
+    Callback = function(value)
+        BoxESPConfig.Thickness = value
     end,
 })
 
@@ -1036,9 +998,30 @@ ESPTab:Toggle({
     Value = false,
     Callback = function(state)
         BoxESPConfig.Active = state
-        if not state then
-            LimparBoxESP()
-        end
+        if not state then LimparBoxESP() end
+    end,
+})
+
+ESPTab:Section({
+    Title = "Name ESP"
+})
+
+ESPTab:Dropdown({
+    Title = "Name ESP Mode",
+    Values = { "Simple", "Customized" },
+    Value = "Simple",
+    Callback = function(value)
+        NameESPConfig.Mode = value
+        if NameESPConfig.Active then LimparNameESP() end
+    end,
+})
+
+ESPTab:Toggle({
+    Title = "Ligar Name ESP",
+    Value = false,
+    Callback = function(state)
+        NameESPConfig.Active = state
+        if not state then LimparNameESP() end
     end,
 })
 
