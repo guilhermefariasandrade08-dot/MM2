@@ -970,7 +970,6 @@ RunService.Stepped:Connect(function()
 end)
 
 
-
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
 --==============================================================--
@@ -1302,36 +1301,4 @@ LocalPlayerTab:Toggle({
         ToggleFly(Ativo)
     end
 })
-
-LocalPlayerTab:Slider({
-    Title = "Fly Speed",
-    Desc = "Ajuste a velocidade do Voo",
-    Value = {Min = 16, Max = 100, Default = 16, Step = 1},
-    Callback = function(Valor)
-        FlyVelocidade = Valor
-    end
-})
-
-LocalPlayerTab:Toggle({
-    Title = "Ligar Noclip",
-    Value = false,
-    Callback = function(state)
-        NoclipConfig.Active = state
-        if not state then
-            -- Restaura as colisões padrão ao desligar
-            local char = LocalPlayer.Character
-            if char then
-                for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = (part.Name == "HumanoidRootPart" or part.Name == "Head" or part.Name == "UpperTorso" or part.Name == "LowerTorso")
-                    end
-                end
-            end
-        end
-    end,
-})
-
-
-
-
 
