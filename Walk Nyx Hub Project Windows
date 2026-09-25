@@ -493,13 +493,13 @@ local function RemoveGrabButton()
     end
 end
 
-
 -- =========================================================================
--- 🎯 FOV CIRCLE & AIMLOCK (CENTRALIZADO, TUDO BRANCO, 10 LINHAS E ROTAÇÃO)
+-- 🎯 FOV CIRCLE & AIMLOCK (PERFEITAMENTE CENTRALIZADO, LINHAS DENTRO E FORA, TUDO BRANCO)
 -- =========================================================================
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -512,7 +512,9 @@ local fovVelocidadeGiro = 2
 local circleFrame = nil
 local modOuterRing = nil
 local modInnerRing = nil
-local modLinesHolder = nil
+local modOuterLinesHolder = nil
+local modInnerLinesHolder = nil
+local modCrossHolder = nil
 
 -- Função para achar o Murderer
 local function GetMurderer()
@@ -544,7 +546,8 @@ local function AtualizarElementosFov()
         local circle = Instance.new("Frame")
         circle.Name = "SimpleCircle"
         circle.AnchorPoint = Vector2.new(0.5, 0.5)
-        circle.Position = UDim2.new(0.5, 0, 0.5, 0)
+        -- Correção exata de centralização de tela tirando o inset do topo/barra do celular
+        circle.Position = UDim2.new(0.5, 0, 0.5, -GuiService:GetGuiInset().Y / 2)
         circle.Size = UDim2.new(0, diametro, 0, diametro)
         circle.BackgroundTransparency = 1
         circle.Parent = FovGui
@@ -560,20 +563,20 @@ local function AtualizarElementosFov()
         stroke.Parent = circle
         
         circleFrame = circle
-        modOuterRing, modInnerRing, modLinesHolder = nil, nil, nil
+        modOuterRing, modInnerRing, modOuterLinesHolder, modInnerLinesHolder, modCrossHolder = nil, nil, nil, nil, nil
         
     elseif fovEstiloAtual == "Modificado" then
-        -- Container centralizado perfeitamente na tela (0.5, 0, 0.5, 0)
+        -- Container centralizado perfeitamente no meio real da tela
         local container = Instance.new("Frame")
         container.Name = "ModContainer"
         container.AnchorPoint = Vector2.new(0.5, 0.5)
-        container.Position = UDim2.new(0.5, 0, 0.5, 0)
+        container.Position = UDim2.new(0.5, 0, 0.5, -GuiService:GetGuiInset().Y / 2)
         container.Size = UDim2.new(0, diametro, 0, diametro)
         container.BackgroundTransparency = 1
         container.Parent = FovGui
         circleFrame = container
         
-        -- Anel Externo (Giratório e Branco)
+        -- 1. Anel Externo
         local outer = Instance.new("Frame")
         outer.Size = UDim2.new(1, 0, 1, 0)
         outer.BackgroundTransparency = 1
@@ -592,7 +595,30 @@ local function AtualizarElementosFov()
         outStroke.Parent = outer
         modOuterRing = outer
         
-        -- Anel Interno (Giratório e Branco)
+        -- Linhas do Círculo Externo (10 linhas)
+        local outerLinesHolder = Instance.new("Frame")
+        outerLinesHolder.Size = UDim2.new(1, 0, 1, 0)
+        outerLinesHolder.BackgroundTransparency = 1
+        outerLinesHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+        outerLinesHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
+        outerLinesHolder.Parent = container
+        modOuterLinesHolder = outerLinesHolder
+        
+        for i = 1, 10 do
+            local angle = (i / 10) * (math.pi * 2)
+            local line = Instance.new("Frame")
+            line.Size = UDim2.new(0, 10, 0, 2)
+            line.AnchorPoint = Vector2.new(0, 0.5)
+            line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            line.BorderSizePixel = 0
+            line.Rotation = math.deg(angle)
+            
+            local radiusOffset = (diametro * 0.5) -- Borda externa
+            line.Position = UDim2.new(0.5, math.cos(angle) * radiusOffset, 0.5, math.sin(angle) * radiusOffset)
+            line.Parent = outerLinesHolder
+        end
+        
+        -- 2. Anel Interno
         local inner = Instance.new("Frame")
         inner.Size = UDim2.new(0.75, 0, 0.75, 0)
         inner.BackgroundTransparency = 1
@@ -611,33 +637,38 @@ local function AtualizarElementosFov()
         inStroke.Parent = inner
         modInnerRing = inner
         
-        -- Holder para as 10 Linhas distribuídas em círculo + X central
-        local linesHolder = Instance.new("Frame")
-        linesHolder.Size = UDim2.new(1, 0, 1, 0)
-        linesHolder.BackgroundTransparency = 1
-        linesHolder.AnchorPoint = Vector2.new(0.5, 0.5)
-        linesHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
-        linesHolder.Parent = container
-        modLinesHolder = linesHolder
+        -- Linhas do Círculo Interno (10 linhas)
+        local innerLinesHolder = Instance.new("Frame")
+        innerLinesHolder.Size = UDim2.new(1, 0, 1, 0)
+        innerLinesHolder.BackgroundTransparency = 1
+        innerLinesHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+        innerLinesHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
+        innerLinesHolder.Parent = container
+        modInnerLinesHolder = innerLinesHolder
         
-        -- Cria as 10 linhas radiais (estilo radar)
         for i = 1, 10 do
             local angle = (i / 10) * (math.pi * 2)
             local line = Instance.new("Frame")
             line.Size = UDim2.new(0, 8, 0, 2)
             line.AnchorPoint = Vector2.new(0, 0.5)
-            line.Position = UDim2.new(0.5, 0, 0.5, 0)
             line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             line.BorderSizePixel = 0
             line.Rotation = math.deg(angle)
             
-            -- Posiciona a linha na borda interna
-            local radiusOffset = (diametro * 0.375)
+            local radiusOffset = (diametro * 0.375) -- Borda interna
             line.Position = UDim2.new(0.5, math.cos(angle) * radiusOffset, 0.5, math.sin(angle) * radiusOffset)
-            line.Parent = linesHolder
+            line.Parent = innerLinesHolder
         end
         
-        -- X Central (Linhas cruzadas diagonais)
+        -- 3. X Central (Girando junto com o anel interno)
+        local crossHolder = Instance.new("Frame")
+        crossHolder.Size = UDim2.new(1, 0, 1, 0)
+        crossHolder.BackgroundTransparency = 1
+        crossHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+        crossHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
+        crossHolder.Parent = container
+        modCrossHolder = crossHolder
+        
         local cross1 = Instance.new("Frame")
         cross1.Size = UDim2.new(0.25, 0, 0, 2)
         cross1.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -645,7 +676,7 @@ local function AtualizarElementosFov()
         cross1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         cross1.BorderSizePixel = 0
         cross1.Rotation = 45
-        cross1.Parent = container
+        cross1.Parent = crossHolder
         
         local cross2 = Instance.new("Frame")
         cross2.Size = UDim2.new(0, 2, 0.25, 0)
@@ -654,7 +685,7 @@ local function AtualizarElementosFov()
         cross2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         cross2.BorderSizePixel = 0
         cross2.Rotation = 45
-        cross2.Parent = container
+        cross2.Parent = crossHolder
     end
 end
 
@@ -680,7 +711,6 @@ local function RemoverFovGui()
     end
 end
 
--- Verificação se o jogador está com a arma (Mão ou Inventário)
 local function PlayerTemArma()
     local Char = LocalPlayer.Character
     if not Char then return false end
@@ -689,17 +719,19 @@ local function PlayerTemArma()
     return false
 end
 
--- Variável acumuladora para o giro suave controlada pelo slider
 local anguloAtualGiro = 0
 
 RunService.RenderStepped:Connect(function(dt)
-    -- 1. Lógica de Rotação Completa (Anéis + 10 linhas giram juntos, parando se o slider for 0)
+    -- Lógica de Rotação (Se slider for 0, para completamente. Externo gira para o sentido oposto)
     if fovAtivo and fovEstiloAtual == "Modificado" and circleFrame then
         anguloAtualGiro = anguloAtualGiro + (fovVelocidadeGiro * dt * 40)
         
         if modInnerRing then modInnerRing.Rotation = anguloAtualGiro end
-        if modOuterRing then modOuterRing.Rotation = -anguloAtualGiro * 0.5 end -- Gira o externo levemente ao contrário para dar efeito legal
-        if modLinesHolder then modLinesHolder.Rotation = anguloAtualGiro * 0.8 end
+        if modInnerLinesHolder then modInnerLinesHolder.Rotation = anguloAtualGiro end
+        if modCrossHolder then modCrossHolder.Rotation = anguloAtualGiro end -- X gira junto
+        
+        if modOuterRing then modOuterRing.Rotation = -anguloAtualGiro end -- Gira para o lado contrário
+        if modOuterLinesHolder then modOuterLinesHolder.Rotation = -anguloAtualGiro end
     end
 
     if not fovAtivo then return end
@@ -775,6 +807,7 @@ SheriffTab:Toggle({
         end
     end,
 })
+
 
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
