@@ -92,6 +92,154 @@ local ESPTab = Window:Tab({ Title = "ESP", Icon = "eye" })
 local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
+-- ==================================
+-- VARIÁVEIS DO BOTÃO FLUTUANTE (SHERIFF)
+-- ==================================
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Cria a ScreenGui protegida para o botão flutuante
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SheriffFloatingButtonGui"
+ScreenGui.ResetOnSpawn = false
+pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Cria o Botão Principal
+local FloatingButton = Instance.new("TextButton")
+FloatingButton.Name = "SilentAimButton"
+FloatingButton.Size = UDim2.new(0, 140, 0, 50) -- Tamanho padrão (Retangular)
+FloatingButton.Position = UDim2.new(0.5, -70, 0.2, 0)
+FloatingButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+FloatingButton.BackgroundTransparency = 0.4 -- Preto semi-transparente
+FloatingButton.Text = "Silent AIM"
+FloatingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatingButton.TextSize = 14
+FloatingButton.Font = Enum.Font.GothamBold
+FloatingButton.Visible = false -- Começa oculto (controlado pelo Toggle)
+FloatingButton.Parent = ScreenGui
+
+-- Borda fina branca ao redor do botão
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(255, 255, 255)
+UIStroke.Thickness = 1.5
+UIStroke.Parent = FloatingButton
+
+-- Arredondamento inicial (Retângulo com cantos levemente arredondados)
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = FloatingButton
+
+-- Variável para guardar o formato atual
+local formatoAtual = "Retangulo"
+local tamanhoAtual = 140
+
+-- ==================================
+-- ANIMAÇÃO DE CLIQUE (ENCOLHER E VOLTAR)
+-- ==================================
+FloatingButton.MouseButton1Click:Connect(function()
+    local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    -- Encolhe levemente
+    local shrink = TweenService:Create(FloatingButton, tweenInfo, {Size = UDim2.new(0, tamanhoAtual * 0.9, 0, (tamanhoAtual * 0.35) * 0.9)})
+    shrink:Play()
+    
+    shrink.Completed:Connect(function()
+        -- Volta ao tamanho original
+        local expand = TweenService:Create(FloatingButton, tweenInfo, {Size = UDim2.new(0, tamanhoAtual, 0, formatoAtual == "Quadrado" and tamanhoAtual or (tamanhoAtual * 0.35))})
+        expand:Play()
+    end)
+    
+    -- Coloque aqui a função do seu Silent AIM se quiser ativar/desativar ao clicar no botão:
+    print("Silent AIM acionado pelo botão flutuante!")
+end)
+
+-- Sistema simples para poder arrastar o botão pela tela no celular/PC
+local dragging, dragInput, dragStart, startPos
+FloatingButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = FloatingButton.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+FloatingButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        FloatingButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+
+-- ==================================
+-- INTERFACE NA ABA SHERIFF (WINDUI)
+-- ==================================
+
+SheriffTab:Section({
+    Title = "Configurações do Silent AIM Flutuante"
+})
+
+-- 1. Dropdown para escolher o Formato
+SheriffTab:Dropdown({
+    Title = "Formato do Botão",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoAtual = v
+        if v == "Retangulo" then
+            UICorner.CornerRadius = UDim.new(0, 8)
+            FloatingButton.Size = UDim2.new(0, tamanhoAtual, 0, tamanhoAtual * 0.35)
+        elseif v == "Quadrado" then
+            UICorner.CornerRadius = UDim.new(0, 8)
+            FloatingButton.Size = UDim2.new(0, tamanhoAtual, 0, tamanhoAtual)
+        elseif v == "Circulo" then
+            UICorner.CornerRadius = UDim.new(1, 0) -- Deixa perfeitamente redondo
+            FloatingButton.Size = UDim2.new(0, tamanhoAtual, 0, tamanhoAtual)
+        end
+    end,
+})
+
+-- 2. Slider para aumentar e diminuir o tamanho
+SheriffTab:Slider({
+    Title = "Tamanho do Botão",
+    Step = 5,
+    Value = { Min = 80, Max = 200, Default = 140 },
+    Callback = function(value)
+        tamanhoAtual = value
+        if formatoAtual == "Retangulo" then
+            FloatingButton.Size = UDim2.new(0, value, 0, value * 0.35)
+        else
+            FloatingButton.Size = UDim2.new(0, value, 0, value)
+        end
+    end,
+})
+
+-- 3. Toggle para fazer o botão aparecer ou sumir
+SheriffTab:Toggle({
+    Title = "Mostrar Botão Flutuante",
+    Value = false,
+    Callback = function(state)
+        FloatingButton.Visible = state
+    end,
+})
+
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
 --==============================================================--
