@@ -493,8 +493,9 @@ local function RemoveGrabButton()
     end
 end
 
+
 -- =========================================================================
--- 🎯 FOV CIRCLE & AIMLOCK (MODO SIMPLE / MODIFICADO + CHECAGEM DE ARMA)
+-- 🎯 FOV CIRCLE & AIMLOCK (CENTRALIZADO, TUDO BRANCO, 10 LINHAS E ROTAÇÃO)
 -- =========================================================================
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -511,16 +512,14 @@ local fovVelocidadeGiro = 2
 local circleFrame = nil
 local modOuterRing = nil
 local modInnerRing = nil
-local modCross1 = nil
-local modCross2 = nil
+local modLinesHolder = nil
 
--- Função para achar o Murderer (ajuste conforme o seu jogo se necessário)
+-- Função para achar o Murderer
 local function GetMurderer()
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local humanoid = p.Character:FindFirstChildOfClass("Humanoid")
             if humanoid and humanoid.Health > 0 then
-                -- Exemplo genérico de verificação de papel ou ferramenta de faca/murderer
                 local backpack = p:FindFirstChild("Backpack")
                 local hasKnife = p.Character:FindFirstChild("Knife") or (backpack and backpack:FindFirstChild("Knife"))
                 if hasKnife then
@@ -555,15 +554,16 @@ local function AtualizarElementosFov()
         corner.Parent = circle
         
         local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(0, 255, 200)
+        stroke.Color = Color3.fromRGB(255, 255, 255)
         stroke.Thickness = 2
         stroke.Transparency = 0.2
         stroke.Parent = circle
         
         circleFrame = circle
-        modOuterRing, modInnerRing, modCross1, modCross2 = nil, nil, nil, nil
+        modOuterRing, modInnerRing, modLinesHolder = nil, nil, nil
         
     elseif fovEstiloAtual == "Modificado" then
+        -- Container centralizado perfeitamente na tela (0.5, 0, 0.5, 0)
         local container = Instance.new("Frame")
         container.Name = "ModContainer"
         container.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -573,7 +573,7 @@ local function AtualizarElementosFov()
         container.Parent = FovGui
         circleFrame = container
         
-        -- Anel Externo Neon
+        -- Anel Externo (Giratório e Branco)
         local outer = Instance.new("Frame")
         outer.Size = UDim2.new(1, 0, 1, 0)
         outer.BackgroundTransparency = 1
@@ -586,13 +586,13 @@ local function AtualizarElementosFov()
         outCorner.Parent = outer
         
         local outStroke = Instance.new("UIStroke")
-        outStroke.Color = Color3.fromRGB(255, 50, 100)
+        outStroke.Color = Color3.fromRGB(255, 255, 255)
         outStroke.Thickness = 2.5
         outStroke.Transparency = 0.1
         outStroke.Parent = outer
         modOuterRing = outer
         
-        -- Anel Interno Rotativo
+        -- Anel Interno (Giratório e Branco)
         local inner = Instance.new("Frame")
         inner.Size = UDim2.new(0.75, 0, 0.75, 0)
         inner.BackgroundTransparency = 1
@@ -605,31 +605,56 @@ local function AtualizarElementosFov()
         inCorner.Parent = inner
         
         local inStroke = Instance.new("UIStroke")
-        inStroke.Color = Color3.fromRGB(0, 200, 255)
+        inStroke.Color = Color3.fromRGB(255, 255, 255)
         inStroke.Thickness = 1.5
-        inStroke.Transparency = 0.4
+        inStroke.Transparency = 0.3
         inStroke.Parent = inner
         modInnerRing = inner
         
-        -- Linhas de Crosshair Centrais
-        local crossH = Instance.new("Frame")
-        crossH.Size = UDim2.new(0.3, 0, 0, 2)
-        crossH.AnchorPoint = Vector2.new(0.5, 0.5)
-        crossH.Position = UDim2.new(0.5, 0, 0.5, 0)
-        crossH.BackgroundColor3 = Color3.fromRGB(0, 255, 200)
-        crossH.BorderSizePixel = 0
-        crossH.Parent = container
+        -- Holder para as 10 Linhas distribuídas em círculo + X central
+        local linesHolder = Instance.new("Frame")
+        linesHolder.Size = UDim2.new(1, 0, 1, 0)
+        linesHolder.BackgroundTransparency = 1
+        linesHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+        linesHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
+        linesHolder.Parent = container
+        modLinesHolder = linesHolder
         
-        local crossV = Instance.new("Frame")
-        crossV.Size = UDim2.new(0, 2, 0.3, 0)
-        crossV.AnchorPoint = Vector2.new(0.5, 0.5)
-        crossV.Position = UDim2.new(0.5, 0, 0.5, 0)
-        crossV.BackgroundColor3 = Color3.fromRGB(0, 255, 200)
-        crossV.BorderSizePixel = 0
-        crossV.Parent = container
+        -- Cria as 10 linhas radiais (estilo radar)
+        for i = 1, 10 do
+            local angle = (i / 10) * (math.pi * 2)
+            local line = Instance.new("Frame")
+            line.Size = UDim2.new(0, 8, 0, 2)
+            line.AnchorPoint = Vector2.new(0, 0.5)
+            line.Position = UDim2.new(0.5, 0, 0.5, 0)
+            line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            line.BorderSizePixel = 0
+            line.Rotation = math.deg(angle)
+            
+            -- Posiciona a linha na borda interna
+            local radiusOffset = (diametro * 0.375)
+            line.Position = UDim2.new(0.5, math.cos(angle) * radiusOffset, 0.5, math.sin(angle) * radiusOffset)
+            line.Parent = linesHolder
+        end
         
-        modCross1 = crossH
-        modCross2 = crossV
+        -- X Central (Linhas cruzadas diagonais)
+        local cross1 = Instance.new("Frame")
+        cross1.Size = UDim2.new(0.25, 0, 0, 2)
+        cross1.AnchorPoint = Vector2.new(0.5, 0.5)
+        cross1.Position = UDim2.new(0.5, 0, 0.5, 0)
+        cross1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        cross1.BorderSizePixel = 0
+        cross1.Rotation = 45
+        cross1.Parent = container
+        
+        local cross2 = Instance.new("Frame")
+        cross2.Size = UDim2.new(0, 2, 0.25, 0)
+        cross2.AnchorPoint = Vector2.new(0.5, 0.5)
+        cross2.Position = UDim2.new(0.5, 0, 0.5, 0)
+        cross2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        cross2.BorderSizePixel = 0
+        cross2.Rotation = 45
+        cross2.Parent = container
     end
 end
 
@@ -664,16 +689,17 @@ local function PlayerTemArma()
     return false
 end
 
--- Loop principal do Aimlock e Rotação
-RunService.RenderStepped:Connect(function()
-    if fovAtivo and fovEstiloAtual == "Modificado" and modInnerRing then
-        local tickTime = tick() * fovVelocidadeGiro
-        modInnerRing.Rotation = (tickTime * 50) % 360
+-- Variável acumuladora para o giro suave controlada pelo slider
+local anguloAtualGiro = 0
+
+RunService.RenderStepped:Connect(function(dt)
+    -- 1. Lógica de Rotação Completa (Anéis + 10 linhas giram juntos, parando se o slider for 0)
+    if fovAtivo and fovEstiloAtual == "Modificado" and circleFrame then
+        anguloAtualGiro = anguloAtualGiro + (fovVelocidadeGiro * dt * 40)
         
-        if modOuterRing then
-            local pulse = 1 + math.sin(tickTime * 3) * 0.03
-            modOuterRing.Size = UDim2.new(pulse, 0, pulse, 0)
-        end
+        if modInnerRing then modInnerRing.Rotation = anguloAtualGiro end
+        if modOuterRing then modOuterRing.Rotation = -anguloAtualGiro * 0.5 end -- Gira o externo levemente ao contrário para dar efeito legal
+        if modLinesHolder then modLinesHolder.Rotation = anguloAtualGiro * 0.8 end
     end
 
     if not fovAtivo then return end
@@ -696,6 +722,59 @@ RunService.RenderStepped:Connect(function()
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
     end
 end)
+
+
+-- =========================================================================
+-- 🎛️ ELEMENTOS DA INTERFACE (WINDUI)
+-- =========================================================================
+
+SheriffTab:Section({ Title = "FOV Circle & Aimlock" })
+
+SheriffTab:Dropdown({
+    Title = "Estilo do Círculo FOV",
+    Values = { "Simple", "Modificado" },
+    Default = "Simple",
+    Callback = function(v)
+        fovEstiloAtual = v
+        if fovAtivo then
+            AtualizarElementosFov()
+        end
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Tamanho do Círculo (FOV)",
+    Step = 5,
+    Value = { Min = 50, Max = 350, Default = 120 },
+    Callback = function(value)
+        fovTamanhoRadius = value
+        if fovAtivo then
+            AtualizarElementosFov()
+        end
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Velocidade de Giro (Modificado)",
+    Step = 0.5,
+    Value = { Min = 0, Max = 5, Default = 2 },
+    Callback = function(value)
+        fovVelocidadeGiro = value
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Ativar FOV Circle & Aimlock",
+    Value = false,
+    Callback = function(state)
+        fovAtivo = state
+        if state then
+            CriarFovGui()
+        else
+            RemoverFovGui()
+        end
+    end,
+})
 
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
@@ -1981,54 +2060,6 @@ SheriffTab:Toggle({
     Value = false,
     Callback = function(state)
         if state then CreateGrabButton() else RemoveGrabButton() end
-    end,
-})
-
-SheriffTab:Section({ Title = "FOV Circle & Aimlock" })
-
-SheriffTab:Dropdown({
-    Title = "Estilo do Círculo FOV",
-    Values = { "Simple", "Modificado" },
-    Default = "Simple",
-    Callback = function(v)
-        fovEstiloAtual = v
-        if fovAtivo then
-            AtualizarElementosFov()
-        end
-    end,
-})
-
-SheriffTab:Slider({
-    Title = "Tamanho do Círculo (FOV)",
-    Step = 5,
-    Value = { Min = 50, Max = 350, Default = 120 },
-    Callback = function(value)
-        fovTamanhoRadius = value
-        if fovAtivo then
-            AtualizarElementosFov()
-        end
-    end,
-})
-
-SheriffTab:Slider({
-    Title = "Velocidade de Giro (Modificado)",
-    Step = 0.5,
-    Value = { Min = 0.5, Max = 5, Default = 2 },
-    Callback = function(value)
-        fovVelocidadeGiro = value
-    end,
-})
-
-SheriffTab:Toggle({
-    Title = "Ativar FOV Circle & Aimlock",
-    Value = false,
-    Callback = function(state)
-        fovAtivo = state
-        if state then
-            CriarFovGui()
-        else
-            RemoverFovGui()
-        end
     end,
 })
 
