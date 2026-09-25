@@ -494,7 +494,7 @@ local function RemoveGrabButton()
 end
 
 -- =========================================================================
--- 🎯 FOV CIRCLE & AIMLOCK (PERFEITAMENTE CENTRALIZADO, LINHAS DENTRO E FORA, TUDO BRANCO)
+-- 🎯 FOV CIRCLE & AIMLOCK (LINHAS ALINHADAS, SEM X, MODO RAINBOW, TUDO BRANCO/RGB)
 -- =========================================================================
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -508,13 +508,20 @@ local fovAtivo = false
 local fovEstiloAtual = "Simple"
 local fovTamanhoRadius = 120
 local fovVelocidadeGiro = 2
+local fovRainbowAtivo = false
 
 local circleFrame = nil
 local modOuterRing = nil
 local modInnerRing = nil
 local modOuterLinesHolder = nil
 local modInnerLinesHolder = nil
-local modCrossHolder = nil
+
+-- Elementos visuais salvos globalmente para atualizar a cor no Rainbow
+local elementosVisuais = {}
+
+local function AdicionarElementoCor(instancia, tipo)
+    table.insert(elementosVisuais, {obj = instancia, tipo = tipo})
+end
 
 -- Função para achar o Murderer
 local function GetMurderer()
@@ -539,14 +546,15 @@ local function AtualizarElementosFov()
     for _, child in ipairs(FovGui:GetChildren()) do
         child:Destroy()
     end
+    elementosVisuais = {}
     
     local diametro = fovTamanhoRadius * 2
+    local corAtual = fovRainbowAtivo and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Color3.fromRGB(255, 255, 255)
     
     if fovEstiloAtual == "Simple" then
         local circle = Instance.new("Frame")
         circle.Name = "SimpleCircle"
         circle.AnchorPoint = Vector2.new(0.5, 0.5)
-        -- Correção exata de centralização de tela tirando o inset do topo/barra do celular
         circle.Position = UDim2.new(0.5, 0, 0.5, -GuiService:GetGuiInset().Y / 2)
         circle.Size = UDim2.new(0, diametro, 0, diametro)
         circle.BackgroundTransparency = 1
@@ -557,16 +565,16 @@ local function AtualizarElementosFov()
         corner.Parent = circle
         
         local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(255, 255, 255)
+        stroke.Color = corAtual
         stroke.Thickness = 2
         stroke.Transparency = 0.2
         stroke.Parent = circle
+        AdicionarElementoCor(stroke, "Color")
         
         circleFrame = circle
-        modOuterRing, modInnerRing, modOuterLinesHolder, modInnerLinesHolder, modCrossHolder = nil, nil, nil, nil, nil
+        modOuterRing, modInnerRing, modOuterLinesHolder, modInnerLinesHolder = nil, nil, nil, nil
         
     elseif fovEstiloAtual == "Modificado" then
-        -- Container centralizado perfeitamente no meio real da tela
         local container = Instance.new("Frame")
         container.Name = "ModContainer"
         container.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -589,13 +597,14 @@ local function AtualizarElementosFov()
         outCorner.Parent = outer
         
         local outStroke = Instance.new("UIStroke")
-        outStroke.Color = Color3.fromRGB(255, 255, 255)
+        outStroke.Color = corAtual
         outStroke.Thickness = 2.5
         outStroke.Transparency = 0.1
         outStroke.Parent = outer
+        AdicionarElementoCor(outStroke, "Color")
         modOuterRing = outer
         
-        -- Linhas do Círculo Externo (10 linhas)
+        -- Linhas do Círculo Externo (Perfeitamente alinhadas na borda: radiano exato)
         local outerLinesHolder = Instance.new("Frame")
         outerLinesHolder.Size = UDim2.new(1, 0, 1, 0)
         outerLinesHolder.BackgroundTransparency = 1
@@ -607,15 +616,17 @@ local function AtualizarElementosFov()
         for i = 1, 10 do
             local angle = (i / 10) * (math.pi * 2)
             local line = Instance.new("Frame")
+            -- Tamanho proporcional para ficar cravado na borda (metade pra dentro, metade pra fora da linha exata)
             line.Size = UDim2.new(0, 10, 0, 2)
-            line.AnchorPoint = Vector2.new(0, 0.5)
-            line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            line.AnchorPoint = Vector2.new(0.5, 0.5)
+            line.BackgroundColor3 = corAtual
             line.BorderSizePixel = 0
             line.Rotation = math.deg(angle)
             
-            local radiusOffset = (diametro * 0.5) -- Borda externa
+            local radiusOffset = fovTamanhoRadius
             line.Position = UDim2.new(0.5, math.cos(angle) * radiusOffset, 0.5, math.sin(angle) * radiusOffset)
             line.Parent = outerLinesHolder
+            AdicionarElementoCor(line, "BackgroundColor3")
         end
         
         -- 2. Anel Interno
@@ -631,13 +642,14 @@ local function AtualizarElementosFov()
         inCorner.Parent = inner
         
         local inStroke = Instance.new("UIStroke")
-        inStroke.Color = Color3.fromRGB(255, 255, 255)
+        inStroke.Color = corAtual
         inStroke.Thickness = 1.5
         inStroke.Transparency = 0.3
         inStroke.Parent = inner
+        AdicionarElementoCor(inStroke, "Color")
         modInnerRing = inner
         
-        -- Linhas do Círculo Interno (10 linhas)
+        -- Linhas do Círculo Interno (Alinhadas perfeitamente no raio de 75%)
         local innerLinesHolder = Instance.new("Frame")
         innerLinesHolder.Size = UDim2.new(1, 0, 1, 0)
         innerLinesHolder.BackgroundTransparency = 1
@@ -650,42 +662,16 @@ local function AtualizarElementosFov()
             local angle = (i / 10) * (math.pi * 2)
             local line = Instance.new("Frame")
             line.Size = UDim2.new(0, 8, 0, 2)
-            line.AnchorPoint = Vector2.new(0, 0.5)
-            line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            line.AnchorPoint = Vector2.new(0.5, 0.5)
+            line.BackgroundColor3 = corAtual
             line.BorderSizePixel = 0
             line.Rotation = math.deg(angle)
             
-            local radiusOffset = (diametro * 0.375) -- Borda interna
+            local radiusOffset = fovTamanhoRadius * 0.75
             line.Position = UDim2.new(0.5, math.cos(angle) * radiusOffset, 0.5, math.sin(angle) * radiusOffset)
             line.Parent = innerLinesHolder
+            AdicionarElementoCor(line, "BackgroundColor3")
         end
-        
-        -- 3. X Central (Girando junto com o anel interno)
-        local crossHolder = Instance.new("Frame")
-        crossHolder.Size = UDim2.new(1, 0, 1, 0)
-        crossHolder.BackgroundTransparency = 1
-        crossHolder.AnchorPoint = Vector2.new(0.5, 0.5)
-        crossHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
-        crossHolder.Parent = container
-        modCrossHolder = crossHolder
-        
-        local cross1 = Instance.new("Frame")
-        cross1.Size = UDim2.new(0.25, 0, 0, 2)
-        cross1.AnchorPoint = Vector2.new(0.5, 0.5)
-        cross1.Position = UDim2.new(0.5, 0, 0.5, 0)
-        cross1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        cross1.BorderSizePixel = 0
-        cross1.Rotation = 45
-        cross1.Parent = crossHolder
-        
-        local cross2 = Instance.new("Frame")
-        cross2.Size = UDim2.new(0, 2, 0.25, 0)
-        cross2.AnchorPoint = Vector2.new(0.5, 0.5)
-        cross2.Position = UDim2.new(0.5, 0, 0.5, 0)
-        cross2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        cross2.BorderSizePixel = 0
-        cross2.Rotation = 45
-        cross2.Parent = crossHolder
     end
 end
 
@@ -722,15 +708,28 @@ end
 local anguloAtualGiro = 0
 
 RunService.RenderStepped:Connect(function(dt)
-    -- Lógica de Rotação (Se slider for 0, para completamente. Externo gira para o sentido oposto)
+    -- Atualização dinâmica de Cores (Rainbow) e Rotação
+    local corFrameAtual = Color3.fromRGB(255, 255, 255)
+    if fovRainbowAtivo then
+        corFrameAtual = Color3.fromHSV((tick() % 4) / 4, 1, 1)
+        for _, item in ipairs(elementosVisuais) do
+            if item.obj and item.obj.Parent then
+                if item.tipo == "Color" then
+                    item.obj.Color = corFrameAtual
+                elseif item.tipo == "BackgroundColor3" then
+                    item.obj.BackgroundColor3 = corFrameAtual
+                end
+            end
+        end
+    end
+
     if fovAtivo and fovEstiloAtual == "Modificado" and circleFrame then
         anguloAtualGiro = anguloAtualGiro + (fovVelocidadeGiro * dt * 40)
         
         if modInnerRing then modInnerRing.Rotation = anguloAtualGiro end
         if modInnerLinesHolder then modInnerLinesHolder.Rotation = anguloAtualGiro end
-        if modCrossHolder then modCrossHolder.Rotation = anguloAtualGiro end -- X gira junto
         
-        if modOuterRing then modOuterRing.Rotation = -anguloAtualGiro end -- Gira para o lado contrário
+        if modOuterRing then modOuterRing.Rotation = -anguloAtualGiro end
         if modOuterLinesHolder then modOuterLinesHolder.Rotation = -anguloAtualGiro end
     end
 
@@ -796,6 +795,18 @@ SheriffTab:Slider({
 })
 
 SheriffTab:Toggle({
+    Title = "Ativar Modo Rainbow",
+    Value = false,
+    Callback = function(state)
+        fovRainbowAtivo = state
+        if not state and FovGui then
+            -- Reseta para branco se desativar
+            AtualizarElementosFov()
+        end
+    end,
+})
+
+SheriffTab:Toggle({
     Title = "Ativar FOV Circle & Aimlock",
     Value = false,
     Callback = function(state)
@@ -807,7 +818,6 @@ SheriffTab:Toggle({
         end
     end,
 })
-
 
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
