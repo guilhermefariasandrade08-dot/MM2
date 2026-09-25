@@ -1870,6 +1870,115 @@ local function ExecutarFPSBoosterCompleto()
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end
 
+-- ==================================
+-- INTERFACE NA ABA SHERIFF (WINDUI)
+-- ==================================
+
+SheriffTab:Section({
+    Title = "Botão Flutuante"
+})
+
+-- 1. Toggle para ligar/desligar o botão flutuante na tela
+SheriffTab:Toggle({
+    Title = "Mostrar Botão Flutuante",
+    Value = false,
+    Callback = function(state)
+        if state then
+            CreateNyxAimButton()
+        else
+            RemoveNyxAimButton()
+        end
+    end,
+})
+
+-- 2. Dropdown (Lista) para escolher o formato (Já vem Retângulo selecionado)
+SheriffTab:Dropdown({
+    Title = "Formato do Botão",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoAtual = v
+        AplicarFormatoETamanho()
+    end,
+})
+
+-- 3. Slider para aumentar e diminuir o tamanho manualmente
+SheriffTab:Slider({
+    Title = "Tamanho do Botão",
+    Step = 5,
+    Value = { Min = 150, Max = 400, Default = 250 },
+    Callback = function(value)
+        tamanhoAtualBase = value
+        AplicarFormatoETamanho()
+        
+        -- Ajusta a proporção da letra automaticamente
+        if currentButtonRef then
+            local textLabel = currentButtonRef:FindFirstChild("NyxText")
+            if textLabel then
+                textLabel.TextSize = math.clamp(math.floor(value / 12.5), 12, 24)
+            end
+        end
+    end,
+})
+
+-- 1. Toggle para ligar/desligar o botão flutuante na tela
+SheriffTab:Toggle({
+    Title = "Mostrar Botão Flutuante",
+    Value = false,
+    Callback = function(state)
+        if state then
+            CreateNyxAimButton()
+        else
+            RemoveNyxAimButton()
+        end
+    end,
+})
+
+-- 2. Lista para escolher o modo de pegar a arma (Grab ou Teleport)
+SheriffTab:Dropdown({
+    Title = "Modo de Pegar a Arma",
+    Values = { "Grab", "Teleport" },
+    Default = "Grab",
+    Callback = function(v)
+        modoGrabAtual = v
+        if currentButtonRef then
+            local textoLabel = currentButtonRef:FindFirstChild("NyxText")
+            if textoLabel then
+                AtualizarTextoBotao(textoLabel)
+            end
+        end
+    end,
+})
+
+-- 3. Lista para escolher o formato do botão (Já vem Retângulo selecionado)
+SheriffTab:Dropdown({
+    Title = "Formato do Botão",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoAtual = v
+        AplicarFormatoETamanho()
+    end,
+})
+
+-- 4. Slider para aumentar e diminuir o tamanho manualmente
+SheriffTab:Slider({
+    Title = "Tamanho do Botão",
+    Step = 5,
+    Value = { Min = 150, Max = 400, Default = 250 },
+    Callback = function(value)
+        tamanhoAtualBase = value
+        AplicarFormatoETamanho()
+        
+        if currentButtonRef then
+            local textLabel = currentButtonRef:FindFirstChild("NyxText")
+            if textLabel then
+                textLabel.TextSize = math.clamp(math.floor(value / 12.5), 12, 24)
+            end
+        end
+    end,
+})
+
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
 --==============================================================--
