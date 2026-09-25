@@ -92,6 +92,495 @@ local ESPTab = Window:Tab({ Title = "ESP", Icon = "eye" })
 local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
+-- =========================================================================
+-- 🔫 SISTEMA COMPLETO: SILENT AIM & GRAB/TELEPORT GUN (ABA SHERIFF)
+-- =========================================================================
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Stats = game:GetService("Stats")
+local LocalPlayer = Players.LocalPlayer
+
+-- =========================================================================
+-- 1. VARIÁVEIS E FUNÇÕES DO SISTEMA 1: SILENT AIM
+-- =========================================================================
+local SilentButtonGui = nil
+local isDraggingSilent = false
+local SilentPressed = false
+local ShootPredictMultiplier = 1
+
+local currentSilentBtnRef = nil
+local currentSilentCornerRef = nil
+local tamanhoSilentBase = 250
+local formatoSilentAtual = "Retangulo"
+
+local function GetPing()
+    local ok, value = pcall(function()
+        return Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+    end)
+    return ok and value or 100
+end
+
+local function GetMurderer()
+    local DataRemote = ReplicatedStorage:FindFirstChild("GetPlayerData", true)
+    if not DataRemote then return nil end
+    local ok, Data = pcall(function() return DataRemote:InvokeServer() end)
+    if not ok or not Data then return nil end
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local Info = Data[p.Name]
+            if Info and not Info.Killed and not Info.Dead then
+                local isMurderer = false
+                if Info.Role == "Murderer" or (Info.Role and string.lower(Info.Role) == "murderer") then
+                    isMurderer = true
+                end
+                if isMurderer then return p end
+            end
+        end
+    end
+    return nil
+end
+
+local function ShootMurderer(TextoLabel)
+    if SilentPressed then return end
+
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+
+    local Gun = Char:FindFirstChild("Gun") or (LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Gun"))
+    
+    if not Gun then
+        if TextoLabel then
+            TextoLabel.Text = "N o    D r o p"
+            task.delay(1, function()
+                if TextoLabel and TextoLabel.Parent then
+                    TextoLabel.Text = "S i l e n t    A I M"
+                end
+            end)
+        end
+        return 
+    end
+
+    SilentPressed = true
+
+    if Gun.Parent ~= Char then
+        Gun.Parent = Char
+        task.wait(0.05)
+    end
+
+    local Murderer = GetMurderer()
+    if not Murderer or not Murderer.Character then 
+        SilentPressed = false 
+        return 
+    end
+
+    local TargetHRP = Murderer.Character:FindFirstChild("HumanoidRootPart")
+    local TargetTorso = Murderer.Character:FindFirstChild("Torso") or Murderer.Character:FindFirstChild("UpperTorso")
+    if not TargetHRP or not TargetTorso then 
+        SilentPressed = false 
+        return 
+    end
+
+    local Ping = GetPing()
+    local PredictionTime = (Ping / 1000) * (ShootPredictMultiplier or 1)
+    local Velocity = TargetHRP.Velocity
+    local PredictedPos = Velocity.Magnitude < 1 and TargetTorso.Position or TargetTorso.Position + (Velocity * PredictionTime)
+    
+    local MyPos = Char.HumanoidRootPart.Position
+    local RayDirection = (PredictedPos - MyPos)
+    
+    local RayParams = RaycastParams.new()
+    RayParams.FilterType = Enum.RaycastFilterType.Exclude
+    RayParams.FilterDescendantsInstances = {Char, Murderer.Character}
+    RayParams.IgnoreWater = true
+
+    local RayResult = workspace:Raycast(MyPos, RayDirection, RayParams)
+    local OriginCFrame = RayResult and CFrame.new(RayResult.Position + (RayDirection.Unit * 1.5), PredictedPos) or CFrame.new(MyPos, PredictedPos)
+
+    local ShootEvent = Gun:FindFirstChild("ShootEvent", true) or Gun:FindFirstChild("Shoot", true) or ReplicatedStorage:FindFirstChild("Shoot", true)
+    if ShootEvent then
+        if ShootEvent:IsA("RemoteEvent") then
+            ShootEvent:FireServer(OriginCFrame, CFrame.new(PredictedPos))
+        elseif ShootEvent:IsA("RemoteFunction") then
+            ShootEvent:InvokeServer(OriginCFrame, CFrame.new(PredictedPos))
+        end
+    end
+
+    task.wait(0.3)
+    SilentPressed = false
+end
+
+local function AplicarFormatoSilent()
+    if not currentSilentBtnRef or not currentSilentCornerRef then return end
+    local val = tamanhoSilentBase
+    if formatoSilentAtual == "Retangulo" then
+        currentSilentBtnRef.Size = UDim2.new(0, val, 0, val / 2.5)
+        currentSilentCornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoSilentAtual == "Quadrado" then
+        currentSilentBtnRef.Size = UDim2.new(0, val, 0, val)
+        currentSilentCornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoSilentAtual == "Circulo" then
+        currentSilentBtnRef.Size = UDim2.new(0, val, 0, val)
+        currentSilentCornerRef.CornerRadius = UDim.new(1, 0)
+    end
+end
+
+local function CreateSilentButton()
+    if SilentButtonGui then return end
+    
+    local ParentGui = CoreGui
+    pcall(function() if not CoreGui then ParentGui = LocalPlayer:WaitForChild("PlayerGui") end end)
+    
+    local GuiBtn = Instance.new("ScreenGui")
+    GuiBtn.Name = "Sheriff_SilentAimGui"
+    GuiBtn.ResetOnSpawn = false
+    GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    GuiBtn.Parent = ParentGui
+    
+    local Btn = Instance.new("ImageButton")
+    Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    Btn.Position = UDim2.new(0.5, 0, 0.25, 0)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.BackgroundTransparency = 0.4
+    Btn.AutoButtonColor = false
+    Btn.BorderSizePixel = 0
+    Btn.Parent = GuiBtn
+    
+    currentSilentBtnRef = Btn
+    
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = Btn
+    currentSilentCornerRef = Corner
+    
+    local Borda = Instance.new("UIStroke")
+    Borda.Color = Color3.fromRGB(255, 255, 255)
+    Borda.Thickness = 1.5
+    Borda.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Borda.Parent = Btn
+    
+    local Texto = Instance.new("TextLabel")
+    Texto.Name = "SilentText"
+    Texto.Size = UDim2.new(1, 0, 1, 0)
+    Texto.BackgroundTransparency = 1
+    Texto.Text = "S i l e n t    A I M"
+    Texto.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Texto.Font = Enum.Font.SourceSans
+    Texto.Parent = Btn
+    
+    AplicarFormatoSilent()
+    Texto.TextSize = math.clamp(math.floor(tamanhoSilentBase / 12.5), 12, 24)
+    
+    local dragStart, startPos
+    Btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDraggingSilent = false
+            dragStart = input.Position
+            startPos = Btn.AbsolutePosition
+        end
+    end)
+    
+    Btn.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and dragStart then
+            local delta = input.Position - dragStart
+            if delta.Magnitude > 10 then
+                isDraggingSilent = true
+                Btn.Position = UDim2.new(0, startPos.X + delta.X + (Btn.AbsoluteSize.X / 2), 0, startPos.Y + delta.Y + (Btn.AbsoluteSize.Y / 2))
+            end
+        end
+    end)
+    
+    Btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not isDraggingSilent then
+                ShootMurderer(Texto)
+            end
+            dragStart = nil
+            isDraggingSilent = false
+        end
+    end)
+    
+    SilentButtonGui = GuiBtn
+end
+
+local function RemoveSilentButton()
+    if SilentButtonGui then
+        SilentButtonGui:Destroy()
+        SilentButtonGui = nil
+        currentSilentBtnRef = nil
+        currentSilentCornerRef = nil
+    end
+end
+
+
+-- =========================================================================
+-- 2. VARIÁVEIS E FUNÇÕES DO SISTEMA 2: GRAB & TELEPORT GUN
+-- =========================================================================
+local GrabButtonGui = nil
+local isDraggingGrab = false
+local GrabPressed = false
+
+local currentGrabBtnRef = nil
+local currentGrabCornerRef = nil
+local tamanhoGrabBase = 250
+local formatoGrabAtual = "Retangulo"
+local modoGrabAtual = "Grab"
+
+local function GetGunDrop()
+    local MapContainer = workspace:FindFirstChild("CoinContainer", true) and workspace:FindFirstChild("CoinContainer", true).Parent
+    local mapToSearch = MapContainer or workspace
+    local gunDrop = mapToSearch:FindFirstChild("GunDrop", true) or workspace:FindFirstChild("GunDrop", true)
+    if gunDrop and gunDrop:IsA("BasePart") then
+        return gunDrop
+    end
+    return nil
+end
+
+local function AtualizarTextoGrab(TextoLabel, customText)
+    if not TextoLabel or not TextoLabel.Parent then return end
+    if customText then
+        TextoLabel.Text = customText
+    else
+        if modoGrabAtual == "Grab" then
+            TextoLabel.Text = "Grab Gun"
+        else
+            TextoLabel.Text = "Teleport to Gun"
+        end
+    end
+end
+
+local function TriggerGrabGun(TextoLabel)
+    if GrabPressed then return end
+    
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+    
+    local gunDrop = GetGunDrop()
+    
+    if not gunDrop then
+        AtualizarTextoGrab(TextoLabel, "No Drop!")
+        task.delay(1.2, function()
+            AtualizarTextoGrab(TextoLabel)
+        end)
+        return
+    end
+    
+    GrabPressed = true
+    
+    if modoGrabAtual == "Grab" then
+        gunDrop.CFrame = Char.HumanoidRootPart.CFrame
+        AtualizarTextoGrab(TextoLabel, "Grabbed!")
+        task.delay(1.2, function()
+            AtualizarTextoGrab(TextoLabel)
+            GrabPressed = false
+        end)
+        
+    elseif modoGrabAtual == "Teleport" then
+        local posOriginal = Char.HumanoidRootPart.CFrame
+        Char.HumanoidRootPart.CFrame = gunDrop.CFrame
+        task.wait(0.08)
+        
+        if Char and Char:FindFirstChild("HumanoidRootPart") then
+            Char.HumanoidRootPart.CFrame = posOriginal
+        end
+        
+        AtualizarTextoGrab(TextoLabel, "Teleported!")
+        task.delay(1.2, function()
+            AtualizarTextoGrab(TextoLabel)
+            GrabPressed = false
+        end)
+    end
+end
+
+local function AplicarFormatoGrab()
+    if not currentGrabBtnRef or not currentGrabCornerRef then return end
+    local val = tamanhoGrabBase
+    if formatoGrabAtual == "Retangulo" then
+        currentGrabBtnRef.Size = UDim2.new(0, val, 0, val / 2.5)
+        currentGrabCornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoGrabAtual == "Quadrado" then
+        currentGrabBtnRef.Size = UDim2.new(0, val, 0, val)
+        currentGrabCornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoGrabAtual == "Circulo" then
+        currentGrabBtnRef.Size = UDim2.new(0, val, 0, val)
+        currentGrabCornerRef.CornerRadius = UDim.new(1, 0)
+    end
+end
+
+local function CreateGrabButton()
+    if GrabButtonGui then return end
+    
+    local ParentGui = CoreGui
+    pcall(function() if not CoreGui then ParentGui = LocalPlayer:WaitForChild("PlayerGui") end end)
+    
+    local GuiBtn = Instance.new("ScreenGui")
+    GuiBtn.Name = "Sheriff_GrabGunGui"
+    GuiBtn.ResetOnSpawn = false
+    GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    GuiBtn.Parent = ParentGui
+    
+    local Btn = Instance.new("ImageButton")
+    Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    Btn.Position = UDim2.new(0.5, 0, 0.45, 0)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.BackgroundTransparency = 0.4
+    Btn.AutoButtonColor = false
+    Btn.BorderSizePixel = 0
+    Btn.Parent = GuiBtn
+    
+    currentGrabBtnRef = Btn
+    
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = Btn
+    currentGrabCornerRef = Corner
+    
+    local Borda = Instance.new("UIStroke")
+    Borda.Color = Color3.fromRGB(255, 255, 255)
+    Borda.Thickness = 1.5
+    Borda.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Borda.Parent = Btn
+    
+    local Texto = Instance.new("TextLabel")
+    Texto.Name = "GrabText"
+    Texto.Size = UDim2.new(1, 0, 1, 0)
+    Texto.BackgroundTransparency = 1
+    Texto.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Texto.Font = Enum.Font.SourceSans
+    Texto.Parent = Btn
+    
+    AtualizarTextoGrab(Texto)
+    AplicarFormatoGrab()
+    Texto.TextSize = math.clamp(math.floor(tamanhoGrabBase / 12.5), 12, 24)
+    
+    local dragStart, startPos
+    Btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDraggingGrab = false
+            dragStart = input.Position
+            startPos = Btn.AbsolutePosition
+        end
+    end)
+    
+    Btn.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and dragStart then
+            local delta = input.Position - dragStart
+            if delta.Magnitude > 10 then
+                isDraggingGrab = true
+                Btn.Position = UDim2.new(0, startPos.X + delta.X + (Btn.AbsoluteSize.X / 2), 0, startPos.Y + delta.Y + (Btn.AbsoluteSize.Y / 2))
+            end
+        end
+    end)
+    
+    Btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not isDraggingGrab then
+                TriggerGrabGun(Texto)
+            end
+            dragStart = nil
+            isDraggingGrab = false
+        end
+    end)
+    
+    GrabButtonGui = GuiBtn
+end
+
+local function RemoveGrabButton()
+    if GrabButtonGui then
+        GrabButtonGui:Destroy()
+        GrabButtonGui = nil
+        currentGrabBtnRef = nil
+        currentGrabCornerRef = nil
+    end
+end
+
+
+-- =========================================================================
+-- 3. INTERFACE NA ABA SHERIFF (WINDUI) - CONFIGURADO SEPARADO E PADRÕES RETÂNGULO
+-- =========================================================================
+
+-- SEÇÃO 1: SILENT AIM
+SheriffTab:Section({ Title = "Botão Flutuante - Silent AIM" })
+
+SheriffTab:Dropdown({
+    Title = "Formato do Botão (Silent)",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoSilentAtual = v
+        AplicarFormatoSilent()
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Tamanho do Botão (Silent)",
+    Step = 5,
+    Value = { Min = 150, Max = 400, Default = 250 },
+    Callback = function(value)
+        tamanhoSilentBase = value
+        AplicarFormatoSilent()
+        if currentSilentBtnRef then
+            local t = currentSilentBtnRef:FindFirstChild("SilentText")
+            if t then t.TextSize = math.clamp(math.floor(value / 12.5), 12, 24) end
+        end
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Mostrar Botão Silent AIM",
+    Value = false,
+    Callback = function(state)
+        if state then CreateSilentButton() else RemoveSilentButton() end
+    end,
+})
+
+
+-- SEÇÃO 2: GRAB / TELEPORT GUN
+SheriffTab:Section({ Title = "Botão Flutuante - Grab / Teleport Gun" })
+
+SheriffTab:Dropdown({
+    Title = "Modo de Pegar a Arma",
+    Values = { "Grab", "Teleport" },
+    Default = "Grab",
+    Callback = function(v)
+        modoGrabAtual = v
+        if currentGrabBtnRef then
+            local t = currentGrabBtnRef:FindFirstChild("GrabText")
+            if t then AtualizarTextoGrab(t) end
+        end
+    end,
+})
+
+SheriffTab:Dropdown({
+    Title = "Formato do Botão (Grab)",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoGrabAtual = v
+        AplicarFormatoGrab()
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Tamanho do Botão (Grab)",
+    Step = 5,
+    Value = { Min = 150, Max = 400, Default = 250 },
+    Callback = function(value)
+        tamanhoGrabBase = value
+        AplicarFormatoGrab()
+        if currentGrabBtnRef then
+            local t = currentGrabBtnRef:FindFirstChild("GrabText")
+            if t then t.TextSize = math.clamp(math.floor(value / 12.5), 12, 24) end
+        end
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Mostrar Botão Grab Gun",
+    Value = false,
+    Callback = function(state)
+        if state then CreateGrabButton() else RemoveGrabButton() end
+    end,
+})
 
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
