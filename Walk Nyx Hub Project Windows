@@ -97,6 +97,7 @@ local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings"
 -- ==================================
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
 
 -- Cria a ScreenGui protegida para o botão flutuante
 local ScreenGui = Instance.new("ScreenGui")
@@ -109,39 +110,68 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Cria o Botão Flutuante Retangular (250 de largura por 100 de altura)
+-- Tamanho base inicial (proporção 2.5 para 1)
+local tamanhoBaseW = 250
+local tamanhoBaseH = 100
+
+-- Cria o Botão Flutuante
 local FloatingButton = Instance.new("TextButton")
 FloatingButton.Name = "SilentAimButton"
-FloatingButton.Size = UDim2.new(0, 250, 0, 100)
-FloatingButton.Position = UDim2.new(0.5, -125, 0.2, 0)
+FloatingButton.Size = UDim2.new(0, tamanhoBaseW, 0, tamanhoBaseH)
+-- Centraliza ancorando pelo meio para crescer de dentro para fora
+FloatingButton.AnchorPoint = Vector2.new(0.5, 0.5)
+FloatingButton.Position = UDim2.new(0.5, 0, 0.3, 0)
 FloatingButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 FloatingButton.BackgroundTransparency = 0.4 -- Preto semi-transparente
 FloatingButton.Text = "S i l e n t    A I M"
 FloatingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 FloatingButton.TextSize = 20
-FloatingButton.Font = Enum.Font.SourceSans -- Letra normal, limpa e sem modificações
+FloatingButton.Font = Enum.Font.SourceSans -- Letra normal e limpa
 FloatingButton.Visible = false -- Começa oculto (controlado pelo Toggle)
 FloatingButton.Parent = ScreenGui
 
--- Cantos levemente arredondados do retângulo
+-- Cantos levemente arredondados
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = FloatingButton
 
--- Linha fina branca contornando toda a borda externa do retângulo
+-- Linha fina branca contornando toda a borda do retângulo
 local UIStroke = Instance.new("UIStroke")
-UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border -- Garante que vai na borda do botão e não no texto
+UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 UIStroke.Color = Color3.fromRGB(255, 255, 255)
 UIStroke.Thickness = 1.5
 UIStroke.Parent = FloatingButton
 
--- Sistema para poder arrastar o botão pela tela no celular/PC
+
+-- ==================================
+-- FUNÇÃO DE LIMITAR O BOTÃO NA TELA (PAREDE INVISÍVEL)
+-- ==================================
+local function AtualizarLimiteTela()
+    local viewport = Camera.ViewportSize
+    local pos = FloatingButton.AbsolutePosition
+    local size = FloatingButton.AbsoluteSize
+    
+    local xMin = size.X / 2
+    local xMax = viewport.X - (size.X / 2)
+    local yMin = size.Y / 2
+    local yMax = viewport.Y - (size.Y / 2)
+    
+    local clampedX = math.clamp(pos.X + (size.X / 2), xMin, xMax)
+    local clampedY = math.clamp(pos.Y + (size.Y / 2), yMin, yMax)
+    
+    FloatingButton.Position = UDim2.new(0, clampedX, 0, clampedY)
+end
+
+
+-- ==================================
+-- SISTEMA PARA ARRASTAR COM LIMITE
+-- ==================================
 local dragging, dragInput, dragStart, startPos
 FloatingButton.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = FloatingButton.Position
+        startPos = FloatingButton.AbsolutePosition
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -159,7 +189,22 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-        FloatingButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        local newX = startPos.X + delta.X
+        local newY = startPos.Y + delta.Y
+        
+        -- Aplica restrição de tela em tempo real enquanto arrasta
+        local viewport = Camera.ViewportSize
+        local size = FloatingButton.AbsoluteSize
+        
+        local xMin = size.X / 2
+        local xMax = viewport.X - (size.X / 2)
+        local yMin = size.Y / 2
+        local yMax = viewport.Y - (size.Y / 2)
+        
+        local clampedX = math.clamp(newX + (size.X / 2), xMin, xMax)
+        local clampedY = math.clamp(newY + (size.Y / 2), yMin, yMax)
+        
+        FloatingButton.Position = UDim2.new(0, clampedX, 0, clampedY)
     end
 end)
 
@@ -172,16 +217,33 @@ SheriffTab:Section({
     Title = "Botão Flutuante"
 })
 
--- Toggle para fazer o botão aparecer ou sumir
+-- 1. Toggle para fazer o botão aparecer ou sumir
 SheriffTab:Toggle({
     Title = "Mostrar Botão Flutuante",
     Value = false,
     Callback = function(state)
         FloatingButton.Visible = state
+        if state then
+            task.spawn(AtualizarLimiteTela)
+        end
     end,
 })
 
- 
+-- 2. Slider para aumentar e diminuir o tamanho (de dentro pra fora)
+SheriffTab:Slider({
+    Title = "Tamanho do Botão",
+    Step = 5,
+    Value = { Min = 150, Max = 400, Default = 250 },
+    Callback = function(value)
+        local proporcaoH = value / 2.5 -- Mantém a proporção correta do retângulo
+        FloatingButton.Size = UDim2.new(0, value, 0, proporcaoH)
+        -- Ajusta tamanho do texto de acordo com o slider para não ficar desproporcional
+        FloatingButton.TextSize = math.clamp(math.floor(value / 12), 12, 28)
+        
+        -- Garante que o botão não fique preso fora da tela ao redimensionar
+        task.spawn(AtualizarLimiteTela)
+    end,
+})
 
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
