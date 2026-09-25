@@ -754,71 +754,6 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
-
--- =========================================================================
--- 🎛️ ELEMENTOS DA INTERFACE (WINDUI)
--- =========================================================================
-
-SheriffTab:Section({ Title = "FOV Circle & Aimlock" })
-
-SheriffTab:Dropdown({
-    Title = "Estilo do Círculo FOV",
-    Values = { "Simple", "Modificado" },
-    Default = "Simple",
-    Callback = function(v)
-        fovEstiloAtual = v
-        if fovAtivo then
-            AtualizarElementosFov()
-        end
-    end,
-})
-
-SheriffTab:Slider({
-    Title = "Tamanho do Círculo (FOV)",
-    Step = 5,
-    Value = { Min = 50, Max = 350, Default = 120 },
-    Callback = function(value)
-        fovTamanhoRadius = value
-        if fovAtivo then
-            AtualizarElementosFov()
-        end
-    end,
-})
-
-SheriffTab:Slider({
-    Title = "Velocidade de Giro (Modificado)",
-    Step = 0.5,
-    Value = { Min = 0, Max = 5, Default = 2 },
-    Callback = function(value)
-        fovVelocidadeGiro = value
-    end,
-})
-
-SheriffTab:Toggle({
-    Title = "Ativar Modo Rainbow",
-    Value = false,
-    Callback = function(state)
-        fovRainbowAtivo = state
-        if not state and FovGui then
-            -- Reseta para branco se desativar
-            AtualizarElementosFov()
-        end
-    end,
-})
-
-SheriffTab:Toggle({
-    Title = "Ativar FOV Circle & Aimlock",
-    Value = false,
-    Callback = function(state)
-        fovAtivo = state
-        if state then
-            CriarFovGui()
-        else
-            RemoverFovGui()
-        end
-    end,
-})
-
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
 --==============================================================--
@@ -2023,7 +1958,7 @@ end
 -- =========================================================================
 
 -- SEÇÃO 1: SILENT AIM
-SheriffTab:Section({ Title = "Botão Flutuante - Silent AIM" })
+SheriffTab:Section({ Title = "S i l e n t   A I M" })
 
 SheriffTab:Dropdown({
     Title = "Formato do Botão (Silent)",
@@ -2050,7 +1985,7 @@ SheriffTab:Slider({
 })
 
 SheriffTab:Toggle({
-    Title = "Mostrar Botão Silent AIM",
+    Title = "Silent AIM",
     Value = false,
     Callback = function(state)
         if state then CreateSilentButton() else RemoveSilentButton() end
@@ -2059,7 +1994,7 @@ SheriffTab:Toggle({
 
 
 -- SEÇÃO 2: GRAB / TELEPORT GUN
-SheriffTab:Section({ Title = "Botão Flutuante - Grab / Teleport Gun" })
+SheriffTab:Section({ Title = "G r a b   G u n" })
 
 SheriffTab:Dropdown({
     Title = "Modo de Pegar a Arma",
@@ -2075,7 +2010,7 @@ SheriffTab:Dropdown({
 })
 
 SheriffTab:Dropdown({
-    Title = "Formato do Botão (Grab)",
+    Title = "Estilo do botao Grab Gun",
     Values = { "Retangulo", "Quadrado", "Circulo" },
     Default = "Retangulo",
     Callback = function(v)
@@ -2085,7 +2020,7 @@ SheriffTab:Dropdown({
 })
 
 SheriffTab:Slider({
-    Title = "Tamanho do Botão (Grab)",
+    Title = "Tamanho do botao Grab Gun",
     Step = 5,
     Value = { Min = 150, Max = 400, Default = 250 },
     Callback = function(value)
@@ -2099,10 +2034,70 @@ SheriffTab:Slider({
 })
 
 SheriffTab:Toggle({
-    Title = "Mostrar Botão Grab Gun",
+    Title = "Button Grab Gun or teleport Gun",
     Value = false,
     Callback = function(state)
         if state then CreateGrabButton() else RemoveGrabButton() end
+    end,
+})
+
+SheriffTab:Section({ Title = "A i n l o c k" })
+
+SheriffTab:Dropdown({
+    Title = "Estilo do Círculo FOV",
+    Values = { "Simple", "Modificado" },
+    Default = "Simple",
+    Callback = function(v)
+        fovEstiloAtual = v
+        if fovAtivo then
+            AtualizarElementosFov()
+        end
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Tamanho do Círculo (FOV)",
+    Step = 5,
+    Value = { Min = 50, Max = 350, Default = 120 },
+    Callback = function(value)
+        fovTamanhoRadius = value
+        if fovAtivo then
+            AtualizarElementosFov()
+        end
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Velocidade de Giro (Modificado)",
+    Step = 0.5,
+    Value = { Min = 0, Max = 5, Default = 2 },
+    Callback = function(value)
+        fovVelocidadeGiro = value
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Ativar Modo Rainbow",
+    Value = false,
+    Callback = function(state)
+        fovRainbowAtivo = state
+        if not state and FovGui then
+            -- Reseta para branco se desativar
+            AtualizarElementosFov()
+        end
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Ativar FOV Circle & Aimlock",
+    Value = false,
+    Callback = function(state)
+        fovAtivo = state
+        if state then
+            CriarFovGui()
+        else
+            RemoverFovGui()
+        end
     end,
 })
 
