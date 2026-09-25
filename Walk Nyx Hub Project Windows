@@ -109,30 +109,31 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Cria o Botão Flutuante Retangular (300 de largura por 100 de altura)
+-- Cria o Botão Flutuante Retangular (250 de largura por 100 de altura)
 local FloatingButton = Instance.new("TextButton")
 FloatingButton.Name = "SilentAimButton"
-FloatingButton.Size = UDim2.new(0, 300, 0, 100)
-FloatingButton.Position = UDim2.new(0.5, -150, 0.2, 0)
+FloatingButton.Size = UDim2.new(0, 250, 0, 100)
+FloatingButton.Position = UDim2.new(0.5, -125, 0.2, 0)
 FloatingButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 FloatingButton.BackgroundTransparency = 0.4 -- Preto semi-transparente
-FloatingButton.Text = "Silent AIM"
+FloatingButton.Text = "S i l e n t    A I M"
 FloatingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 FloatingButton.TextSize = 20
-FloatingButton.Font = Enum.Font.SourceSansBold -- Letra normal e limpa
+FloatingButton.Font = Enum.Font.SourceSans -- Letra normal, limpa e sem modificações
 FloatingButton.Visible = false -- Começa oculto (controlado pelo Toggle)
 FloatingButton.Parent = ScreenGui
 
--- Linha branca fina em volta do botão
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(255, 255, 255)
-UIStroke.Thickness = 1.5
-UIStroke.Parent = FloatingButton
-
--- Cantos levemente arredondados para ficar bonito
+-- Cantos levemente arredondados do retângulo
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = FloatingButton
+
+-- Linha fina branca contornando toda a borda externa do retângulo
+local UIStroke = Instance.new("UIStroke")
+UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border -- Garante que vai na borda do botão e não no texto
+UIStroke.Color = Color3.fromRGB(255, 255, 255)
+UIStroke.Thickness = 1.5
+UIStroke.Parent = FloatingButton
 
 -- Sistema para poder arrastar o botão pela tela no celular/PC
 local dragging, dragInput, dragStart, startPos
@@ -180,8 +181,7 @@ SheriffTab:Toggle({
     end,
 })
 
-
-
+ 
 
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
