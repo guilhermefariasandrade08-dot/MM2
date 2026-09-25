@@ -493,94 +493,209 @@ local function RemoveGrabButton()
     end
 end
 
-
 -- =========================================================================
--- 3. INTERFACE NA ABA SHERIFF (WINDUI) - CONFIGURADO SEPARADO E PADRÕES RETÂNGULO
+-- 🎯 FOV CIRCLE & AIMLOCK (MODO SIMPLE / MODIFICADO + CHECAGEM DE ARMA)
 -- =========================================================================
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
--- SEÇÃO 1: SILENT AIM
-SheriffTab:Section({ Title = "Botão Flutuante - Silent AIM" })
+local FovGui = nil
+local fovAtivo = false
+local fovEstiloAtual = "Simple"
+local fovTamanhoRadius = 120
+local fovVelocidadeGiro = 2
 
-SheriffTab:Dropdown({
-    Title = "Formato do Botão (Silent)",
-    Values = { "Retangulo", "Quadrado", "Circulo" },
-    Default = "Retangulo",
-    Callback = function(v)
-        formatoSilentAtual = v
-        AplicarFormatoSilent()
-    end,
-})
+local circleFrame = nil
+local modOuterRing = nil
+local modInnerRing = nil
+local modCross1 = nil
+local modCross2 = nil
 
-SheriffTab:Slider({
-    Title = "Tamanho do Botão (Silent)",
-    Step = 5,
-    Value = { Min = 150, Max = 400, Default = 250 },
-    Callback = function(value)
-        tamanhoSilentBase = value
-        AplicarFormatoSilent()
-        if currentSilentBtnRef then
-            local t = currentSilentBtnRef:FindFirstChild("SilentText")
-            if t then t.TextSize = math.clamp(math.floor(value / 12.5), 12, 24) end
+-- Função para achar o Murderer (ajuste conforme o seu jogo se necessário)
+local function GetMurderer()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = p.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                -- Exemplo genérico de verificação de papel ou ferramenta de faca/murderer
+                local backpack = p:FindFirstChild("Backpack")
+                local hasKnife = p.Character:FindFirstChild("Knife") or (backpack and backpack:FindFirstChild("Knife"))
+                if hasKnife then
+                    return p
+                end
+            end
         end
-    end,
-})
+    end
+    return nil
+end
 
-SheriffTab:Toggle({
-    Title = "Mostrar Botão Silent AIM",
-    Value = false,
-    Callback = function(state)
-        if state then CreateSilentButton() else RemoveSilentButton() end
-    end,
-})
+local function AtualizarElementosFov()
+    if not FovGui then return end
+    
+    for _, child in ipairs(FovGui:GetChildren()) do
+        child:Destroy()
+    end
+    
+    local diametro = fovTamanhoRadius * 2
+    
+    if fovEstiloAtual == "Simple" then
+        local circle = Instance.new("Frame")
+        circle.Name = "SimpleCircle"
+        circle.AnchorPoint = Vector2.new(0.5, 0.5)
+        circle.Position = UDim2.new(0.5, 0, 0.5, 0)
+        circle.Size = UDim2.new(0, diametro, 0, diametro)
+        circle.BackgroundTransparency = 1
+        circle.Parent = FovGui
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = circle
+        
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(0, 255, 200)
+        stroke.Thickness = 2
+        stroke.Transparency = 0.2
+        stroke.Parent = circle
+        
+        circleFrame = circle
+        modOuterRing, modInnerRing, modCross1, modCross2 = nil, nil, nil, nil
+        
+    elseif fovEstiloAtual == "Modificado" then
+        local container = Instance.new("Frame")
+        container.Name = "ModContainer"
+        container.AnchorPoint = Vector2.new(0.5, 0.5)
+        container.Position = UDim2.new(0.5, 0, 0.5, 0)
+        container.Size = UDim2.new(0, diametro, 0, diametro)
+        container.BackgroundTransparency = 1
+        container.Parent = FovGui
+        circleFrame = container
+        
+        -- Anel Externo Neon
+        local outer = Instance.new("Frame")
+        outer.Size = UDim2.new(1, 0, 1, 0)
+        outer.BackgroundTransparency = 1
+        outer.AnchorPoint = Vector2.new(0.5, 0.5)
+        outer.Position = UDim2.new(0.5, 0, 0.5, 0)
+        outer.Parent = container
+        
+        local outCorner = Instance.new("UICorner")
+        outCorner.CornerRadius = UDim.new(1, 0)
+        outCorner.Parent = outer
+        
+        local outStroke = Instance.new("UIStroke")
+        outStroke.Color = Color3.fromRGB(255, 50, 100)
+        outStroke.Thickness = 2.5
+        outStroke.Transparency = 0.1
+        outStroke.Parent = outer
+        modOuterRing = outer
+        
+        -- Anel Interno Rotativo
+        local inner = Instance.new("Frame")
+        inner.Size = UDim2.new(0.75, 0, 0.75, 0)
+        inner.BackgroundTransparency = 1
+        inner.AnchorPoint = Vector2.new(0.5, 0.5)
+        inner.Position = UDim2.new(0.5, 0, 0.5, 0)
+        inner.Parent = container
+        
+        local inCorner = Instance.new("UICorner")
+        inCorner.CornerRadius = UDim.new(1, 0)
+        inCorner.Parent = inner
+        
+        local inStroke = Instance.new("UIStroke")
+        inStroke.Color = Color3.fromRGB(0, 200, 255)
+        inStroke.Thickness = 1.5
+        inStroke.Transparency = 0.4
+        inStroke.Parent = inner
+        modInnerRing = inner
+        
+        -- Linhas de Crosshair Centrais
+        local crossH = Instance.new("Frame")
+        crossH.Size = UDim2.new(0.3, 0, 0, 2)
+        crossH.AnchorPoint = Vector2.new(0.5, 0.5)
+        crossH.Position = UDim2.new(0.5, 0, 0.5, 0)
+        crossH.BackgroundColor3 = Color3.fromRGB(0, 255, 200)
+        crossH.BorderSizePixel = 0
+        crossH.Parent = container
+        
+        local crossV = Instance.new("Frame")
+        crossV.Size = UDim2.new(0, 2, 0.3, 0)
+        crossV.AnchorPoint = Vector2.new(0.5, 0.5)
+        crossV.Position = UDim2.new(0.5, 0, 0.5, 0)
+        crossV.BackgroundColor3 = Color3.fromRGB(0, 255, 200)
+        crossV.BorderSizePixel = 0
+        crossV.Parent = container
+        
+        modCross1 = crossH
+        modCross2 = crossV
+    end
+end
 
+local function CriarFovGui()
+    if FovGui then return end
+    local ParentGui = CoreGui
+    pcall(function() if not CoreGui then ParentGui = LocalPlayer:WaitForChild("PlayerGui") end end)
+    
+    FovGui = Instance.new("ScreenGui")
+    FovGui.Name = "Sheriff_FovCircleGui"
+    FovGui.ResetOnSpawn = false
+    FovGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    FovGui.Parent = ParentGui
+    
+    AtualizarElementosFov()
+end
 
--- SEÇÃO 2: GRAB / TELEPORT GUN
-SheriffTab:Section({ Title = "Botão Flutuante - Grab / Teleport Gun" })
+local function RemoverFovGui()
+    if FovGui then
+        FovGui:Destroy()
+        FovGui = nil
+        circleFrame = nil
+    end
+end
 
-SheriffTab:Dropdown({
-    Title = "Modo de Pegar a Arma",
-    Values = { "Grab", "Teleport" },
-    Default = "Grab",
-    Callback = function(v)
-        modoGrabAtual = v
-        if currentGrabBtnRef then
-            local t = currentGrabBtnRef:FindFirstChild("GrabText")
-            if t then AtualizarTextoGrab(t) end
+-- Verificação se o jogador está com a arma (Mão ou Inventário)
+local function PlayerTemArma()
+    local Char = LocalPlayer.Character
+    if not Char then return false end
+    if Char:FindFirstChild("Gun") then return true end
+    if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Gun") then return true end
+    return false
+end
+
+-- Loop principal do Aimlock e Rotação
+RunService.RenderStepped:Connect(function()
+    if fovAtivo and fovEstiloAtual == "Modificado" and modInnerRing then
+        local tickTime = tick() * fovVelocidadeGiro
+        modInnerRing.Rotation = (tickTime * 50) % 360
+        
+        if modOuterRing then
+            local pulse = 1 + math.sin(tickTime * 3) * 0.03
+            modOuterRing.Size = UDim2.new(pulse, 0, pulse, 0)
         end
-    end,
-})
+    end
 
-SheriffTab:Dropdown({
-    Title = "Formato do Botão (Grab)",
-    Values = { "Retangulo", "Quadrado", "Circulo" },
-    Default = "Retangulo",
-    Callback = function(v)
-        formatoGrabAtual = v
-        AplicarFormatoGrab()
-    end,
-})
-
-SheriffTab:Slider({
-    Title = "Tamanho do Botão (Grab)",
-    Step = 5,
-    Value = { Min = 150, Max = 400, Default = 250 },
-    Callback = function(value)
-        tamanhoGrabBase = value
-        AplicarFormatoGrab()
-        if currentGrabBtnRef then
-            local t = currentGrabBtnRef:FindFirstChild("GrabText")
-            if t then t.TextSize = math.clamp(math.floor(value / 12.5), 12, 24) end
-        end
-    end,
-})
-
-SheriffTab:Toggle({
-    Title = "Mostrar Botão Grab Gun",
-    Value = false,
-    Callback = function(state)
-        if state then CreateGrabButton() else RemoveGrabButton() end
-    end,
-})
+    if not fovAtivo then return end
+    if not PlayerTemArma() then return end
+    
+    local Murderer = GetMurderer()
+    if not Murderer or not Murderer.Character then return end
+    
+    local targetPart = Murderer.Character:FindFirstChild("HumanoidRootPart") or Murderer.Character:FindFirstChild("UpperTorso")
+    if not targetPart then return end
+    
+    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+    if not onScreen then return end
+    
+    local centerScreen = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local targetPos2D = Vector2.new(screenPos.X, screenPos.Y)
+    local distanciaDoCentro = (targetPos2D - centerScreen).Magnitude
+    
+    if distanciaDoCentro <= fovTamanhoRadius then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+    end
+end)
 
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
@@ -1781,6 +1896,141 @@ local function ExecutarFPSBoosterCompleto()
 end
 
 
+-- =========================================================================
+-- 3. INTERFACE NA ABA SHERIFF (WINDUI) - CONFIGURADO SEPARADO E PADRÕES RETÂNGULO
+-- =========================================================================
+
+-- SEÇÃO 1: SILENT AIM
+SheriffTab:Section({ Title = "Botão Flutuante - Silent AIM" })
+
+SheriffTab:Dropdown({
+    Title = "Formato do Botão (Silent)",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoSilentAtual = v
+        AplicarFormatoSilent()
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Tamanho do Botão (Silent)",
+    Step = 5,
+    Value = { Min = 150, Max = 400, Default = 250 },
+    Callback = function(value)
+        tamanhoSilentBase = value
+        AplicarFormatoSilent()
+        if currentSilentBtnRef then
+            local t = currentSilentBtnRef:FindFirstChild("SilentText")
+            if t then t.TextSize = math.clamp(math.floor(value / 12.5), 12, 24) end
+        end
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Mostrar Botão Silent AIM",
+    Value = false,
+    Callback = function(state)
+        if state then CreateSilentButton() else RemoveSilentButton() end
+    end,
+})
+
+
+-- SEÇÃO 2: GRAB / TELEPORT GUN
+SheriffTab:Section({ Title = "Botão Flutuante - Grab / Teleport Gun" })
+
+SheriffTab:Dropdown({
+    Title = "Modo de Pegar a Arma",
+    Values = { "Grab", "Teleport" },
+    Default = "Grab",
+    Callback = function(v)
+        modoGrabAtual = v
+        if currentGrabBtnRef then
+            local t = currentGrabBtnRef:FindFirstChild("GrabText")
+            if t then AtualizarTextoGrab(t) end
+        end
+    end,
+})
+
+SheriffTab:Dropdown({
+    Title = "Formato do Botão (Grab)",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoGrabAtual = v
+        AplicarFormatoGrab()
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Tamanho do Botão (Grab)",
+    Step = 5,
+    Value = { Min = 150, Max = 400, Default = 250 },
+    Callback = function(value)
+        tamanhoGrabBase = value
+        AplicarFormatoGrab()
+        if currentGrabBtnRef then
+            local t = currentGrabBtnRef:FindFirstChild("GrabText")
+            if t then t.TextSize = math.clamp(math.floor(value / 12.5), 12, 24) end
+        end
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Mostrar Botão Grab Gun",
+    Value = false,
+    Callback = function(state)
+        if state then CreateGrabButton() else RemoveGrabButton() end
+    end,
+})
+
+SheriffTab:Section({ Title = "FOV Circle & Aimlock" })
+
+SheriffTab:Dropdown({
+    Title = "Estilo do Círculo FOV",
+    Values = { "Simple", "Modificado" },
+    Default = "Simple",
+    Callback = function(v)
+        fovEstiloAtual = v
+        if fovAtivo then
+            AtualizarElementosFov()
+        end
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Tamanho do Círculo (FOV)",
+    Step = 5,
+    Value = { Min = 50, Max = 350, Default = 120 },
+    Callback = function(value)
+        fovTamanhoRadius = value
+        if fovAtivo then
+            AtualizarElementosFov()
+        end
+    end,
+})
+
+SheriffTab:Slider({
+    Title = "Velocidade de Giro (Modificado)",
+    Step = 0.5,
+    Value = { Min = 0.5, Max = 5, Default = 2 },
+    Callback = function(value)
+        fovVelocidadeGiro = value
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Ativar FOV Circle & Aimlock",
+    Value = false,
+    Callback = function(state)
+        fovAtivo = state
+        if state then
+            CriarFovGui()
+        else
+            RemoverFovGui()
+        end
+    end,
+})
 
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
