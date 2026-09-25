@@ -1221,54 +1221,72 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==================================
--- SISTEMA DE FPS BOOSTER / MODO TUDO CINZA & SEM BRILHO
+-- SISTEMA DE FPS BOOSTER / TUDO CINZA & ARMAS (AUTOMÁTICO)
 -- ==================================
 local Lighting = game:GetService("Lighting")
 local Terrain = workspace:FindFirstChildOfClass("Terrain")
 
-local function ExecutarFPSBoosterExtremo()
-    -- 1. Destruir e desativar TODOS os efeitos de iluminação e sol pesados
+local fpsBoosterAtivo = false
+
+local function PintarELevarPart(v)
+    if v:IsA("BasePart") then
+        -- Ignora o personagem do jogador para não deixar o seu avatar cinza (opcional, se quiser deixar o avatar cinza também, remova essa linha)
+        local player = game:GetService("Players").LocalPlayer
+        if player.Character and v:IsDescendantOf(player.Character) then return end
+
+        v.Material = Enum.Material.SmoothPlastic
+        v.Color = Color3.fromRGB(130, 130, 130) -- Deixa o objeto totalmente cinza (chão, paredes, armas, caixas, etc)
+        v.CastShadow = false
+        v.Reflectance = 0
+    elseif v:IsA("Decal" or v:IsA("Texture")) then
+        v:Destroy()
+    elseif v:IsA("ParticleEmitter" or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles")) then
+        v:Destroy()
+    end
+end
+
+local function ExecutarFPSBoosterCompleto()
+    fpsBoosterAtivo = true
+
+    -- 1. Destruir efeitos de iluminação e brilho do sol
     for _, v in ipairs(Lighting:GetChildren()) do
-        if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then
-            v:Destroy() -- Remove completamente para sumir o brilho do sol e efeitos cinemáticos
+        if v:IsA("PostEffect") or v:IsA("SunRaysEffect") or v:IsA("Atmosphere") or v:IsA("Sky") or v:IsA("BloomEffect") then
+            v:Destroy()
         end
     end
 
-    -- 2. Travar a iluminação num estado totalmente plano, sem brilho solar refletindo nas paredes/chão
+    -- 2. Configurar Iluminação totalmente plana e sem reflexos
     Lighting.GlobalShadows = false
-    Lighting.Brightness = 0.5 -- Deixa a luz bem baixa e opaca
-    Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 150) -- Deixa o ambiente totalmente cinza uniforme
+    Lighting.Brightness = 0.5
+    Lighting.OutdoorAmbient = Color3.fromRGB(140, 140, 140)
     Lighting.Ambient = Color3.fromRGB(120, 120, 120)
-    Lighting.ShadowSoftness = 0
-    Lighting.ClockTime = 14 -- Trava o sol meio-dia sem reflexos estourados dinâmicos
 
-    -- 3. Otimizar o Terreno (Água totalmente fosca e sem ondas)
+    -- 3. Limpar Terrain (Água/Grama)
     if Terrain then
         pcall(function()
             Terrain.WaterWaveSize = 0
             Terrain.WaterWaveTransparency = 0
             Terrain.WaterReflectance = 0
             Terrain.WaterTransparency = 0
-            Terrain.Decoration = false -- Remove grama 3D que pesa muito
+            Terrain.Decoration = false
         end)
     end
 
-    -- 4. Faxina geral no Workspace: Tira texturas, decorações, partículas e pinta tudo de cinza fosco
+    -- 4. Pintar tudo o que já existe no jogo agora (mapa atual, caixas, armas, etc)
     for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Material = Enum.Material.SmoothPlastic -- Plástico liso bloqueia qualquer brilho/especular
-            v.CastShadow = false
-            v.Reflectance = 0 -- Zera qualquer brilho de reflexo no chão/paredes
-        elseif v:IsA("Decal" or v:IsA("Texture")) then
-            v:Destroy() -- Some com adesivos e texturas que pesam
-        elseif v:IsA("ParticleEmitter" or v:IsA("Fire" or v:IsA("Smoke" or v:IsA("Sparkles") or v:IsA("Explosion")))) then
-            v:Destroy() -- Remove partículas (fogo, fumaça, poeira)
-        elseif v:IsA("PostEffect") then
-            v:Destroy()
-        end
+        PintarELevarPart(v)
     end
 
-    -- Força a qualidade gráfica ao mínimo do Roblox
+    -- 5. Monitorar se o mapa muda ou se novas coisas (armas, caixas, rounds novos) aparecem
+    workspace.DescendantAdded:Connect(function(v)
+        if fpsBoosterAtivo then
+            task.spawn(function()
+                task.wait(0.05) -- Pequeno delay para garantir que a peça carregou
+                PintarELevarPart(v)
+            end)
+        end
+    end)
+
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end
 
@@ -1706,12 +1724,11 @@ ModificationsTab:Section({
     Title = "Desempenho e Gráficos"
 })
 
--- Botão de Clique Único (Ativa o modo batata cinza e sem brilho de uma vez)
 ModificationsTab:Button({
-    Title = "Ativar FPS Booster (Tudo Cinza & Sem Brilho)",
-    Desc = "Remove o brilho do sol, texturas, sombras e deixa o mapa leve e cinza.",
+    Title = "Tudo Cinza & Sem Brilho (Auto-Mapa)",
+    Desc = "Pinta paredes, chão, armas, caixas de cinza e limpa o sol automaticamente.",
     Callback = function()
-        ExecutarFPSBoosterExtremo()
+        ExecutarFPSBoosterCompleto()
     end,
 })
 
