@@ -341,6 +341,285 @@ local function RemoveNyxAimButton()
 end
 
 -- ==================================
+-- SISTEMA COMPLETO DE GRAB GUN / SILENT AIM (SHERIFF)
+-- ==================================
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Stats = game:GetService("Stats")
+local LocalPlayer = Players.LocalPlayer
+
+local ShootButtonGui = nil
+local isDraggingNyx = false
+local Pressed = false
+
+-- Referências e configurações do Botão Flutuante e Modos
+local currentButtonRef = nil
+local currentUICornerRef = nil
+local tamanhoAtualBase = 250
+local formatoAtual = "Retangulo"
+local modoGrabAtual = "Grab" -- "Grab" ou "Teleport"
+
+-- 🟢 Função para encontrar o GunDrop no mapa do MM2
+local function GetGunDrop()
+    local MapContainer = workspace:FindFirstChild("CoinContainer", true) and workspace:FindFirstChild("CoinContainer", true).Parent
+    local mapToSearch = MapContainer or workspace
+    local gunDrop = mapToSearch:FindFirstChild("GunDrop", true) or workspace:FindFirstChild("GunDrop", true)
+    if gunDrop and gunDrop:IsA("BasePart") then
+        return gunDrop
+    end
+    return nil
+end
+
+-- 🟢 Função para atualizar o texto do botão com base no estado e modo atual
+local function AtualizarTextoBotao(TextoLabel, customText)
+    if not TextoLabel or not TextoLabel.Parent then return end
+    if customText then
+        TextoLabel.Text = customText
+    else
+        if modoGrabAtual == "Grab" then
+            TextoLabel.Text = "Grab Gun"
+        else
+            TextoLabel.Text = "Teleport to Gun"
+        end
+    end
+end
+
+-- 🟢 Lógica de Ação do Botão (Grab ou Teleport para a Gun)
+local function TriggerGrabGun(TextoLabel)
+    if Pressed then return end
+    
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+    
+    local gunDrop = GetGunDrop()
+    
+    if not gunDrop then
+        -- Se não tiver arma no chão, mostra "No Drop!" temporariamente
+        AtualizarTextoBotao(TextoLabel, "No Drop!")
+        task.delay(1.2, function()
+            AtualizarTextoBotao(TextoLabel)
+        end)
+        return
+    end
+    
+    Pressed = true
+    
+    if modoGrabAtual == "Grab" then
+        -- Traz a arma até o jogador
+        gunDrop.CFrame = Char.HumanoidRootPart.CFrame
+        AtualizarTextoBotao(TextoLabel, "Grabbed!")
+        task.delay(1.2, function()
+            AtualizarTextoBotao(TextoLabel)
+            Pressed = false
+        end)
+        
+    elseif modoGrabAtual == "Teleport" then
+        -- Salva a posição atual, teleporta até a arma e retorna para trás
+        local posOriginal = Char.HumanoidRootPart.CFrame
+        
+        -- Vai até a arma
+        Char.HumanoidRootPart.CFrame = gunDrop.CFrame
+        task.wait(0.08) -- Pequeno delay para garantir que o jogo registre o toque na arma
+        
+        -- Retorna para a posição original
+        if Char and Char:FindFirstChild("HumanoidRootPart") then
+            Char.HumanoidRootPart.CFrame = posOriginal
+        end
+        
+        AtualizarTextoBotao(TextoLabel, "Teleported!")
+        task.delay(1.2, function()
+            AtualizarTextoBotao(TextoLabel)
+            Pressed = false
+        end)
+    end
+end
+
+-- 🟢 Função para atualizar o tamanho e o formato do botão dinamicamente
+local function AplicarFormatoETamanho()
+    if not currentButtonRef or not currentUICornerRef then return end
+    
+    local valor = tamanhoAtualBase
+    if formatoAtual == "Retangulo" then
+        currentButtonRef.Size = UDim2.new(0, valor, 0, valor / 2.5)
+        currentUICornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoAtual == "Quadrado" then
+        currentButtonRef.Size = UDim2.new(0, valor, 0, valor)
+        currentUICornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoAtual == "Circulo" then
+        currentButtonRef.Size = UDim2.new(0, valor, 0, valor)
+        currentUICornerRef.CornerRadius = UDim.new(1, 0) -- Redondo perfeito
+    end
+end
+
+-- 🟢 Criar Botão Flutuante na Tela
+local function CreateNyxAimButton()
+    if ShootButtonGui then return end
+    
+    local ParentGui = CoreGui
+    pcall(function()
+        if not CoreGui then 
+            ParentGui = LocalPlayer:WaitForChild("PlayerGui") 
+        end
+    end)
+    
+    local GuiBtn = Instance.new("ScreenGui")
+    GuiBtn.Name = "Sheriff_GrabGunButton"
+    GuiBtn.ResetOnSpawn = false
+    GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    GuiBtn.Parent = ParentGui
+    
+    local Btn = Instance.new("ImageButton")
+    Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    Btn.Position = UDim2.new(0.5, 0, 0.3, 0)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.BackgroundTransparency = 0.4
+    Btn.AutoButtonColor = false
+    Btn.BorderSizePixel = 0
+    Btn.Parent = GuiBtn
+    
+    currentButtonRef = Btn
+    
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = Btn
+    currentUICornerRef = Corner
+    
+    local Borda = Instance.new("UIStroke")
+    Borda.Color = Color3.fromRGB(255, 255, 255)
+    Borda.Thickness = 1.5
+    Borda.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Borda.Parent = Btn
+    
+    local Texto = Instance.new("TextLabel")
+    Texto.Name = "NyxText"
+    Texto.Size = UDim2.new(1, 0, 1, 0)
+    Texto.BackgroundTransparency = 1
+    Texto.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Texto.Font = Enum.Font.SourceSans
+    Texto.Parent = Btn
+    
+    -- Define o texto inicial com base no modo escolhido
+    AtualizarTextoBotao(Texto)
+    
+    -- Aplica formato e tamanho iniciais
+    AplicarFormatoETamanho()
+    
+    -- Ajusta o tamanho da fonte proporcionalmente
+    Texto.TextSize = math.clamp(math.floor(tamanhoAtualBase / 12.5), 12, 24)
+    
+    -- Sistema de Arraste livre
+    local dragThreshold = 10
+    local dragStartMousePos, buttonStartPosScreen
+    
+    Btn.InputBegan:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.Touch or Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDraggingNyx = false
+            dragStartMousePos = Input.Position
+            buttonStartPosScreen = Btn.AbsolutePosition
+        end
+    end)
+    
+    Btn.InputChanged:Connect(function(Input)
+        if (Input.UserInputType == Enum.UserInputType.Touch or Input.UserInputType == Enum.UserInputType.MouseMovement) and dragStartMousePos then
+            local delta = Input.Position - dragStartMousePos
+            if delta.Magnitude > dragThreshold then
+                isDraggingNyx = true
+                local newX = buttonStartPosScreen.X + delta.X
+                local newY = buttonStartPosScreen.Y + delta.Y
+                Btn.Position = UDim2.new(0, newX + (Btn.AbsoluteSize.X / 2), 0, newY + (Btn.AbsoluteSize.Y / 2))
+            end
+        end
+    end)
+    
+    Btn.InputEnded:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.Touch or Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not isDraggingNyx then
+                TriggerGrabGun(Texto)
+            end
+            dragStartMousePos = nil
+            isDraggingNyx = false
+        end
+    end)
+    
+    ShootButtonGui = GuiBtn
+end
+
+local function RemoveNyxAimButton()
+    if ShootButtonGui then
+        ShootButtonGui:Destroy()
+        ShootButtonGui = nil
+        currentButtonRef = nil
+        currentUICornerRef = nil
+    end
+end
+
+-- ==================================
+-- INTERFACE NA ABA SHERIFF (WINDUI)
+-- ==================================
+
+SheriffTab:Section({
+    Title = "Grab Gun / Teleport"
+})
+
+-- 1. Toggle para ligar/desligar o botão flutuante na tela
+SheriffTab:Toggle({
+    Title = "Mostrar Botão Flutuante",
+    Value = false,
+    Callback = function(state)
+        if state then
+            CreateNyxAimButton()
+        else
+            RemoveNyxAimButton()
+        end
+    end,
+})
+
+-- 2. Lista para escolher o modo de pegar a arma (Grab ou Teleport)
+SheriffTab:Dropdown({
+    Title = "Modo de Pegar a Arma",
+    Values = { "Grab", "Teleport" },
+    Default = "Grab",
+    Callback = function(v)
+        modoGrabAtual = v
+        if currentButtonRef then
+            local textoLabel = currentButtonRef:FindFirstChild("NyxText")
+            if textoLabel then
+                AtualizarTextoBotao(textoLabel)
+            end
+        end
+    end,
+})
+
+-- 3. Lista para escolher o formato do botão (Já vem Retângulo selecionado)
+SheriffTab:Dropdown({
+    Title = "Formato do Botão",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoAtual = v
+        AplicarFormatoETamanho()
+    end,
+})
+
+-- 4. Slider para aumentar e diminuir o tamanho manualmente
+SheriffTab:Slider({
+    Title = "Tamanho do Botão",
+    Step = 5,
+    Value = { Min = 150, Max = 400, Default = 250 },
+    Callback = function(value)
+        tamanhoAtualBase = value
+        AplicarFormatoETamanho()
+        
+        if currentButtonRef then
+            local textLabel = currentButtonRef:FindFirstChild("NyxText")
+            if textLabel then
+                textLabel.TextSize = math.clamp(math.floor(value / 12.5), 12, 24)
+            end
+        end
+    end,
+})
+
+-- ==================================
 -- INTERFACE NA ABA SHERIFF (WINDUI)
 -- ==================================
 
