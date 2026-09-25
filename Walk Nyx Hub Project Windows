@@ -1220,6 +1220,88 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- ==================================
+-- SISTEMA DE FPS BOOSTER / OTIMIZADOR
+-- ==================================
+local Lighting = game:GetService("Lighting")
+local Terrain = workspace:FindFirstChildOfClass("Terrain")
+
+-- Tabelas para salvar os estados originais e restaurar se desativar
+local savedLightingProps = {}
+local alteredParts = {}
+
+local function ToggleFPSBooster(state)
+    if state then
+        -- 1. Otimizar Iluminação e Efeitos pesados
+        savedLightingProps.GlobalShadows = Lighting.GlobalShadows
+        savedLightingProps.Brightness = Lighting.Brightness
+        savedLightingProps.FogEnd = Lighting.FogEnd
+        
+        Lighting.GlobalShadows = false
+        Lighting.Brightness = 1
+        Lighting.FogEnd = 9e9
+        
+        -- Remove efeitos de pós-processamento que pesam muito o FPS
+        for _, v in ipairs(Lighting:GetChildren()) do
+            if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") then
+                v.Enabled = false
+            end
+        end
+
+        -- 2. Otimizar o Terrain (Água e grama)
+        if Terrain then
+            pcall(function()
+                Terrain.WaterWaveSize = 0
+                Terrain.WaterWaveTransparency = 0
+                Terrain.WaterReflectance = 0
+                if Terrain.WaterTransparency then
+                    Terrain.WaterTransparency = 0
+                end
+            end)
+        end
+
+        -- 3. Limpar Texturas, Materiais e Sombras do Mundo (Tudo cinza/fosco e leve)
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") then
+                -- Salva o material original para restaurar se quiser
+                alteredParts[v] = {Material = v.Material, CastShadow = v.CastShadow}
+                
+                v.Material = Enum.Material.SmoothPlastic -- Material super leve
+                v.CastShadow = false
+            elseif v:IsA("Decal" or v:IsA("Texture")) then
+                v.Transparency = 1 -- Some com decalques e texturas pesadas
+            elseif v:IsA("ParticleEmitter" or v:IsA("Fire" or v:IsA("Smoke" or v:IsA("Sparkles")))) then
+                v.Enabled = false -- Desativa partículas (fogo, fumaça, etc)
+            end
+        end
+
+        -- Força o nível de qualidade do Renderizador para o mínimo
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    else
+        -- Restaura tudo ao desligar o toggle
+        if savedLightingProps.GlobalShadows ~= nil then
+            Lighting.GlobalShadows = savedLightingProps.GlobalShadows
+            Lighting.Brightness = savedLightingProps.Brightness or 2
+            Lighting.FogEnd = savedLightingProps.FogEnd or 100000
+        end
+
+        for _, v in ipairs(Lighting:GetChildren()) do
+            if v:IsA("PostEffect") then
+                v.Enabled = true
+            end
+        end
+
+        for part, data in pairs(alteredParts) do
+            if part and part.Parent then
+                part.Material = data.Material
+                part.CastShadow = data.CastShadow
+            end
+        end
+        alteredParts = {}
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+    end
+end
+
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
 --==============================================================--
@@ -1650,3 +1732,15 @@ ModificationsTab:Toggle({
     end,
 })
 
+ModificationsTab:Section({
+    Title = "Desempenho e FPS"
+})
+
+-- Botão Toggle do FPS Booster
+ModificationsTab:Toggle({
+    Title = "FPS Booster (Modo Batata / Limpar Tudo)",
+    Value = false,
+    Callback = function(state)
+        ToggleFPSBooster(state)
+    end,
+})
