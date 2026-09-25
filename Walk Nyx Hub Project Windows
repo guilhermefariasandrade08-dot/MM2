@@ -93,7 +93,7 @@ local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 -- ==================================
--- SISTEMA COMPLETO DE SILENT AIM COM SLIDER (SHERIFF)
+-- SISTEMA COMPLETO DE SILENT AIM COM FORMATOS E SLIDER (SHERIFF)
 -- ==================================
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -106,9 +106,11 @@ local isDraggingNyx = false
 local Pressed = false
 local ShootPredictMultiplier = 1
 
--- Referências para manipulação dinâmica pelo Slider
+-- Referências e configurações iniciais
 local currentButtonRef = nil
+local currentUICornerRef = nil
 local tamanhoAtualBase = 250
+local formatoAtual = "Retangulo"
 
 -- 🟢 Função para pegar o Ping real do servidor
 local function GetPing()
@@ -224,6 +226,23 @@ local function ShootMurderer(TextoLabel)
     Pressed = false
 end
 
+-- 🟢 Função para atualizar o tamanho e o formato do botão dinamicamente
+local function AplicarFormatoETamanho()
+    if not currentButtonRef or not currentUICornerRef then return end
+    
+    local valor = tamanhoAtualBase
+    if formatoAtual == "Retangulo" then
+        currentButtonRef.Size = UDim2.new(0, valor, 0, valor / 2.5)
+        currentUICornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoAtual == "Quadrado" then
+        currentButtonRef.Size = UDim2.new(0, valor, 0, valor)
+        currentUICornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoAtual == "Circulo" then
+        currentButtonRef.Size = UDim2.new(0, valor, 0, valor)
+        currentUICornerRef.CornerRadius = UDim.new(1, 0) -- Deixa redondo perfeito
+    end
+end
+
 -- 🟢 Criar Botão Flutuante na Tela
 local function CreateNyxAimButton()
     if ShootButtonGui then return end
@@ -241,9 +260,7 @@ local function CreateNyxAimButton()
     GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     GuiBtn.Parent = ParentGui
     
-    -- Botão Retangular com AnchorPoint no centro (cresce de dentro para fora)
     local Btn = Instance.new("ImageButton")
-    Btn.Size = UDim2.new(0, tamanhoAtualBase, 0, tamanhoAtualBase / 2.5)
     Btn.AnchorPoint = Vector2.new(0.5, 0.5)
     Btn.Position = UDim2.new(0.5, 0, 0.3, 0)
     Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -255,8 +272,8 @@ local function CreateNyxAimButton()
     currentButtonRef = Btn
     
     local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 8)
     Corner.Parent = Btn
+    currentUICornerRef = Corner
     
     local Borda = Instance.new("UIStroke")
     Borda.Color = Color3.fromRGB(255, 255, 255)
@@ -273,6 +290,9 @@ local function CreateNyxAimButton()
     Texto.TextSize = math.clamp(math.floor(tamanhoAtualBase / 12.5), 12, 24)
     Texto.Font = Enum.Font.SourceSans
     Texto.Parent = Btn
+    
+    -- Aplica o formato retangular inicial padrão
+    AplicarFormatoETamanho()
     
     -- Sistema de Arraste livre
     local dragThreshold = 10
@@ -316,6 +336,7 @@ local function RemoveNyxAimButton()
         ShootButtonGui:Destroy()
         ShootButtonGui = nil
         currentButtonRef = nil
+        currentUICornerRef = nil
     end
 end
 
@@ -340,18 +361,28 @@ SheriffTab:Toggle({
     end,
 })
 
--- 2. Slider para aumentar e diminuir o tamanho manualmente
+-- 2. Dropdown (Lista) para escolher o formato (Já vem Retângulo selecionado)
+SheriffTab:Dropdown({
+    Title = "Formato do Botão",
+    Values = { "Retangulo", "Quadrado", "Circulo" },
+    Default = "Retangulo",
+    Callback = function(v)
+        formatoAtual = v
+        AplicarFormatoETamanho()
+    end,
+})
+
+-- 3. Slider para aumentar e diminuir o tamanho manualmente
 SheriffTab:Slider({
     Title = "Tamanho do Botão",
     Step = 5,
     Value = { Min = 150, Max = 400, Default = 250 },
     Callback = function(value)
         tamanhoAtualBase = value
-        if currentButtonRef and currentButtonRef.Parent then
-            -- Redimensiona mantendo a proporção retangular de dentro para fora
-            currentButtonRef.Size = UDim2.new(0, value, 0, value / 2.5)
-            
-            -- Ajusta o tamanho da letra proporcionalmente
+        AplicarFormatoETamanho()
+        
+        -- Ajusta a proporção da letra automaticamente
+        if currentButtonRef then
             local textLabel = currentButtonRef:FindFirstChild("NyxText")
             if textLabel then
                 textLabel.TextSize = math.clamp(math.floor(value / 12.5), 12, 24)
@@ -359,6 +390,8 @@ SheriffTab:Slider({
         end
     end,
 })
+
+
 
 --==============================================================--
 --                SISTEMA DE CARGOS COMPARTILHADO               --
