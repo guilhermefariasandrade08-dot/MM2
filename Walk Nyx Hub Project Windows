@@ -1189,62 +1189,36 @@ player.CharacterAdded:Connect(function()
 end)
 
 -- ==================================
--- VARIÁVEIS INICIAIS (CÂMERA)
+-- VARIÁVEIS GLOBAIS DE CÂMERA
 -- ==================================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+_G.CameraInfinita = false
+_G.CameraNoClip = false
+_G.FOV_Ativo = false
+_G.FOV_Valor = 70
 
-local fovAtivo = false
-local fovAtual = 70
-local fovConnection = nil
+local ZoomMaxOriginal = player.CameraMaxZoomDistance
+local ZoomMinOriginal = player.CameraMinZoomDistance
+local BloqueioOriginal = player.DevCameraOcclusionMode
 
 -- ==================================
--- SISTEMAS DE CÂMERA (LÓGICA)
+-- LOOP E SISTEMAS DE CÂMERA
 -- ==================================
+RunService.RenderStepped:Connect(function()
+    local Cam = Workspace.CurrentCamera
+    if not Cam then return end
 
--- 1. Sistema de Zoom Infinito
-local function ToggleZoomInfinito(state)
-    if state then
-        LocalPlayer.CameraMaxZoomDistance = math.huge
+    -- 👁️ Câmera Sem Bloqueio nas Paredes
+    if _G.CameraNoClip then
+        player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
     else
-        LocalPlayer.CameraMaxZoomDistance = 400 -- Padrão do Roblox
+        player.DevCameraOcclusionMode = BloqueioOriginal
     end
-end
 
--- 2. Sistema de FOV (Toggle + Slider)
-local function ToggleFOV(state)
-    fovAtivo = state
-    if fovAtivo then
-        Camera.FieldOfView = fovAtual
-        
-        -- Mantém o FOV aplicado caso o jogo tente resetar
-        if fovConnection then fovConnection:Disconnect() end
-        fovConnection = RunService.RenderStepped:Connect(function()
-            if fovAtivo and Camera then
-                Camera.FieldOfView = fovAtual
-            end
-        end)
-    else
-        if fovConnection then
-            fovConnection:Disconnect()
-            fovConnection = nil
-        end
-        Camera.FieldOfView = 70 -- Valor padrão do Roblox
+    -- 🔧 Campo de Visão (FOV)
+    if _G.FOV_Ativo then
+        Cam.FieldOfView = _G.FOV_Valor
     end
-end
-
--- 3. Sistema de Câmera Atravessar Paredes (Sem Colisão)
-local function ToggleCameraNoCollision(state)
-    if state then
-        -- Remove o bloqueio da câmera batendo nas paredes
-        LocalPlayer.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Empty
-    else
-        -- Volta ao normal (aproxima ao encostar na parede)
-        LocalPlayer.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Zoom
-    end
-end
+end)
 
 --==============================================================--
 --            INTERFACE DE BOTÕES DA ABA ESP                    --
@@ -1623,49 +1597,56 @@ LocalPlayerTab:Toggle({
 })
 
 -- ==================================
--- BOTOES DA ABA MODIFICATIONS
+-- SEÇÃO E BOTÕES NA INTERFACE (WINDUI)
 -- ==================================
 
 ModificationsTab:Section({
-    Title = "Modificações de Câmera"
+    Title = "Configurações de Câmera"
 })
 
--- Botão Zoom Infinito
+-- 1. Botão Zoom Infinito
 ModificationsTab:Toggle({
     Title = "Zoom Infinito",
     Value = false,
     Callback = function(state)
-        ToggleZoomInfinito(state)
-    end,
-})
-
--- Botão Ativar FOV
-ModificationsTab:Toggle({
-    Title = "Ativar FOV Personalizado",
-    Value = false,
-    Callback = function(state)
-        ToggleFOV(state)
-    end,
-})
-
--- Slider do FOV (Logo abaixo do botão do FOV)
-ModificationsTab:Slider({
-    Title = "Valor do FOV",
-    Step = 1,
-    Value = { Min = 30, Max = 120, Default = 70 },
-    Callback = function(value)
-        fovAtual = value
-        if fovAtivo and Camera then
-            Camera.FieldOfView = fovAtual
+        _G.CameraInfinita = state
+        if state then
+            player.CameraMaxZoomDistance = math.huge
+        else
+            player.CameraMaxZoomDistance = ZoomMaxOriginal
         end
     end,
 })
 
--- Botão Câmera Atravessar Paredes
+-- 2. Botão FOV Personalizado
 ModificationsTab:Toggle({
-    Title = "Câmera Atravessar Paredes",
+    Title = "Ativar FOV Personalizado",
     Value = false,
     Callback = function(state)
-        ToggleCameraNoCollision(state)
+        _G.FOV_Ativo = state
+        local Cam = Workspace.CurrentCamera
+        if not state and Cam then
+            Cam.FieldOfView = 70 -- Valor padrão do Roblox ao desativar
+        end
     end,
 })
+
+-- 3. Slider do FOV (De 70 a 150)
+ModificationsTab:Slider({
+    Title = "Valor do FOV",
+    Step = 1,
+    Value = { Min = 70, Max = 150, Default = 70 },
+    Callback = function(value)
+        _G.FOV_Valor = value
+    end,
+})
+
+-- 4. Botão Câmera Sem Bloqueio (Não bate nas paredes)
+ModificationsTab:Toggle({
+    Title = "Câmera Sem Bloqueio (Atravessar Paredes)",
+    Value = false,
+    Callback = function(state)
+        _G.CameraNoClip = state
+    end,
+})
+
