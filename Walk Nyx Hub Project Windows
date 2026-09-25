@@ -1221,85 +1221,55 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==================================
--- SISTEMA DE FPS BOOSTER / OTIMIZADOR
+-- SISTEMA DE FPS BOOSTER / MODO TUDO CINZA & SEM BRILHO
 -- ==================================
 local Lighting = game:GetService("Lighting")
 local Terrain = workspace:FindFirstChildOfClass("Terrain")
 
--- Tabelas para salvar os estados originais e restaurar se desativar
-local savedLightingProps = {}
-local alteredParts = {}
-
-local function ToggleFPSBooster(state)
-    if state then
-        -- 1. Otimizar Iluminação e Efeitos pesados
-        savedLightingProps.GlobalShadows = Lighting.GlobalShadows
-        savedLightingProps.Brightness = Lighting.Brightness
-        savedLightingProps.FogEnd = Lighting.FogEnd
-        
-        Lighting.GlobalShadows = false
-        Lighting.Brightness = 1
-        Lighting.FogEnd = 9e9
-        
-        -- Remove efeitos de pós-processamento que pesam muito o FPS
-        for _, v in ipairs(Lighting:GetChildren()) do
-            if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") then
-                v.Enabled = false
-            end
+local function ExecutarFPSBoosterExtremo()
+    -- 1. Destruir e desativar TODOS os efeitos de iluminação e sol pesados
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then
+            v:Destroy() -- Remove completamente para sumir o brilho do sol e efeitos cinemáticos
         end
-
-        -- 2. Otimizar o Terrain (Água e grama)
-        if Terrain then
-            pcall(function()
-                Terrain.WaterWaveSize = 0
-                Terrain.WaterWaveTransparency = 0
-                Terrain.WaterReflectance = 0
-                if Terrain.WaterTransparency then
-                    Terrain.WaterTransparency = 0
-                end
-            end)
-        end
-
-        -- 3. Limpar Texturas, Materiais e Sombras do Mundo (Tudo cinza/fosco e leve)
-        for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("BasePart") then
-                -- Salva o material original para restaurar se quiser
-                alteredParts[v] = {Material = v.Material, CastShadow = v.CastShadow}
-                
-                v.Material = Enum.Material.SmoothPlastic -- Material super leve
-                v.CastShadow = false
-            elseif v:IsA("Decal" or v:IsA("Texture")) then
-                v.Transparency = 1 -- Some com decalques e texturas pesadas
-            elseif v:IsA("ParticleEmitter" or v:IsA("Fire" or v:IsA("Smoke" or v:IsA("Sparkles")))) then
-                v.Enabled = false -- Desativa partículas (fogo, fumaça, etc)
-            end
-        end
-
-        -- Força o nível de qualidade do Renderizador para o mínimo
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    else
-        -- Restaura tudo ao desligar o toggle
-        if savedLightingProps.GlobalShadows ~= nil then
-            Lighting.GlobalShadows = savedLightingProps.GlobalShadows
-            Lighting.Brightness = savedLightingProps.Brightness or 2
-            Lighting.FogEnd = savedLightingProps.FogEnd or 100000
-        end
-
-        for _, v in ipairs(Lighting:GetChildren()) do
-            if v:IsA("PostEffect") then
-                v.Enabled = true
-            end
-        end
-
-        for part, data in pairs(alteredParts) do
-            if part and part.Parent then
-                part.Material = data.Material
-                part.CastShadow = data.CastShadow
-            end
-        end
-        alteredParts = {}
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
     end
+
+    -- 2. Travar a iluminação num estado totalmente plano, sem brilho solar refletindo nas paredes/chão
+    Lighting.GlobalShadows = false
+    Lighting.Brightness = 0.5 -- Deixa a luz bem baixa e opaca
+    Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 150) -- Deixa o ambiente totalmente cinza uniforme
+    Lighting.Ambient = Color3.fromRGB(120, 120, 120)
+    Lighting.ShadowSoftness = 0
+    Lighting.ClockTime = 14 -- Trava o sol meio-dia sem reflexos estourados dinâmicos
+
+    -- 3. Otimizar o Terreno (Água totalmente fosca e sem ondas)
+    if Terrain then
+        pcall(function()
+            Terrain.WaterWaveSize = 0
+            Terrain.WaterWaveTransparency = 0
+            Terrain.WaterReflectance = 0
+            Terrain.WaterTransparency = 0
+            Terrain.Decoration = false -- Remove grama 3D que pesa muito
+        end)
+    end
+
+    -- 4. Faxina geral no Workspace: Tira texturas, decorações, partículas e pinta tudo de cinza fosco
+    for _, v in ipairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic -- Plástico liso bloqueia qualquer brilho/especular
+            v.CastShadow = false
+            v.Reflectance = 0 -- Zera qualquer brilho de reflexo no chão/paredes
+        elseif v:IsA("Decal" or v:IsA("Texture")) then
+            v:Destroy() -- Some com adesivos e texturas que pesam
+        elseif v:IsA("ParticleEmitter" or v:IsA("Fire" or v:IsA("Smoke" or v:IsA("Sparkles") or v:IsA("Explosion")))) then
+            v:Destroy() -- Remove partículas (fogo, fumaça, poeira)
+        elseif v:IsA("PostEffect") then
+            v:Destroy()
+        end
+    end
+
+    -- Força a qualidade gráfica ao mínimo do Roblox
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end
 
 --==============================================================--
@@ -1733,14 +1703,16 @@ ModificationsTab:Toggle({
 })
 
 ModificationsTab:Section({
-    Title = "Desempenho e FPS"
+    Title = "Desempenho e Gráficos"
 })
 
--- Botão Toggle do FPS Booster
-ModificationsTab:Toggle({
-    Title = "FPS Booster (Modo Batata / Limpar Tudo)",
-    Value = false,
-    Callback = function(state)
-        ToggleFPSBooster(state)
+-- Botão de Clique Único (Ativa o modo batata cinza e sem brilho de uma vez)
+ModificationsTab:Button({
+    Title = "Ativar FPS Booster (Tudo Cinza & Sem Brilho)",
+    Desc = "Remove o brilho do sol, texturas, sombras e deixa o mapa leve e cinza.",
+    Callback = function()
+        ExecutarFPSBoosterExtremo()
     end,
 })
+
+
