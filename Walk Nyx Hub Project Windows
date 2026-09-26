@@ -300,49 +300,159 @@ local function RemoveThrowButton()
 end
 
 -- =========================================================================
--- 🎛️ ELEMENTOS DA INTERFACE (WINDUI - ABA MURDERER)
+-- 🔴 SISTEMA COMPLETO: KILL AURA + CÍRCULO VERMELHO & CONTORNO BRANCO
 -- =========================================================================
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
-if MurdererTab then
-    MurdererTab:Section({ Title = "Throw Knife Flutuante" })
+local KillAuraAtivo = false
+local RaioKillAura = 15
+local MostrarCirculoAura = false
 
-    MurdererTab:Toggle({
-        Title = "Ativar Botão Flutuante",
-        Value = false,
-        Callback = function(state)
-            if state then
-                CreateThrowButton()
-            else
-                RemoveThrowButton()
-            end
-        end,
-    })
+local CirculoAdornment = nil
+local ContornoBrancoFolder = nil
 
-    MurdererTab:Dropdown({
-        Title = "Formato do Botão",
-        Values = { "Retangulo", "Quadrado", "Circulo" },
-        Default = "Retangulo",
-        Callback = function(v)
-            formatoThrowAtual = v
-            AplicarFormatoThrow()
-        end,
-    })
+-- 📏 CRIAR / ATUALIZAR O CÍRCULO VERMELHO E O CONTORNO BRANCO TRAÇADO
+local function AtualizarCirculoAura()
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-    MurdererTab:Slider({
-        Title = "Tamanho do Botão",
-        Step = 10,
-        Value = { Min = 100, Max = 400, Default = 150 }, -- Atualizado de 100 até 400 com default 150
-        Callback = function(value)
-            tamanhoThrowBase = value
-            AplicarFormatoThrow()
-            if currentThrowBtnRef and currentThrowBtnRef:FindFirstChild("ThrowText") then
-                currentThrowBtnRef.ThrowText.TextSize = math.clamp(math.floor(tamanhoThrowBase / 12.5), 12, 24)
-            end
-        end,
-    })
+    if not MostrarCirculoAura or not hrp then
+        if CirculoAdornment then
+            CirculoAdornment:Destroy()
+            CirculoAdornment = nil
+        end
+        if ContornoBrancoFolder then
+            ContornoBrancoFolder:Destroy()
+            ContornoBrancoFolder = nil
+        end
+        return
+    end
+
+    -- Círculo Principal Vermelho nos Pés
+    if not CirculoAdornment or not CirculoAdornment.Parent then
+        CirculoAdornment = Instance.new("CylinderHandleAdornment")
+        CirculoAdornment.Name = "KillAuraRangeVisual"
+        CirculoAdornment.Color3 = Color3.fromRGB(255, 0, 0)
+        CirculoAdornment.Transparency = 0.6
+        CirculoAdornment.AlwaysOnTop = true
+        CirculoAdornment.ZIndex = 5
+        CirculoAdornment.CFrame = CFrame.Angles(math.rad(90), 0, 0)
+    end
+
+    CirculoAdornment.Adornee = hrp
+    CirculoAdornment.Parent = hrp
+    CirculoAdornment.Height = 0.2
+    CirculoAdornment.Radius = RaioKillAura
+
+    -- Contorno em Tracejado Branco (— — —) em volta do círculo
+    if not ContornoBrancoFolder or not ContornoBrancoFolder.Parent then
+        ContornoBrancoFolder = Instance.new("Folder")
+        ContornoBrancoFolder.Name = "KillAuraDashedBorder"
+        ContornoBrancoFolder.Parent = hrp
+    else
+        ContornoBrancoFolder:ClearAllChildren()
+    end
+
+    ContornoBrancoFolder.Parent = hrp
+
+    -- Criando os traços (segmentos) em volta do raio
+    local numTracos = math.clamp(math.floor(RaioKillAura * 1.5), 12, 48)
+    for i = 1, numTracos do
+        local angulo = (i / numTracos) * (math.pi * 2)
+        local part = Instance.new("Part")
+        part.Name = "Dash"
+        part.Size = Vector3.new(0.6, 0.1, 1.2) -- Formato de traço
+        part.Color = Color3.fromRGB(255, 255, 255)
+        part.Material = Enum.Material.Neon
+        part.Transparency = 0.2
+        part.Anchored = false
+        part.CanCollide = false
+        part.CastShadow = false
+
+        -- Solda invisível ou Attachment para colar no HRP mantendo a rotação correta nos pés
+        local weld = Instance.new("WeldConstraint")
+        part.Parent = ContornoBrancoFolder
+        
+        -- Posicionamento circular exato na borda do raio (nos pés)
+        local posX = math.cos(angulo) * RaioKillAura
+        local posZ = math.sin(angulo) * RaioKillAura
+        part.CFrame = hrp.CFrame * CFrame.new(posX, -2.5, posZ) * CFrame.Angles(0, -angulo, 0)
+
+        weld.Part0 = hrp
+        weld.Part1 = part
+        weld.Parent = part
+    end
 end
 
+-- ⚔️ EXECUTAR ATAQUE DE FACA
+local function ExecutarAtaque(Alvo)
+    local Char = player.Character
+    if not Char then return end
+    
+    local Faca = Char:FindFirstChild("Knife") or (player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild("Knife"))
+    if not Faca then return end
+    
+    if Faca.Parent ~= Char then 
+        Faca.Parent = Char 
+        task.wait(0.02) 
+    end
+    
+    local Eventos = Faca:FindFirstChild("Events")
+    if not Eventos then return end
 
+    if Alvo and Alvo.Character and Alvo.Character:FindFirstChild("Head") then
+        pcall(function()
+            Eventos.KnifeStabbed:FireServer()
+            Eventos.HandleTouched:FireServer(Alvo.Character.Head)
+        end)
+    end
+end
+
+-- 🔴 LOOP DE ATUALIZAÇÃO DO CÍRCULO
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        AtualizarCirculoAura()
+    end
+end)
+
+-- ⚔️ LOOP DO KILL AURA (Lógica de Combate)
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+
+        if KillAuraAtivo then
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+            if hrp and hum and hum.Health > 0 then
+                for _, Alvo in ipairs(Players:GetPlayers()) do
+                    if not KillAuraAtivo then break end
+                    
+                    if Alvo ~= player and Alvo.Character then
+                        local alvoHrp = Alvo.Character:FindFirstChild("HumanoidRootPart")
+                        local alvoHum = Alvo.Character:FindFirstChildOfClass("Humanoid")
+                        
+                        if alvoHrp and alvoHum and alvoHum.Health > 0 then
+                            local distancia = (hrp.Position - alvoHrp.Position).Magnitude
+                            
+                            if distancia <= RaioKillAura then
+                                ExecutarAtaque(Alvo)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+player.CharacterAdded:Connect(function()
+    task.wait(1)
+    AtualizarCirculoAura()
+end)
 
 -- =========================================================================
 -- 🔫 AUTO GRAB GUN (SISTEMA COMPLETO E ISOLADO)
@@ -2241,6 +2351,82 @@ local function ExecutarFPSBoosterCompleto()
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end
 
+-- =========================================================================
+-- 🎛️ ELEMENTOS DA INTERFACE (WINDUI - ABA MURDERER)
+-- =========================================================================
+
+if MurdererTab then
+    MurdererTab:Section({ Title = "Kill Aura & Alcance" })
+
+    -- 1. Botão para Ligar/Desligar Kill Aura
+    MurdererTab:Toggle({
+        Title = "Ativar Kill Aura",
+        Value = false,
+        Callback = function(state)
+            KillAuraAtivo = state
+        end,
+    })
+
+    -- 2. Slider de Distância (5 a 50)
+    MurdererTab:Slider({
+        Title = "Distância do Kill Aura",
+        Step = 1,
+        Value = { Min = 5, Max = 50, Default = 15 },
+        Callback = function(value)
+            RaioKillAura = value
+            AtualizarCirculoAura()
+        end,
+    })
+
+    -- 3. Botão Toggle para Ver o Círculo Vermelho com Traços Brancos
+    MurdererTab:Toggle({
+        Title = "Mostrar Círculo do Kill Aura",
+        Value = false,
+        Callback = function(state)
+            MostrarCirculoAura = state
+            AtualizarCirculoAura()
+        end,
+    })
+end
+
+if MurdererTab then
+    MurdererTab:Section({ Title = "Throw Knife Flutuante" })
+
+    MurdererTab:Toggle({
+        Title = "Ativar Botão Flutuante",
+        Value = false,
+        Callback = function(state)
+            if state then
+                CreateThrowButton()
+            else
+                RemoveThrowButton()
+            end
+        end,
+    })
+
+    MurdererTab:Dropdown({
+        Title = "Formato do Botão",
+        Values = { "Retangulo", "Quadrado", "Circulo" },
+        Default = "Retangulo",
+        Callback = function(v)
+            formatoThrowAtual = v
+            AplicarFormatoThrow()
+        end,
+    })
+
+    MurdererTab:Slider({
+        Title = "Tamanho do Botão",
+        Step = 10,
+        Value = { Min = 100, Max = 400, Default = 150 }, -- Atualizado de 100 até 400 com default 150
+        Callback = function(value)
+            tamanhoThrowBase = value
+            AplicarFormatoThrow()
+            if currentThrowBtnRef and currentThrowBtnRef:FindFirstChild("ThrowText") then
+                currentThrowBtnRef.ThrowText.TextSize = math.clamp(math.floor(tamanhoThrowBase / 12.5), 12, 24)
+            end
+        end,
+    })
+end
 
 -- =========================================================================
 -- 3. INTERFACE NA ABA SHERIFF (WINDUI) - CONFIGURADO SEPARADO E PADRÕES RETÂNGULO
