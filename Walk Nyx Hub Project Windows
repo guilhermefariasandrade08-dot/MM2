@@ -107,7 +107,7 @@ local isDraggingThrow = false
 local currentThrowBtnRef = nil
 local currentThrowCornerRef = nil
 local currentThrowStrokeRef = nil
-local tamanhoThrowBase = 250
+local tamanhoThrowBase = 150 -- Valor inicial ajustado para 150
 local formatoThrowAtual = "Retangulo"
 
 -- Função para checar se o jogador tem a faca
@@ -152,6 +152,7 @@ local function ExecuteThrowKnife(TextoLabel)
     local Char = LocalPlayer.Character
     local knife = Char and Char:FindFirstChild("Knife") or (LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Knife"))
     
+    -- Verifica se tem faca e o evento de arremesso
     if knife and knife:FindFirstChild("Events") and knife.Events:FindFirstChild("KnifeThrown") then
         local frontTarget, exactTarget = GetClosestPlayerFrontCFrame()
         if frontTarget and exactTarget then
@@ -159,22 +160,21 @@ local function ExecuteThrowKnife(TextoLabel)
             knife.Events.KnifeThrown:FireServer(unpack(args))
         else
             if TextoLabel then
-                local oldText = TextoLabel.Text
                 TextoLabel.Text = "T a r g e t    N o t    F o u n d"
                 task.delay(1, function()
                     if TextoLabel and TextoLabel.Parent then
-                        TextoLabel.Text = PlayerTemFaca() and "T r o i n g    K a n i f" or "N o t    M u r d e r e r"
+                        TextoLabel.Text = "T h r o w    K a n i f"
                     end
                 end)
             end
         end
     else
+        -- Caso não tenha a faca/não seja murderer, avisa temporariamente por 1 segundo e volta
         if TextoLabel then
-            local oldText = TextoLabel.Text
-            TextoLabel.Text = "N o    K n i f e"
+            TextoLabel.Text = "N o t    K a n i f"
             task.delay(1, function()
                 if TextoLabel and TextoLabel.Parent then
-                    TextoLabel.Text = PlayerTemFaca() and "T r o i n g    K a n i f" or "N o t    M u r d e r e r"
+                    TextoLabel.Text = "T h r o w    K a n i f"
                 end
             end)
         end
@@ -236,23 +236,22 @@ local function CreateThrowButton()
     Texto.Name = "ThrowText"
     Texto.Size = UDim2.new(1, 0, 1, 0)
     Texto.BackgroundTransparency = 1
-    Texto.Text = PlayerTemFaca() and "T r o i n g    K a n i f" or "N o t    M u r d e r e r"
+    Texto.Text = "T h r o w    K a n i f"
     Texto.TextColor3 = Color3.fromRGB(255, 255, 255)
     Texto.Font = Enum.Font.SourceSans
     Texto.Parent = Btn
     
     AplicarFormatoThrow()
-    Texto.TextSize = math.clamp(math.floor(tamanhoThrowBase / 13.5), 11, 22)
+    -- Proporção de tamanho de fonte idêntica ao Silent AIM (baseada no /12.5 ou /10.5)
+    Texto.TextSize = math.clamp(math.floor(tamanhoThrowBase / 12.5), 12, 24)
     
-    -- Loop para atualizar cor e texto em tempo real
+    -- Loop apenas para estilizar a borda verde se tiver faca ou branca se não tiver
     task.spawn(function()
         while ThrowButtonGui and Btn and Texto and currentThrowStrokeRef do
             if PlayerTemFaca() then
-                Texto.Text = "T r o i n g    K a n i f"
-                currentThrowStrokeRef.Color = Color3.fromRGB(0, 255, 100) -- Verde se for Murderer
+                currentThrowStrokeRef.Color = Color3.fromRGB(0, 255, 100) -- Verde se tiver a faca
             else
-                Texto.Text = "N o t    M u r d e r e r"
-                currentThrowStrokeRef.Color = Color3.fromRGB(255, 50, 50) -- Vermelho se não for
+                currentThrowStrokeRef.Color = Color3.fromRGB(255, 255, 255) -- Branco normal se não tiver
             end
             task.wait(0.4)
         end
@@ -332,16 +331,18 @@ if MurdererTab then
     MurdererTab:Slider({
         Title = "Tamanho do Botão",
         Step = 10,
-        Value = { Min = 150, Max = 350, Default = 250 },
+        Value = { Min = 100, Max = 400, Default = 150 }, -- Atualizado de 100 até 400 com default 150
         Callback = function(value)
             tamanhoThrowBase = value
             AplicarFormatoThrow()
             if currentThrowBtnRef and currentThrowBtnRef:FindFirstChild("ThrowText") then
-                currentThrowBtnRef.ThrowText.TextSize = math.clamp(math.floor(tamanhoThrowBase / 13.5), 11, 22)
+                currentThrowBtnRef.ThrowText.TextSize = math.clamp(math.floor(tamanhoThrowBase / 12.5), 12, 24)
             end
         end,
     })
 end
+
+
 
 -- =========================================================================
 -- 🔫 AUTO GRAB GUN (SISTEMA COMPLETO E ISOLADO)
