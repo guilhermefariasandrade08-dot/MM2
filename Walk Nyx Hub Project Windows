@@ -93,8 +93,12 @@ local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 -- =========================================================================
--- 🔫 AUTO GRAB GUN (PUXAR ARMA AUTOMÁTICO)
+-- 🔫 AUTO GRAB GUN (ISOLADO)
 -- =========================================================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
 local autoGrabAtivo = false
 
 local function GetGunDrop()
@@ -2074,13 +2078,17 @@ SheriffTab:Toggle({
     end,
 })
 
-SheriffTab:Toggle({
-    Title = "Ativar Auto Puxar Arma (Automático)",
-    Value = false,
-    Callback = function(state)
-        autoGrabAtivo = state
-    end,
-})
+if SheriffTab then
+    SheriffTab:Section({ Title = "Auto Grab Gun" })
+
+    SheriffTab:Toggle({
+        Title = "Ativar Auto Puxar Arma (Automático)",
+        Value = false,
+        Callback = function(state)
+            autoGrabAtivo = state
+        end,
+    })
+end
 
 SheriffTab:Section({ Title = "A i n l o c k" })
 
