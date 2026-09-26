@@ -89,9 +89,9 @@ local MurdererTab = Window:Tab({ Title = "Murderer", Icon = "sword" })
 local SheriffTab = Window:Tab({ Title = "Sheriff", Icon = "shield" })
 local FarmCoin = Window:Tab({ Title = "Farm Coin", Icon = "coins" })
 local ESPTab = Window:Tab({ Title = "ESP", Icon = "eye" })
-local NotificationTab = Window:Tab({Title = "Notificações",Icon = "bell"})
+local NotificationTab = Window:Tab({Title = "Notificações",Icon = "bell" })
 local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
-local KeybindsTab = Window:Tab({Title = "Keybinds",Icon = "keyboard"})
+local KeybindsTab = Window:Tab({Title = "Keybinds", Icon = "keyboard" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 -- =========================================================================
