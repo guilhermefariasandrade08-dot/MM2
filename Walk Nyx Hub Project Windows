@@ -93,6 +93,39 @@ local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 -- =========================================================================
+-- 🔫 AUTO GRAB GUN (PUXAR ARMA AUTOMÁTICO)
+-- =========================================================================
+local autoGrabAtivo = false
+
+local function GetGunDrop()
+    local MapContainer = workspace:FindFirstChild("CoinContainer", true) and workspace:FindFirstChild("CoinContainer", true).Parent
+    local mapToSearch = MapContainer or workspace
+    local gunDrop = mapToSearch:FindFirstChild("GunDrop", true) or workspace:FindFirstChild("GunDrop", true)
+    if gunDrop and gunDrop:IsA("BasePart") then
+        return gunDrop
+    end
+    return nil
+end
+
+local function TriggerAutoGrab()
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+
+    local gunDrop = GetGunDrop()
+    if gunDrop then
+        -- Teleporta a arma direto para o seu personagem
+        gunDrop.CFrame = Char.HumanoidRootPart.CFrame
+    end
+end
+
+-- Loop de verificação automática do Auto Grab
+RunService.RenderStepped:Connect(function()
+    if autoGrabAtivo then
+        TriggerAutoGrab()
+    end
+end)
+
+-- =========================================================================
 -- 🔫 SISTEMA COMPLETO: SILENT AIM & GRAB/TELEPORT GUN (ABA SHERIFF)
 -- =========================================================================
 local CoreGui = game:GetService("CoreGui")
@@ -2038,6 +2071,14 @@ SheriffTab:Toggle({
     Value = false,
     Callback = function(state)
         if state then CreateGrabButton() else RemoveGrabButton() end
+    end,
+})
+
+SheriffTab:Toggle({
+    Title = "Ativar Auto Puxar Arma (Automático)",
+    Value = false,
+    Callback = function(state)
+        autoGrabAtivo = state
     end,
 })
 
