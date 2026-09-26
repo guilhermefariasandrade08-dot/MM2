@@ -95,6 +95,186 @@ local KeybindsTab = Window:Tab({Title = "Keybinds", Icon = "keyboard" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 -- =========================================================================
+-- 🔴 SISTEMA COMPLETO: KILL AURA + LINHAS TRACEJADAS VERMELHAS (ESP)
+-- =========================================================================
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local KillAuraAtivo = false
+local RaioKillAura = 15
+local MostrarCirculoAura = false
+
+local ContornoVermelhoFolder = nil
+
+-- 📏 CRIAR / ATUALIZAR APENAS AS LINHAS TRACEJADAS VERMELHAS ATRAVÉS DAS PAREDES
+local function AtualizarCirculoAura()
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+    if not MostrarCirculoAura or not hrp then
+        if ContornoVermelhoFolder then
+            ContornoVermelhoFolder:Destroy()
+            ContornoVermelhoFolder = nil
+        end
+        return
+    end
+
+    -- Gerenciamento da Pasta das Linhas Tracejadas
+    if not ContornoVermelhoFolder or not ContornoVermelhoFolder.Parent then
+        ContornoVermelhoFolder = Instance.new("Folder")
+        ContornoVermelhoFolder.Name = "KillAuraDashedBorderRed"
+        ContornoVermelhoFolder.Parent = hrp
+    else
+        ContornoVermelhoFolder:ClearAllChildren()
+    end
+
+    ContornoVermelhoFolder.Parent = hrp
+
+    -- Criando os traços (segmentos) em volta do raio
+    local numTracos = math.clamp(math.floor(RaioKillAura * 1.5), 12, 48)
+    for i = 1, numTracos do
+        local angulo = (i / numTracos) * (math.pi * 2)
+        local part = Instance.new("Part")
+        part.Name = "Dash"
+        part.Size = Vector3.new(0.6, 0.1, 1.2) -- Formato de traço
+        part.Color = Color3.fromRGB(255, 0, 0) -- Mudado para Vermelho
+        part.Material = Enum.Material.Neon
+        part.Transparency = 0.1
+        part.Anchored = false
+        part.CanCollide = false
+        part.CastShadow = false
+
+        -- Highlight interno ou propriedade para ver através das paredes (AlwaysOnTop simulado por SelectionBox ou zIndex visual)
+        local highlight = Instance.new("Highlight")
+        highlight.Adornee = part
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+        highlight.FillTransparency = 0
+        highlight.OutlineTransparency = 0
+        highlight.Parent = part
+
+        local weld = Instance.new("WeldConstraint")
+        part.Parent = ContornoVermelhoFolder
+        
+        -- Posicionamento circular exato na borda do raio (nos pés)
+        local posX = math.cos(angulo) * RaioKillAura
+        local posZ = math.sin(angulo) * RaioKillAura
+        part.CFrame = hrp.CFrame * CFrame.new(posX, -2.5, posZ) * CFrame.Angles(0, -angulo, 0)
+
+        weld.Part0 = hrp
+        weld.Part1 = part
+        weld.Parent = part
+    end
+end
+
+-- ⚔️ EXECUTAR ATAQUE DE FACA
+local function ExecutarAtaque(Alvo)
+    local Char = player.Character
+    if not Char then return end
+    
+    local Faca = Char:FindFirstChild("Knife") or (player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild("Knife"))
+    if not Faca then return end
+    
+    if Faca.Parent ~= Char then 
+        Faca.Parent = Char 
+        task.wait(0.02) 
+    end
+    
+    local Eventos = Faca:FindFirstChild("Events")
+    if not Eventos then return end
+
+    if Alvo and Alvo.Character and Alvo.Character:FindFirstChild("Head") then
+        pcall(function()
+            Eventos.KnifeStabbed:FireServer()
+            Eventos.HandleTouched:FireServer(Alvo.Character.Head)
+        end)
+    end
+end
+
+-- 🔴 LOOP DE ATUALIZAÇÃO DO CÍRCULO
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        AtualizarCirculoAura()
+    end
+end)
+
+-- ⚔️ LOOP DO KILL AURA (Lógica de Combate)
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+
+        if KillAuraAtivo then
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+            if hrp and hum and hum.Health > 0 then
+                for _, Alvo in ipairs(Players:GetPlayers()) do
+                    if not KillAuraAtivo then break end
+                    
+                    if Alvo ~= player and Alvo.Character then
+                        local alvoHrp = Alvo.Character:FindFirstChild("HumanoidRootPart")
+                        local alvoHum = Alvo.Character:FindFirstChildOfClass("Humanoid")
+                        
+                        if alvoHrp and alvoHum and alvoHum.Health > 0 then
+                            local distancia = (hrp.Position - alvoHrp.Position).Magnitude
+                            
+                            if distancia <= RaioKillAura then
+                                ExecutarAtaque(Alvo)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+player.CharacterAdded:Connect(function()
+    task.wait(1)
+    AtualizarCirculoAura()
+end)
+
+-- =========================================================================
+-- 🎛️ ELEMENTOS DA INTERFACE (WINDUI - ABA MURDERER)
+-- =========================================================================
+
+if MurdererTab then
+    MurdererTab:Section({ Title = "Kill Aura & Alcance" })
+
+    -- 1. Botão para Ligar/Desligar Kill Aura
+    MurdererTab:Toggle({
+        Title = "Ativar Kill Aura",
+        Value = false,
+        Callback = function(state)
+            KillAuraAtivo = state
+        end,
+    })
+
+    -- 2. Slider de Distância (5 a 50)
+    MurdererTab:Slider({
+        Title = "Distância do Kill Aura",
+        Step = 1,
+        Value = { Min = 5, Max = 50, Default = 15 },
+        Callback = function(value)
+            RaioKillAura = value
+            AtualizarCirculoAura()
+        end,
+    })
+
+    -- 3. Botão Toggle para Ver as Linhas Tracejadas Vermelhas
+    MurdererTab:Toggle({
+        Title = "Mostrar Linhas do Kill Aura",
+        Value = false,
+        Callback = function(state)
+            MostrarCirculoAura = state
+            AtualizarCirculoAura()
+        end,
+    })
+end
+
+-- =========================================================================
 -- 🔪 SISTEMA COMPLETO: THROW KNIFE FLUTUANTE & INTERFACE (ABA MURDERER)
 -- =========================================================================
 local CoreGui = game:GetService("CoreGui")
@@ -2196,43 +2376,7 @@ local function ExecutarFPSBoosterCompleto()
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end
 
--- =========================================================================
--- 🎛️ ELEMENTOS DA INTERFACE (WINDUI - ABA MURDERER)
--- =========================================================================
-
-if MurdererTab then
-    MurdererTab:Section({ Title = "Kill Aura & Alcance" })
-
-    -- 1. Botão para Ligar/Desligar Kill Aura
-    MurdererTab:Toggle({
-        Title = "Ativar Kill Aura",
-        Value = false,
-        Callback = function(state)
-            KillAuraAtivo = state
-        end,
-    })
-
-    -- 2. Slider de Distância (5 a 50)
-    MurdererTab:Slider({
-        Title = "Distância do Kill Aura",
-        Step = 1,
-        Value = { Min = 5, Max = 50, Default = 15 },
-        Callback = function(value)
-            RaioKillAura = value
-            AtualizarCirculoAura()
-        end,
-    })
-
-    -- 3. Botão Toggle para Ver o Círculo Vermelho com Traços Brancos
-    MurdererTab:Toggle({
-        Title = "Mostrar Círculo do Kill Aura",
-        Value = false,
-        Callback = function(state)
-            MostrarCirculoAura = state
-            AtualizarCirculoAura()
-        end,
-    })
-end
+-- ASSASINO ABA MURDERER 
 
 if MurdererTab then
     MurdererTab:Section({ Title = "Throw Knife Flutuante" })
