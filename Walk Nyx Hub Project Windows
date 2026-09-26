@@ -237,6 +237,268 @@ player.CharacterAdded:Connect(function()
 end)
 
 -- =========================================================================
+-- 🗡️ SISTEMA COMPLETO: KILL ALL FLUTUANTE & LOOP AUTOMÁTICO (ABA MURDERER)
+-- =========================================================================
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local KillAllButtonGui = nil
+local isDraggingKillAll = false
+
+local currentKillAllBtnRef = nil
+local currentKillAllCornerRef = nil
+local currentKillAllStrokeRef = nil
+local tamanhoKillAllBase = 150
+local formatoKillAllAtual = "Retangulo"
+
+local KillAllLoopAtivo = false
+
+-- Função para checar se o jogador tem a faca (é o Murderer)
+local function PlayerTemFaca()
+    local Char = LocalPlayer.Character
+    if not Char then return false end
+    if Char:FindFirstChild("Knife") then return true end
+    if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Knife") then return true end
+    return false
+end
+
+-- ⚔️ EXECUTAR ATAQUE DE FACA
+local function ExecutarAtaque(Alvo)
+    local Char = LocalPlayer.Character
+    if not Char then return end
+    
+    local Faca = Char:FindFirstChild("Knife") or (LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Knife"))
+    if not Faca then return end
+    
+    if Faca.Parent ~= Char then 
+        Faca.Parent = Char 
+        task.wait(0.02) 
+    end
+    
+    local Eventos = Faca:FindFirstChild("Events")
+    if not Eventos then return end
+
+    if Alvo and Alvo.Character and Alvo.Character:FindFirstChild("Head") then
+        pcall(function()
+            Eventos.KnifeStabbed:FireServer()
+            Eventos.HandleTouched:FireServer(Alvo.Character.Head)
+        end)
+    end
+end
+
+-- Função do Botão Flutuante (Clique Instantâneo - Só funciona se for Murderer)
+local function KillAllInstantaneo(TextoLabel)
+    if not PlayerTemFaca() then
+        if TextoLabel then
+            TextoLabel.Text = "N o t    M u r d e r e r"
+            task.delay(1, function()
+                if TextoLabel and TextoLabel.Parent then
+                    TextoLabel.Text = "K i l l    A l l"
+                end
+            end)
+        end
+        return
+    end
+
+    for _, Alvo in ipairs(Players:GetPlayers()) do
+        if Alvo ~= LocalPlayer and Alvo.Character and Alvo.Character:FindFirstChild("Head") then
+            ExecutarAtaque(Alvo)
+        end
+    end
+end
+
+-- Aplicar Formato do Botão Flutuante (Seguindo o padrão do Hub)
+local function AplicarFormatoKillAll()
+    if not currentKillAllBtnRef or not currentKillAllCornerRef then return end
+    local val = tamanhoKillAllBase
+    if formatoKillAllAtual == "Retangulo" then
+        currentKillAllBtnRef.Size = UDim2.new(0, val, 0, val / 2.5)
+        currentKillAllCornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoKillAllAtual == "Quadrado" then
+        currentKillAllBtnRef.Size = UDim2.new(0, val, 0, val)
+        currentKillAllCornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoKillAllAtual == "Circulo" then
+        currentKillAllBtnRef.Size = UDim2.new(0, val, 0, val)
+        currentKillAllCornerRef.CornerRadius = UDim.new(1, 0)
+    end
+end
+
+-- Criar o Botão Flutuante Kill All
+local function CreateKillAllButton()
+    if KillAllButtonGui then return end
+    
+    local ParentGui = CoreGui
+    pcall(function() if not CoreGui then ParentGui = LocalPlayer:WaitForChild("PlayerGui") end end)
+    
+    local GuiBtn = Instance.new("ScreenGui")
+    GuiBtn.Name = "Murderer_KillAllGui"
+    GuiBtn.ResetOnSpawn = false
+    GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    GuiBtn.Parent = ParentGui
+    
+    local Btn = Instance.new("ImageButton")
+    Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    Btn.Position = UDim2.new(0.5, 0, 0.5, 0)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.BackgroundTransparency = 0.4
+    Btn.AutoButtonColor = false
+    Btn.BorderSizePixel = 0
+    Btn.Parent = GuiBtn
+    
+    currentKillAllBtnRef = Btn
+    
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = Btn
+    currentKillAllCornerRef = Corner
+    
+    local Borda = Instance.new("UIStroke")
+    Borda.Color = Color3.fromRGB(255, 255, 255)
+    Borda.Thickness = 1.5
+    Borda.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Borda.Parent = Btn
+    currentKillAllStrokeRef = Borda
+    
+    local Texto = Instance.new("TextLabel")
+    Texto.Name = "KillAllText"
+    Texto.Size = UDim2.new(1, 0, 1, 0)
+    Texto.BackgroundTransparency = 1
+    Texto.Text = "K i l l    A l l"
+    Texto.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Texto.Font = Enum.Font.SourceSans
+    Texto.Parent = Btn
+    
+    AplicarFormatoKillAll()
+    Texto.TextSize = math.clamp(math.floor(tamanhoKillAllBase / 12.5), 12, 24)
+    
+    -- Loop de cor da borda em tempo real (Verde se tiver faca, Branco se não tiver)
+    task.spawn(function()
+        while KillAllButtonGui and Btn and Texto and currentKillAllStrokeRef do
+            if PlayerTemFaca() then
+                currentKillAllStrokeRef.Color = Color3.fromRGB(0, 255, 100)
+            else
+                currentKillAllStrokeRef.Color = Color3.fromRGB(255, 255, 255)
+            end
+            task.wait(0.4)
+        end
+    end)
+    
+    local dragStart, startPos
+    Btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDraggingKillAll = false
+            dragStart = input.Position
+            startPos = Btn.AbsolutePosition
+        end
+    end)
+    
+    Btn.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and dragStart then
+            local delta = input.Position - dragStart
+            if delta.Magnitude > 10 then
+                isDraggingKillAll = true
+                Btn.Position = UDim2.new(0, startPos.X + delta.X + (Btn.AbsoluteSize.X / 2), 0, startPos.Y + delta.Y + (Btn.AbsoluteSize.Y / 2))
+            end
+        end
+    end)
+    
+    Btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not isDraggingKillAll then
+                KillAllInstantaneo(Texto)
+            end
+            dragStart = nil
+            isDraggingKillAll = false
+        end
+    end)
+    
+    KillAllButtonGui = GuiBtn
+end
+
+local function RemoveKillAllButton()
+    if KillAllButtonGui then
+        KillAllButtonGui:Destroy()
+        KillAllButtonGui = nil
+        currentKillAllBtnRef = nil
+        currentKillAllCornerRef = nil
+        currentKillAllStrokeRef = nil
+    end
+end
+
+-- =========================================================================
+-- 🔄 LOOP DO KILL ALL AUTOMÁTICO (Mata 1 por 1 se for Murderer)
+-- =========================================================================
+task.spawn(function()
+    while true do
+        task.wait(0.3)
+        if KillAllLoopAtivo and PlayerTemFaca() then
+            for _, Alvo in ipairs(Players:GetPlayers()) do
+                if not KillAllLoopAtivo or not PlayerTemFaca() then break end
+                if Alvo ~= LocalPlayer and Alvo.Character and Alvo.Character:FindFirstChild("Head") then
+                    ExecutarAtaque(Alvo)
+                    task.wait(0.15)
+                end
+            end
+        end
+    end
+end)
+
+-- =========================================================================
+-- 🎛️ ELEMENTOS DA INTERFACE (WINDUI - ABA MURDERER)
+-- =========================================================================
+
+if MurdererTab then
+    MurdererTab:Section({ Title = "Kill All Sistema" })
+
+    -- 1. Botão Toggle para ativar o Botão Flutuante na tela
+    MurdererTab:Toggle({
+        Title = "Ativar Botão Flutuante Kill All",
+        Value = false,
+        Callback = function(state)
+            if state then
+                CreateKillAllButton()
+            else
+                RemoveKillAllButton()
+            end
+        end,
+    })
+
+    -- 2. Dropdown de Formato do Botão Flutuante
+    MurdererTab:Dropdown({
+        Title = "Formato do Botão Kill All",
+        Values = { "Retangulo", "Quadrado", "Circulo" },
+        Default = "Retangulo",
+        Callback = function(v)
+            formatoKillAllAtual = v
+            AplicarFormatoKillAll()
+        end,
+    })
+
+    -- 3. Slider de Tamanho do Botão Flutuante (100 a 400)
+    MurdererTab:Slider({
+        Title = "Tamanho do Botão Kill All",
+        Step = 10,
+        Value = { Min = 100, Max = 400, Default = 150 },
+        Callback = function(value)
+            tamanhoKillAllBase = value
+            AplicarFormatoKillAll()
+            if currentKillAllBtnRef and currentKillAllBtnRef:FindFirstChild("KillAllText") then
+                currentKillAllBtnRef.KillAllText.TextSize = math.clamp(math.floor(tamanhoKillAllBase / 12.5), 12, 24)
+            end
+        end,
+    })
+
+    -- 4. Toggle para Ligar o Loop Automático de Kill All (Só mata se for Murderer)
+    MurdererTab:Toggle({
+        Title = "Loop Automático Kill All",
+        Value = false,
+        Callback = function(state)
+            KillAllLoopAtivo = state
+        end,
+    })
+end
+
+-- =========================================================================
 -- 🎛️ ELEMENTOS DA INTERFACE (WINDUI - ABA MURDERER)
 -- =========================================================================
 
