@@ -93,7 +93,7 @@ local LocalPlayerTab = Window:Tab({ Title = "Local Player", Icon = "user" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 -- =========================================================================
--- 🔫 AUTO GRAB GUN (ISOLADO)
+-- 🔫 AUTO GRAB GUN (SISTEMA COMPLETO E ISOLADO)
 -- =========================================================================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -117,12 +117,12 @@ local function TriggerAutoGrab()
 
     local gunDrop = GetGunDrop()
     if gunDrop then
-        -- Teleporta a arma direto para o seu personagem
+        -- Teleporta a arma instantaneamente para os pés/personagem
         gunDrop.CFrame = Char.HumanoidRootPart.CFrame
     end
 end
 
--- Loop de verificação automática do Auto Grab
+-- Loop contínuo que monitora a arma no mapa
 RunService.RenderStepped:Connect(function()
     if autoGrabAtivo then
         TriggerAutoGrab()
