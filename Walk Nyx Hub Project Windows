@@ -2079,7 +2079,6 @@ SheriffTab:Toggle({
 })
 
 if SheriffTab then
-    SheriffTab:Section({ Title = "Auto Grab Gun" })
 
     SheriffTab:Toggle({
         Title = "Ativar Auto Puxar Arma (Automático)",
