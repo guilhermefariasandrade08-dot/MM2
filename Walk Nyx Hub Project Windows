@@ -95,6 +95,236 @@ local KeybindsTab = Window:Tab({Title = "Keybinds", Icon = "keyboard" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 -- =========================================================================
+-- 🔪 SISTEMA DE THROW KNIFE FLUTUANTE (COM FORMATOS)
+-- =========================================================================
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+local showThrowButton = false
+local throwButtonGui = nil
+local floatButton = nil
+local buttonSizeScale = 1 -- Tamanho padrão do slider
+local formatoAtual = "Retângulo" -- Formato padrão
+
+-- Variáveis visuais internas para atualizar o formato
+local floatCorner = nil
+
+-- Função para checar se o jogador atual é o Murderer
+local function PlayerTemFaca()
+    local Char = player.Character
+    if not Char then return false end
+    if Char:FindFirstChild("Knife") then return true end
+    if player.Backpack and player.Backpack:FindFirstChild("Knife") then return true end
+    return false
+end
+
+-- Função para achar o alvo mais próximo na frente
+local function getClosestPlayerFrontCFrame()
+    local closestCharacter = nil
+    local shortestDistance = math.huge
+    local myChar = player.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil, nil end
+    local myHRP = myChar.HumanoidRootPart
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+            if p.Character.Humanoid.Health > 0 then
+                local targetHRP = p.Character.HumanoidRootPart
+                local distance = (myHRP.Position - targetHRP.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestCharacter = p.Character
+                end
+            end
+        end
+    end
+    
+    if closestCharacter then
+        local hrp = closestCharacter.HumanoidRootPart
+        return hrp.CFrame + (hrp.CFrame.LookVector * 2), hrp.CFrame
+    end
+    return nil, nil
+end
+
+-- Função de Lançar Faca
+local function ThrowKnife(btnRef)
+    local knife = player.Character and player.Character:FindFirstChild("Knife") or player:FindFirstChild("Backpack") and player:FindFirstChild("Backpack"):FindFirstChild("Knife")
+    if knife and knife:FindFirstChild("Events") and knife.Events:FindFirstChild("KnifeThrown") then
+        local frontTarget, exactTarget = getClosestPlayerFrontCFrame()
+        if frontTarget and exactTarget then
+            local args = {frontTarget, exactTarget}
+            knife.Events.KnifeThrown:FireServer(unpack(args))
+        else
+            if btnRef then
+                local oldText = btnRef.Text
+                btnRef.Text = "Target Not Found"
+                task.wait(1)
+                if btnRef then btnRef.Text = oldText end
+            end
+        end
+    else
+        if btnRef then
+            local oldText = btnRef.Text
+            btnRef.Text = "No Knife"
+            task.wait(1)
+            if btnRef then btnRef.Text = oldText end
+        end
+    end
+end
+
+-- Função para aplicar o formato escolhido ao botão
+local function AtualizarFormatoBotao()
+    if not floatButton or not floatCorner then return end
+    
+    if formatoAtual == "Retângulo" then
+        floatButton.Size = UDim2.new(0, 180 * buttonSizeScale, 0, 50 * buttonSizeScale)
+        floatCorner.CornerRadius = UDim.new(0, 8)
+    elseif formatoAtual == "Quadrado" then
+        local tamanho = 70 * buttonSizeScale
+        floatButton.Size = UDim2.new(0, tamanho, 0, tamanho)
+        floatCorner.CornerRadius = UDim.new(0, 8)
+    elseif formatoAtual == "Círculo" then
+        local tamanho = 70 * buttonSizeScale
+        floatButton.Size = UDim2.new(0, tamanho, 0, tamanho)
+        floatCorner.CornerRadius = UDim.new(1, 0) -- Deixa perfeitamente redondo
+    end
+end
+
+-- Criar / Atualizar Botão Flutuante
+local function CriarBotaoFlutuante()
+    if throwButtonGui then return end
+    
+    local parentGui = CoreGui
+    pcall(function() if not CoreGui then parentGui = player:WaitForChild("PlayerGui") end end)
+    
+    throwButtonGui = Instance.new("ScreenGui")
+    throwButtonGui.Name = "ThrowKnifeFloatGui"
+    throwButtonGui.ResetOnSpawn = false
+    throwButtonGui.Parent = parentGui
+    
+    floatButton = Instance.new("TextButton")
+    floatButton.Name = "FloatButton"
+    floatButton.Position = UDim2.new(0.5, -90, 0.1, 0)
+    floatButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    floatButton.BorderSizePixel = 0
+    floatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    floatButton.TextSize = 13 * buttonSizeScale
+    floatButton.Font = Enum.Font.GothamBold
+    floatButton.Parent = throwButtonGui
+    
+    floatCorner = Instance.new("UICorner")
+    floatCorner.Parent = floatButton
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 50, 50)
+    stroke.Thickness = 2
+    stroke.Parent = floatButton
+
+    -- Aplica o formato inicial selecionado
+    AtualizarFormatoBotao()
+
+    -- Lógica de Arrastar (Draggable) o Botão Flutuante
+    local dragging, dragStart, startPos
+    floatButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = floatButton.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            floatButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    -- Ação de Clicar no Botão Flutuante
+    floatButton.MouseButton1Click:Connect(function()
+        ThrowKnife(floatButton)
+    end)
+    
+    -- Loop de verificação de texto em tempo real (Troing Kanif vs Not Murderer)
+    task.spawn(function()
+        while throwButtonGui and floatButton do
+            if PlayerTemFaca() then
+                floatButton.Text = "Troing Kanif"
+                stroke.Color = Color3.fromRGB(0, 255, 100) -- Verde se tiver faca
+            else
+                floatButton.Text = "Not Murderer"
+                stroke.Color = Color3.fromRGB(255, 50, 50) -- Vermelho se não for
+            end
+            task.wait(0.5)
+        end
+    end)
+end
+
+local function RemoverBotaoFlutuante()
+    if throwButtonGui then
+        throwButtonGui:Destroy()
+        throwButtonGui = nil
+        floatButton = nil
+        floatCorner = nil
+    end
+end
+
+-- =========================================================================
+-- 🎛️ ADICIONAR NA ABA MURDERER (WINDUI)
+-- =========================================================================
+
+if MurdererTab then
+    MurdererTab:Section({ Title = "Throw Knife Flutuante" })
+
+    -- Toggle para ligar/desligar o botão flutuante
+    MurdererTab:Toggle({
+        Title = "Ativar Botão Flutuante",
+        Value = false,
+        Callback = function(state)
+            showThrowButton = state
+            if state then
+                CriarBotaoFlutuante()
+            else
+                RemoverBotaoFlutuante()
+            end
+        end,
+    })
+
+    -- Dropdown para escolher o formato do botão
+    MurdererTab:Dropdown({
+        Title = "Formato do Botão Flutuante",
+        Values = { "Retângulo", "Quadrado", "Círculo" },
+        Default = "Retângulo",
+        Callback = function(v)
+            formatoAtual = v
+            AtualizarFormatoBotao()
+        end,
+    })
+
+    -- Slider para alterar o tamanho do botão flutuante
+    MurdererTab:Slider({
+        Title = "Tamanho do Botão Flutuante",
+        Step = 0.1,
+        Value = { Min = 0.6, Max = 1.8, Default = 1.0 },
+        Callback = function(value)
+            buttonSizeScale = value
+            AtualizarFormatoBotao()
+            if floatButton then
+                floatButton.TextSize = 13 * buttonSizeScale
+            end
+        end,
+    })
+end
+
+-- =========================================================================
 -- 🔫 AUTO GRAB GUN (SISTEMA COMPLETO E ISOLADO)
 -- =========================================================================
 local Players = game:GetService("Players")
