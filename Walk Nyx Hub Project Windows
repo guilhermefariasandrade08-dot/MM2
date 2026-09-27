@@ -95,6 +95,88 @@ local KeybindsTab = Window:Tab({Title = "Keybinds", Icon = "keyboard" })
 local ModificationsTab = Window:Tab({ Title = "Modifications", Icon = "settings" })
 
 -- =========================================================================
+-- 🎯 SISTEMA DE TARGET KILL (MATAR JOGADOR ESPECÍFICO)
+-- =========================================================================
+local jogadorSelecionadoParaKill = nil
+local dropdownJogadoresRef = nil
+
+-- Função para obter a lista atualizada de nomes de jogadores (excluindo você mesmo)
+local function ObterListaDeJogadores()
+    local lista = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(lista, p.Name)
+        end
+    end
+    if #lista == 0 then
+        table.insert(lista, "Nenhum jogador")
+    end
+    return lista
+end
+
+-- ⚔️ EXECUTAR ATAQUE NO ALVO SELECIONADO
+local function ExecutarKillNoAlvo()
+    if not PlayerTemFaca() then
+        -- Opcional: Se não for murderer, você pode ignorar ou avisar
+        return
+    end
+
+    if not jogadorSelecionadoParaKill or jogadorSelecionadoParaKill == "Nenhum jogador" then
+        return
+    end
+
+    local alvoPlayer = Players:FindFirstChild(jogadorSelecionadoParaKill)
+    if alvoPlayer and alvoPlayer.Character and alvoPlayer.Character:FindFirstChild("Head") then
+        ExecutarAtaque(alvoPlayer)
+    end
+end
+
+-- =========================================================================
+-- 🎛️ ELEMENTOS DA INTERFACE (WINDUI - ABA MURDERER) [POSICIONADO NO FINAL]
+-- =========================================================================
+
+if MurdererTab then
+    MurdererTab:Section({ Title = "Target Kill (Alvo Único)" })
+
+    -- 1. Dropdown com a Lista de Jogadores (Atualizada Dinamicamente)
+    dropdownJogadoresRef = MurdererTab:Dropdown({
+        Title = "Selecionar Jogador Alvo",
+        Values = ObterListaDeJogadores(),
+        Default = "",
+        Callback = function(v)
+            jogadorSelecionadoParaKill = v
+        end,
+    })
+
+    -- 2. Botão de Clique para Matar o Jogador Selecionado
+    MurdererTab:Button({
+        Title = "Matar Jogador Selecionado",
+        Callback = function()
+            ExecutarKillNoAlvo()
+        end,
+    })
+end
+
+-- 🔄 EVENTOS PARA ATUALIZAR A LISTA AUTOMATICAMENTE QUANDO ENTRA/SAI JOGADOR
+Players.PlayerAdded:Connect(function(p)
+    task.wait(0.5) -- Pequeno delay para estabilizar
+    if dropdownJogadoresRef and dropdownJogadoresRef.Refresh then
+        dropdownJogadoresRef:Refresh(ObterListaDeJogadores())
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    task.wait(0.2)
+    -- Se o jogador que saiu era o selecionado, limpa a seleção
+    if jogadorSelecionadoParaKill == p.Name then
+        jogadorSelecionadoParaKill = nil
+    end
+    if dropdownJogadoresRef and dropdownJogadoresRef.Refresh then
+        dropdownJogadoresRef:Refresh(ObterListaDeJogadores())
+    end
+end)
+
+-- =========================================================================
 -- 🔴 SISTEMA COMPLETO: KILL AURA + LINHAS TRACEJADAS VERMELHAS (ESP)
 -- =========================================================================
 local Players = game:GetService("Players")
