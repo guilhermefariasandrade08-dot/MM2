@@ -742,6 +742,288 @@ local function RemoveThrowButton()
 end
 
 -- =========================================================================
+-- SISTEMA DE TARGET SHOOT (TELEPORTE + TIRO + RETORNO) - ABA SHERIFF
+-- =========================================================================
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Stats = game:GetService("Stats")
+local LocalPlayer = Players.LocalPlayer
+
+-- =========================================================================
+-- VARIÁVEIS DO SISTEMA
+-- =========================================================================
+local TargetButtonGui = nil
+local isDraggingTarget = false
+local TargetPressed = false
+local ShootPredictMultiplier = 1
+local currentTargetBtnRef = nil
+local currentTargetCornerRef = nil
+local tamanhoTargetBase = 250
+local formatoTargetAtual = "Retangulo"
+
+local function GetPing()
+    local ok, value = pcall(function()
+        return Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+    end)
+    return ok and value or 100
+end
+
+local function GetMurderer()
+    local DataRemote = ReplicatedStorage:FindFirstChild("GetPlayerData", true)
+    if not DataRemote then return nil end
+    local ok, Data = pcall(function()
+        return DataRemote:InvokeServer()
+    end)
+    if not ok or not Data then return nil end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local Info = Data[p.Name]
+            if Info and not Info.Killed and not Info.Dead then
+                local isMurderer = false
+                if Info.Role == "Murderer" or (Info.Role and string.lower(Info.Role) == "murderer") then
+                    isMurderer = true
+                end
+                if isMurderer then return p end
+            end
+        end
+    end
+    return nil
+end
+
+-- =========================================================================
+-- FUNÇÃO DE DISPARO COM TELEPORTE RÁPIDO
+-- =========================================================================
+local function TargetShootAction(TextoLabel)
+    if TargetPressed then return end
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+    
+    local Gun = Char:FindFirstChild("Gun") or (LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Gun"))
+    if not Gun then
+        if TextoLabel then
+            TextoLabel.Text = "N o   D r o p"
+            task.delay(1, function()
+                if TextoLabel and TextoLabel.Parent then
+                    TextoLabel.Text = "T a r g e t   S h o o t"
+                end
+            end)
+        end
+        return
+    end
+
+    TargetPressed = true
+    if Gun.Parent ~= Char then
+        Gun.Parent = Char
+        task.wait(0.05)
+    end
+
+    local Murderer = GetMurderer()
+    if not Murderer or not Murderer.Character then
+        TargetPressed = false
+        return
+    end
+
+    local TargetHRP = Murderer.Character:FindFirstChild("HumanoidRootPart")
+    local TargetTorso = Murderer.Character:FindFirstChild("Torso") or Murderer.Character:FindFirstChild("UpperTorso")
+    if not TargetHRP or not TargetTorso then
+        TargetPressed = false
+        return
+    end
+
+    -- Salva a posição original do Sheriff
+    local OriginalCFrame = Char.HumanoidRootPart.CFrame
+
+    -- Teleporta para trás do Murderer (aproximadamente 4 studs)
+    local BehindCFrame = TargetHRP.CFrame * CFrame.new(0, 0, 4)
+    Char.HumanoidRootPart.CFrame = BehindCFrame
+
+    task.wait(0.05)
+
+    -- Cálculos de predição e disparo
+    local Ping = GetPing()
+    local PredictionTime = (Ping / 1000) * (ShootPredictMultiplier or 1)
+    local Velocity = TargetHRP.Velocity
+    local PredictedPos = Velocity.Magnitude < 1 and TargetTorso.Position or TargetTorso.Position + (Velocity * PredictionTime)
+    local MyPos = Char.HumanoidRootPart.Position
+    local RayDirection = (PredictedPos - MyPos)
+
+    local RayParams = RaycastParams.new()
+    RayParams.FilterType = Enum.RaycastFilterType.Exclude
+    RayParams.FilterDescendantsInstances = {Char, Murderer.Character}
+    RayParams.IgnoreWater = true
+
+    local RayResult = workspace:Raycast(MyPos, RayDirection, RayParams)
+    local OriginCFrame = RayResult and CFrame.new(RayResult.Position + (RayDirection.Unit * 1.5), PredictedPos) or CFrame.new(MyPos, PredictedPos)
+
+    local ShootEvent = Gun:FindFirstChild("ShootEvent", true) or Gun:FindFirstChild("Shoot", true) or ReplicatedStorage:FindFirstChild("Shoot", true)
+    if ShootEvent then
+        if ShootEvent:IsA("RemoteEvent") then
+            ShootEvent:FireServer(OriginCFrame, CFrame.new(PredictedPos))
+        elseif ShootEvent:IsA("RemoteFunction") then
+            ShootEvent:InvokeServer(OriginCFrame, CFrame.new(PredictedPos))
+        end
+    end
+
+    -- Retorna para a posição original instantaneamente
+    task.wait(0.05)
+    if Char and Char:FindFirstChild("HumanoidRootPart") then
+        Char.HumanoidRootPart.CFrame = OriginalCFrame
+    end
+
+    TargetPressed = false
+end
+
+-- =========================================================================
+-- GERENCIAMENTO DO BOTÃO FLUTUANTE
+-- =========================================================================
+local function AplicarFormatoTarget()
+    if not currentTargetBtnRef or not currentTargetCornerRef then return end
+    local val = tamanhoTargetBase
+    if formatoTargetAtual == "Retangulo" then
+        currentTargetBtnRef.Size = UDim2.new(0, val, 0, val / 2.5)
+        currentTargetCornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoTargetAtual == "Quadrado" then
+        currentTargetBtnRef.Size = UDim2.new(0, val, 0, val)
+        currentTargetCornerRef.CornerRadius = UDim.new(0, 8)
+    elseif formatoTargetAtual == "Circulo" then
+        currentTargetBtnRef.Size = UDim2.new(0, val, 0, val)
+        currentTargetCornerRef.CornerRadius = UDim.new(1, 0)
+    end
+end
+
+local function CreateTargetButton()
+    if TargetButtonGui then return end
+    local ParentGui = CoreGui
+    pcall(function()
+        if not CoreGui then ParentGui = LocalPlayer:WaitForChild("PlayerGui") end
+    end)
+
+    local GuiBtn = Instance.new("ScreenGui")
+    GuiBtn.Name = "Sheriff_TargetShootGui"
+    GuiBtn.ResetOnSpawn = false
+    GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    GuiBtn.Parent = ParentGui
+
+    local Btn = Instance.new("ImageButton")
+    Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    Btn.Position = UDim2.new(0.5, 0, 0.25, 0)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.BackgroundTransparency = 0.4
+    Btn.AutoButtonColor = false
+    Btn.BorderSizePixel = 0
+    Btn.Parent = GuiBtn
+    currentTargetBtnRef = Btn
+
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = Btn
+    currentTargetCornerRef = Corner
+
+    local Borda = Instance.new("UIStroke")
+    Borda.Color = Color3.fromRGB(255, 255, 255)
+    Borda.Thickness = 1.5
+    Borda.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Borda.Parent = Btn
+
+    local Texto = Instance.new("TextLabel")
+    Texto.Name = "TargetText"
+    Texto.Size = UDim2.new(1, 0, 1, 0)
+    Texto.BackgroundTransparency = 1
+    Texto.Text = "T a r g e t   S h o o t"
+    Texto.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Texto.Font = Enum.Font.SourceSansBold
+    Texto.Parent = Btn
+
+    AplicarFormatoTarget()
+    Texto.TextSize = math.clamp(math.floor(tamanhoTargetBase / 12.5), 12, 24)
+
+    local dragStart, startPos
+    Btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDraggingTarget = false
+            dragStart = input.Position
+            startPos = Btn.AbsolutePosition
+        end
+    end)
+
+    Btn.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and dragStart then
+            local delta = input.Position - dragStart
+            if delta.Magnitude > 10 then
+                isDraggingTarget = true
+                Btn.Position = UDim2.new(0, startPos.X + delta.X + (Btn.AbsoluteSize.X / 2), 0, startPos.Y + delta.Y + (Btn.AbsoluteSize.Y / 2))
+            end
+        end
+    end)
+
+    Btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not isDraggingTarget then
+                TargetShootAction(Texto)
+            end
+            dragStart = nil
+            isDraggingTarget = false
+        end
+    end)
+
+    TargetButtonGui = GuiBtn
+end
+
+local function RemoveTargetButton()
+    if TargetButtonGui then
+        TargetButtonGui:Destroy()
+        TargetButtonGui = nil
+        currentTargetBtnRef = nil
+        currentTargetCornerRef = nil
+    end
+end
+
+-- =========================================================================
+-- CONFIGURAÇÃO DOS ELEMENTOS NA INTERFACE (WINDUI)
+-- =========================================================================
+
+-- Substitua 'SheriffTab' pela variável correspondente à sua aba do Sheriff
+SheriffTab:Dropdown({
+    Title = "Formato do Botão Target Shoot",
+    Values = {"Retangulo", "Quadrado", "Circulo"},
+    Default = "Retangulo",
+    Callback = function(Value)
+        formatoTargetAtual = Value
+        AplicarFormatoTarget()
+    end
+})
+
+SheriffTab:Slider({
+    Title = "Tamanho do Botão Target Shoot",
+    Min = 100,
+    Max = 400,
+    Default = 250,
+    Callback = function(Value)
+        tamanhoTargetBase = Value
+        AplicarFormatoTarget()
+        if currentTargetBtnRef then
+            local txt = currentTargetBtnRef:FindFirstChild("TargetText")
+            if txt then
+                txt.TextSize = math.clamp(math.floor(Value / 12.5), 12, 24)
+            end
+        end
+    end
+})
+
+SheriffTab:Toggle({
+    Title = "Ativar Botão Flutuante Target Shoot",
+    Default = false,
+    Callback = function(State)
+        if State then
+            CreateTargetButton()
+        else
+            RemoveTargetButton()
+        end
+    end
+})
+
+-- =========================================================================
 -- 🔫 AUTO GRAB GUN (SISTEMA COMPLETO E ISOLADO)
 -- =========================================================================
 local Players = game:GetService("Players")
