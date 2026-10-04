@@ -1,75 +1,1622 @@
--- Protected by Mnx Obfuscator | Public Enemy
-local slKpNlwNxgHun6=bit32.bxor(37,64)
-local k09tu8RbHkL0P9UHQ1=tostring(43)
-local lTlzLQMXtrnkZ=math.floor(3)
-local pex2kGMZMA0t8wg=#"oEY"
-if false then error("") end
-do local _=nil end
-local betfZAU0gqdnCnzR=tostring(23)
-local zWXPVEjl2oZ370U3=tostring(56)
-local lHX15SC67S6YV=#"da7j1w"
-local wIPnxAWNirH=tostring(67)
-do local _=nil end
-for _=1,0 do end
-do local _=nil end
-local wxhCmFh0caoiz={"405c2490a1fb0add8566bb4b87ac98a015f4a92a1be32466aace79cb0756f39814605a877627eea4e81f635a82558fab8a00750d56d2545b99f0710663ecc090ba87541f070200fe96abfce9"}
-local irajkMF8JF={1}
-local qxqCCaqXJIFsf={"36e86ed66652da678a065abf77f40b2a1afc3efa69e9aba5529a0a28619371db445009a07c465966c749a8451cc0734a0abb6da591f8129bfd47ba5570668aff3fd81da0a2656434408484"}
-local cnBGoQrqcpx_7vA={1}
-local dYdY1OS_8oq={}
-for ldFjXP82L5CiNo=1,#irajkMF8JF do dYdY1OS_8oq[irajkMF8JF[ldFjXP82L5CiNo]]=wxhCmFh0caoiz[ldFjXP82L5CiNo] end
-dYdY1OS_8oq=table.concat(dYdY1OS_8oq)
-local iIHhUjHzDdfqcmKSL6={}
-for ldFjXP82L5CiNo=1,#cnBGoQrqcpx_7vA do iIHhUjHzDdfqcmKSL6[cnBGoQrqcpx_7vA[ldFjXP82L5CiNo]]=qxqCCaqXJIFsf[ldFjXP82L5CiNo] end
-iIHhUjHzDdfqcmKSL6=table.concat(iIHhUjHzDdfqcmKSL6)
-local sg6vqzEo_ECPKfbE7={}
-for ldFjXP82L5CiNo=1,#dYdY1OS_8oq,2 do
-  sg6vqzEo_ECPKfbE7[#sg6vqzEo_ECPKfbE7+1]=tonumber(string.sub(dYdY1OS_8oq,ldFjXP82L5CiNo,ldFjXP82L5CiNo+1),16)
+--==============================================================--
+--                         NYX HUB                              --
+--                    FOOTAGESUS ICONS V2                       --
+--==============================================================--
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+--==============================================================--
+-- CONFIG
+--==============================================================--
+
+local WINDOW_WIDTH = 675
+local WINDOW_HEIGHT = 400
+local SIDEBAR_WIDTH = 58
+
+local LOGO_IMAGE_ID = "rbxassetid://115458927281221"
+
+local SOUND_ID = "rbxassetid://4499400560"
+
+local BLACK = Color3.fromRGB(5, 5, 5)
+local SIDEBAR_COLOR = Color3.fromRGB(7, 7, 7)
+local CONTENT_COLOR = Color3.fromRGB(16, 16, 16)
+
+local TAB_COLOR = Color3.fromRGB(12, 12, 12)
+local TAB_ACTIVE = Color3.fromRGB(21, 21, 21)
+
+local WHITE = Color3.fromRGB(245, 245, 245)
+local GRAY = Color3.fromRGB(125, 125, 125)
+
+--==============================================================--
+-- FOOTAGESUS ICONS V2
+--==============================================================--
+
+local Icons
+
+do
+	local Success, Result = pcall(function()
+
+		local Source = game:HttpGet(
+			"https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"
+		)
+
+		local Loader = loadstring(Source)
+
+		if not Loader then
+			error("Footagesus loader não encontrado.")
+		end
+
+		return Loader()
+
+	end)
+
+	if Success and Result then
+
+		Icons = Result
+
+		pcall(function()
+			Icons.SetIconsType("lucide")
+		end)
+
+	else
+
+		warn(
+			"Nyx Hub | Erro ao carregar Footagesus Icons V2:",
+			Result
+		)
+
+	end
 end
-local oPXO6hEJuRtRP={23,211,172,137,45,37,177,104,23,52,116,132,62,93,129,4,211,236,42,164,54,126,205,12,115,222}
-for ldFjXP82L5CiNo=1,#sg6vqzEo_ECPKfbE7 do
-  sg6vqzEo_ECPKfbE7[ldFjXP82L5CiNo]=bit32.bxor(sg6vqzEo_ECPKfbE7[ldFjXP82L5CiNo],oPXO6hEJuRtRP[(ldFjXP82L5CiNo-1)%#oPXO6hEJuRtRP+1])
+
+--==============================================================--
+-- SCREEN GUI
+--==============================================================--
+
+local ScreenGui = Instance.new("ScreenGui")
+
+ScreenGui.Name = "NyxHubGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ScreenGui.DisplayOrder = 2147483647
+
+ScreenGui.Parent = PlayerGui
+
+--==============================================================--
+-- SOM DO HUB
+--==============================================================--
+
+local HubSound = Instance.new("Sound")
+
+HubSound.Name = "HubSound"
+HubSound.SoundId = SOUND_ID
+HubSound.Volume = 1
+HubSound.Parent = ScreenGui
+
+local function PlayHubSound()
+
+	if HubSound.IsPlaying then
+		HubSound:Stop()
+	end
+
+	HubSound.TimePosition = 0
+	HubSound:Play()
+
 end
-local bMI1w3W8IkECyN7FTG={}
-for ldFjXP82L5CiNo=1,#iIHhUjHzDdfqcmKSL6,2 do
-  bMI1w3W8IkECyN7FTG[#bMI1w3W8IkECyN7FTG+1]=tonumber(string.sub(iIHhUjHzDdfqcmKSL6,ldFjXP82L5CiNo,ldFjXP82L5CiNo+1),16)
+
+--==============================================================--
+-- BOTÃO FLUTUANTE
+--==============================================================--
+
+local OpenButton = Instance.new("TextButton")
+
+OpenButton.Name = "NyxHubButton"
+
+OpenButton.Size = UDim2.fromOffset(136, 52)
+
+OpenButton.AnchorPoint = Vector2.new(0.5, 0)
+
+OpenButton.Position = UDim2.new(
+	0.5,
+	0,
+	0,
+	18
+)
+
+OpenButton.BackgroundColor3 = BLACK
+OpenButton.BorderSizePixel = 0
+
+OpenButton.Text = ""
+OpenButton.AutoButtonColor = false
+
+OpenButton.ZIndex = 1000
+OpenButton.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner")
+
+OpenCorner.CornerRadius = UDim.new(0, 14)
+OpenCorner.Parent = OpenButton
+
+--==============================================================--
+-- LINHA FINA DO BOTÃO
+--==============================================================--
+
+local OpenStroke = Instance.new("UIStroke")
+
+OpenStroke.Name = "WhiteBorder"
+OpenStroke.Color = WHITE
+OpenStroke.Thickness = 1
+OpenStroke.Transparency = 0
+OpenStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+OpenStroke.Parent = OpenButton
+
+--==============================================================--
+-- N DO BOTÃO
+--==============================================================--
+
+local OpenN = Instance.new("TextLabel")
+
+OpenN.Name = "N"
+
+OpenN.Size = UDim2.fromOffset(34, 44)
+
+OpenN.Position = UDim2.new(
+	0,
+	18,
+	0.5,
+	-22
+)
+
+OpenN.BackgroundTransparency = 1
+
+OpenN.Text = "N"
+
+OpenN.TextColor3 = BLACK
+OpenN.TextStrokeColor3 = WHITE
+OpenN.TextStrokeTransparency = 0
+
+OpenN.Font = Enum.Font.GothamBold
+OpenN.TextSize = 28
+
+OpenN.TextXAlignment = Enum.TextXAlignment.Center
+OpenN.TextYAlignment = Enum.TextYAlignment.Center
+
+OpenN.ZIndex = 1001
+OpenN.Parent = OpenButton
+
+--==============================================================--
+-- YX HUB
+--==============================================================--
+
+local OpenText = Instance.new("TextLabel")
+
+OpenText.Name = "HubText"
+
+OpenText.Size = UDim2.fromOffset(78, 52)
+
+OpenText.Position = UDim2.new(
+	0,
+	48,
+	0,
+	0
+)
+
+OpenText.BackgroundTransparency = 1
+
+OpenText.Text = "yx Hub"
+OpenText.TextColor3 = WHITE
+
+OpenText.Font = Enum.Font.GothamBold
+OpenText.TextSize = 18
+
+OpenText.TextXAlignment = Enum.TextXAlignment.Left
+OpenText.TextYAlignment = Enum.TextYAlignment.Center
+
+OpenText.ZIndex = 1001
+OpenText.Parent = OpenButton
+
+--==============================================================--
+-- JANELA PRINCIPAL
+--==============================================================--
+
+local Window = Instance.new("Frame")
+
+Window.Name = "MainWindow"
+
+Window.Size = UDim2.fromOffset(
+	WINDOW_WIDTH,
+	WINDOW_HEIGHT
+)
+
+Window.AnchorPoint = Vector2.new(0.5, 0.5)
+
+Window.Position = UDim2.new(
+	0.5,
+	55,
+	0.5,
+	45
+)
+
+Window.BackgroundColor3 = BLACK
+Window.BorderSizePixel = 0
+
+Window.Visible = false
+
+Window.Active = true
+
+Window.ZIndex = 100
+Window.Parent = ScreenGui
+
+local WindowCorner = Instance.new("UICorner")
+
+WindowCorner.CornerRadius = UDim.new(0, 16)
+WindowCorner.Parent = Window
+
+local WindowStroke = Instance.new("UIStroke")
+
+WindowStroke.Name = "WindowBorder"
+WindowStroke.Color = WHITE
+WindowStroke.Thickness = 1
+
+WindowStroke.Parent = Window
+
+--==============================================================--
+-- HEADER
+--==============================================================--
+
+local Header = Instance.new("Frame")
+
+Header.Name = "Header"
+
+Header.Size = UDim2.new(
+	1,
+	0,
+	0,
+	58
+)
+
+Header.BackgroundColor3 = BLACK
+Header.BorderSizePixel = 0
+
+Header.Active = true
+
+Header.ZIndex = 101
+Header.Parent = Window
+
+local HeaderCorner = Instance.new("UICorner")
+
+HeaderCorner.CornerRadius = UDim.new(0, 16)
+HeaderCorner.Parent = Header
+
+local HeaderFix = Instance.new("Frame")
+
+HeaderFix.Size = UDim2.new(
+	1,
+	0,
+	0,
+	18
+)
+
+HeaderFix.Position = UDim2.new(
+	0,
+	0,
+	1,
+	-18
+)
+
+HeaderFix.BackgroundColor3 = BLACK
+HeaderFix.BorderSizePixel = 0
+
+HeaderFix.ZIndex = 101
+HeaderFix.Parent = Header
+
+--==============================================================--
+-- N HEADER
+--==============================================================--
+
+local HeaderN = Instance.new("TextLabel")
+
+HeaderN.Name = "N"
+
+HeaderN.Size = UDim2.fromOffset(
+	36,
+	42
+)
+
+HeaderN.Position = UDim2.new(
+	0,
+	18,
+	0.5,
+	-21
+)
+
+HeaderN.BackgroundTransparency = 1
+
+HeaderN.Text = "N"
+
+HeaderN.TextColor3 = BLACK
+HeaderN.TextStrokeColor3 = WHITE
+HeaderN.TextStrokeTransparency = 0
+
+HeaderN.Font = Enum.Font.GothamBold
+HeaderN.TextSize = 28
+
+HeaderN.TextXAlignment = Enum.TextXAlignment.Center
+HeaderN.TextYAlignment = Enum.TextYAlignment.Center
+
+HeaderN.ZIndex = 103
+HeaderN.Parent = Header
+
+--==============================================================--
+-- YX HUB
+--==============================================================--
+
+local HeaderText = Instance.new("TextLabel")
+
+HeaderText.Name = "HubText"
+
+HeaderText.Size = UDim2.fromOffset(
+	100,
+	40
+)
+
+HeaderText.Position = UDim2.new(
+	0,
+	53,
+	0,
+	9
+)
+
+HeaderText.BackgroundTransparency = 1
+
+HeaderText.Text = "yx Hub"
+
+HeaderText.TextColor3 = WHITE
+
+HeaderText.Font = Enum.Font.GothamBold
+HeaderText.TextSize = 18
+
+HeaderText.TextXAlignment = Enum.TextXAlignment.Left
+HeaderText.TextYAlignment = Enum.TextYAlignment.Center
+
+HeaderText.ZIndex = 103
+HeaderText.Parent = Header
+
+--==============================================================--
+-- PILHA DE INFORMAÇÕES
+--==============================================================--
+
+local GamePill = Instance.new("Frame")
+
+GamePill.Name = "GamePill"
+
+GamePill.Size = UDim2.fromOffset(
+	156,
+	28
+)
+
+GamePill.Position = UDim2.new(
+	0,
+	175,
+	0.5,
+	-14
+)
+
+GamePill.BackgroundColor3 = Color3.fromRGB(150, 20, 25)
+GamePill.BorderSizePixel = 0
+
+GamePill.ZIndex = 104
+GamePill.Parent = Header
+
+local GamePillCorner = Instance.new("UICorner")
+
+GamePillCorner.CornerRadius = UDim.new(1, 0)
+GamePillCorner.Parent = GamePill
+
+--==============================================================--
+-- VERSION PILL
+--==============================================================--
+
+local VersionPill = Instance.new("Frame")
+
+VersionPill.Name = "VersionPill"
+
+VersionPill.Size = UDim2.fromOffset(
+	72,
+	28
+)
+
+VersionPill.Position = UDim2.new(
+	0,
+	337,
+	0.5,
+	-14
+)
+
+VersionPill.BackgroundColor3 = Color3.fromRGB(150, 20, 25)
+VersionPill.BorderSizePixel = 0
+
+VersionPill.ZIndex = 104
+VersionPill.Parent = Header
+
+local VersionPillCorner = Instance.new("UICorner")
+
+VersionPillCorner.CornerRadius = UDim.new(1, 0)
+VersionPillCorner.Parent = VersionPill
+
+--==============================================================--
+-- FUNÇÃO DE ÍCONE DO HEADER
+--==============================================================--
+
+local function CreateHeaderIcon(IconName, Parent)
+
+	if not Icons then
+		return nil
+	end
+
+	local Success, IconData = pcall(function()
+		return Icons.Icon2(IconName, "lucide")
+	end)
+
+	if not Success then
+		return nil
+	end
+
+	if type(IconData) ~= "table" then
+		return nil
+	end
+
+	local ImageId = IconData[1]
+	local IconInfo = IconData[2]
+
+	if not ImageId then
+		return nil
+	end
+
+	local Icon = Instance.new("ImageLabel")
+
+	Icon.Name = "Icon"
+
+	Icon.Size = UDim2.fromOffset(17, 17)
+
+	Icon.Position = UDim2.new(
+		0,
+		8,
+		0.5,
+		-8.5
+	)
+
+	Icon.BackgroundTransparency = 1
+	Icon.BorderSizePixel = 0
+
+	Icon.Image = ImageId
+	Icon.ImageColor3 = WHITE
+
+	if IconInfo then
+
+		if IconInfo.ImageRectSize then
+			Icon.ImageRectSize = IconInfo.ImageRectSize
+		end
+
+		if IconInfo.ImageRectPosition then
+			Icon.ImageRectOffset = IconInfo.ImageRectPosition
+		end
+
+	end
+
+	Icon.ZIndex = 106
+	Icon.Parent = Parent
+
+	return Icon
+
 end
-local jf5w6z6h4aJhjrpx7z={12,184,219,204,123,233,150,127,240,183,8,74,248,78,9,6,175,84,158,140,87,237,56,85,219,126}
-for ldFjXP82L5CiNo=1,#bMI1w3W8IkECyN7FTG do
-  bMI1w3W8IkECyN7FTG[ldFjXP82L5CiNo]=bit32.bxor(bMI1w3W8IkECyN7FTG[ldFjXP82L5CiNo],jf5w6z6h4aJhjrpx7z[(ldFjXP82L5CiNo-1)%#jf5w6z6h4aJhjrpx7z+1])
+
+CreateHeaderIcon(
+	"gamepad-2",
+	GamePill
+)
+
+--==============================================================--
+-- TEXTO GAME
+--==============================================================--
+
+local GameText = Instance.new("TextLabel")
+
+GameText.Size = UDim2.new(
+	1,
+	-32,
+	1,
+	0
+)
+
+GameText.Position = UDim2.new(
+	0,
+	28,
+	0,
+	0
+)
+
+GameText.BackgroundTransparency = 1
+
+GameText.Text = "Murderer Mystery 2"
+GameText.TextColor3 = WHITE
+
+GameText.Font = Enum.Font.GothamMedium
+GameText.TextSize = 11
+
+GameText.TextXAlignment = Enum.TextXAlignment.Left
+GameText.TextYAlignment = Enum.TextYAlignment.Center
+
+GameText.ZIndex = 106
+GameText.Parent = GamePill
+
+--==============================================================--
+-- ÍCONE ROCKET
+--==============================================================--
+
+CreateHeaderIcon(
+	"rocket",
+	VersionPill
+)
+
+--==============================================================--
+-- TEXTO VERSION
+--==============================================================--
+
+local VersionText = Instance.new("TextLabel")
+
+VersionText.Size = UDim2.new(
+	1,
+	-32,
+	1,
+	0
+)
+
+VersionText.Position = UDim2.new(
+	0,
+	28,
+	0,
+	0
+)
+
+VersionText.BackgroundTransparency = 1
+
+VersionText.Text = "V 0.1"
+VersionText.TextColor3 = WHITE
+
+VersionText.Font = Enum.Font.GothamMedium
+VersionText.TextSize = 11
+
+VersionText.TextXAlignment = Enum.TextXAlignment.Left
+VersionText.TextYAlignment = Enum.TextYAlignment.Center
+
+VersionText.ZIndex = 106
+VersionText.Parent = VersionPill
+
+--==============================================================--
+-- SIDEBAR
+--==============================================================--
+
+local Sidebar = Instance.new("Frame")
+
+Sidebar.Name = "Sidebar"
+
+Sidebar.Size = UDim2.new(
+	0,
+	SIDEBAR_WIDTH,
+	1,
+	-58
+)
+
+Sidebar.Position = UDim2.new(
+	0,
+	0,
+	0,
+	58
+)
+
+Sidebar.BackgroundColor3 = SIDEBAR_COLOR
+Sidebar.BorderSizePixel = 0
+
+Sidebar.ZIndex = 102
+Sidebar.Parent = Window
+
+local SidebarCorner = Instance.new("UICorner")
+
+SidebarCorner.CornerRadius = UDim.new(0, 16)
+SidebarCorner.Parent = Sidebar
+
+local SidebarFix = Instance.new("Frame")
+
+SidebarFix.Size = UDim2.new(
+	0,
+	18,
+	1,
+	0
+)
+
+SidebarFix.Position = UDim2.new(
+	1,
+	-18,
+	0,
+	0
+)
+
+SidebarFix.BackgroundColor3 = SIDEBAR_COLOR
+SidebarFix.BorderSizePixel = 0
+
+SidebarFix.ZIndex = 102
+SidebarFix.Parent = Sidebar
+
+--==============================================================--
+-- CONTENT
+--==============================================================--
+
+local Content = Instance.new("Frame")
+
+Content.Name = "Content"
+
+Content.Size = UDim2.new(
+	1,
+	-SIDEBAR_WIDTH,
+	1,
+	-58
+)
+
+Content.Position = UDim2.new(
+	0,
+	SIDEBAR_WIDTH,
+	0,
+	58
+)
+
+Content.BackgroundColor3 = CONTENT_COLOR
+Content.BorderSizePixel = 0
+
+Content.ZIndex = 101
+Content.ClipsDescendants = true
+
+Content.Parent = Window
+
+local ContentCorner = Instance.new("UICorner")
+
+ContentCorner.CornerRadius = UDim.new(0, 16)
+ContentCorner.Parent = Content
+
+--==============================================================--
+-- IMAGEM DE FUNDO
+--==============================================================--
+
+local HubBackground = Instance.new("ImageLabel")
+
+HubBackground.Name = "NyxHubBackground"
+
+HubBackground.Size = UDim2.new(
+	1,
+	0,
+	1,
+	0
+)
+
+HubBackground.Position = UDim2.new(
+	0,
+	0,
+	0,
+	0
+)
+
+HubBackground.BackgroundTransparency = 1
+
+HubBackground.Image = LOGO_IMAGE_ID
+HubBackground.ScaleType = Enum.ScaleType.Crop
+HubBackground.ImageTransparency = 0.18
+
+HubBackground.ZIndex = 102
+HubBackground.Parent = Content
+
+local HubBackgroundCorner = Instance.new("UICorner")
+
+HubBackgroundCorner.CornerRadius = UDim.new(0, 16)
+HubBackgroundCorner.Parent = HubBackground
+
+--==============================================================--
+-- OVERLAY DA IMAGEM
+--==============================================================--
+
+local BackgroundOverlay = Instance.new("Frame")
+
+BackgroundOverlay.Name = "BackgroundOverlay"
+
+BackgroundOverlay.Size = UDim2.new(
+	1,
+	0,
+	1,
+	0
+)
+
+BackgroundOverlay.BackgroundColor3 =
+	Color3.fromRGB(8, 8, 8)
+
+BackgroundOverlay.BackgroundTransparency = 1
+BackgroundOverlay.BorderSizePixel = 0
+
+BackgroundOverlay.ZIndex = 103
+BackgroundOverlay.Parent = Content
+
+local OverlayCorner = Instance.new("UICorner")
+
+OverlayCorner.CornerRadius = UDim.new(0, 16)
+OverlayCorner.Parent = BackgroundOverlay
+
+--==============================================================--
+-- TABS
+--==============================================================--
+
+local TabsContainer = Instance.new("Frame")
+
+TabsContainer.Name = "Tabs"
+
+TabsContainer.Size = UDim2.new(
+	1,
+	-12,
+	1,
+	-12
+)
+
+TabsContainer.Position = UDim2.new(
+	0,
+	6,
+	0,
+	6
+)
+
+TabsContainer.BackgroundTransparency = 1
+
+TabsContainer.ZIndex = 104
+TabsContainer.Parent = Sidebar
+
+local TabLayout = Instance.new("UIListLayout")
+
+TabLayout.Padding = UDim.new(0, 5)
+TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+TabLayout.Parent = TabsContainer
+
+--==============================================================--
+-- NOMES DAS ABAS
+--==============================================================--
+
+local TabNames = {
+	"Combat",
+	"ESP",
+	"Farm Coin",
+	"Player",
+	"Teleport & Fling"
+}
+
+--==============================================================--
+-- ÍCONES DAS ABAS
+--==============================================================--
+
+local TabIcons = {
+	Combat = "swords",
+	ESP = "eye",
+	["Farm Coin"] = "coins",
+	Player = "user",
+	["Teleport & Fling"] = "send"
+}
+
+local Tabs = {}
+local Pages = {}
+
+local SelectedTab = "Combat"
+
+--==============================================================--
+-- FUNÇÃO DE ÍCONE
+--==============================================================--
+
+local function CreateFootagesusIcon(
+	IconName,
+	Parent
+)
+
+	if not Icons then
+		return nil
+	end
+
+	local Success, IconData = pcall(function()
+
+		return Icons.Icon2(
+			IconName,
+			"lucide"
+		)
+
+	end)
+
+	if not Success then
+		return nil
+	end
+
+	if type(IconData) ~= "table" then
+		return nil
+	end
+
+	local ImageId = IconData[1]
+	local IconInfo = IconData[2]
+
+	if not ImageId then
+		return nil
+	end
+
+	local IconLabel = Instance.new("ImageLabel")
+
+	IconLabel.Name = "TabIcon"
+
+	IconLabel.Size = UDim2.fromOffset(
+		19,
+		19
+	)
+
+	IconLabel.Position = UDim2.new(
+		0.5,
+		-9.5,
+		0.5,
+		-9.5
+	)
+
+	IconLabel.BackgroundTransparency = 1
+	IconLabel.BorderSizePixel = 0
+
+	IconLabel.Image = ImageId
+	IconLabel.ImageColor3 = GRAY
+
+	if IconInfo then
+
+		if IconInfo.ImageRectSize then
+			IconLabel.ImageRectSize =
+				IconInfo.ImageRectSize
+		end
+
+		if IconInfo.ImageRectPosition then
+			IconLabel.ImageRectOffset =
+				IconInfo.ImageRectPosition
+		end
+
+	end
+
+	IconLabel.ZIndex = 108
+	IconLabel.Parent = Parent
+
+	return IconLabel
+
 end
-local fVJi77PuGw7wZEW2Yw={}
-for ldFjXP82L5CiNo=1,math.max(#sg6vqzEo_ECPKfbE7,#bMI1w3W8IkECyN7FTG) do
-  if sg6vqzEo_ECPKfbE7[ldFjXP82L5CiNo] then fVJi77PuGw7wZEW2Yw[#fVJi77PuGw7wZEW2Yw+1]=sg6vqzEo_ECPKfbE7[ldFjXP82L5CiNo] end
-  if bMI1w3W8IkECyN7FTG[ldFjXP82L5CiNo] then fVJi77PuGw7wZEW2Yw[#fVJi77PuGw7wZEW2Yw+1]=bMI1w3W8IkECyN7FTG[ldFjXP82L5CiNo] end
+
+--==============================================================--
+-- CRIAR ABAS
+--==============================================================--
+
+for Index, TabName in ipairs(TabNames) do
+
+	local Tab = Instance.new("TextButton")
+
+	Tab.Name = TabName:gsub("%s+", "")
+
+	Tab.Size = UDim2.fromOffset(
+		44,
+		36
+	)
+
+	Tab.BackgroundColor3 = TAB_COLOR
+	Tab.BorderSizePixel = 0
+
+	Tab.Text = ""
+	Tab.AutoButtonColor = false
+
+	Tab.LayoutOrder = Index
+
+	Tab.ZIndex = 105
+	Tab.Parent = TabsContainer
+
+	local TabCorner = Instance.new("UICorner")
+
+	TabCorner.CornerRadius = UDim.new(0, 9)
+	TabCorner.Parent = Tab
+
+	--==========================================================--
+	-- ÍCONE
+	--==========================================================--
+
+	local Icon = CreateFootagesusIcon(
+		TabIcons[TabName],
+		Tab
+	)
+
+	--==========================================================--
+	-- INDICADOR
+	--==========================================================--
+
+	local Indicator = Instance.new("Frame")
+
+	Indicator.Name = "SelectedIndicator"
+
+	Indicator.Size = UDim2.fromOffset(
+		3,
+		20
+	)
+
+	Indicator.Position = UDim2.new(
+		1,
+		-3,
+		0.5,
+		-10
+	)
+
+	Indicator.BackgroundColor3 = WHITE
+	Indicator.BorderSizePixel = 0
+
+	Indicator.Visible = false
+
+	Indicator.ZIndex = 109
+	Indicator.Parent = Tab
+
+	local IndicatorCorner = Instance.new("UICorner")
+
+	IndicatorCorner.CornerRadius = UDim.new(1, 0)
+	IndicatorCorner.Parent = Indicator
+
+	--==========================================================--
+	-- PÁGINA DA ABA
+	--==========================================================--
+
+	local Page = Instance.new("Frame")
+
+	Page.Name = TabName:gsub("%s+", "")
+
+	Page.Size = UDim2.new(
+		1,
+		-20,
+		1,
+		-20
+	)
+
+	Page.Position = UDim2.new(
+		0,
+		10,
+		0,
+		10
+	)
+
+	Page.BackgroundTransparency = 1
+
+	Page.Visible = TabName == SelectedTab
+
+	Page.ZIndex = 106
+	Page.Parent = Content
+
+	--==========================================================--
+	-- PARTE ESQUERDA
+	--==========================================================--
+
+	local LeftScroll = Instance.new("ScrollingFrame")
+
+	LeftScroll.Name = "LeftScroll"
+
+	LeftScroll.Size = UDim2.new(
+		0.5,
+		-6,
+		1,
+		0
+	)
+
+	LeftScroll.Position = UDim2.new(
+		0,
+		0,
+		0,
+		0
+	)
+
+	LeftScroll.BackgroundTransparency = 1
+
+	LeftScroll.BorderSizePixel = 0
+
+	LeftScroll.ScrollBarThickness = 0
+	LeftScroll.ScrollBarImageTransparency = 1
+
+	LeftScroll.CanvasSize = UDim2.new(
+		0,
+		0,
+		0,
+		0
+	)
+
+	LeftScroll.AutomaticCanvasSize =
+		Enum.AutomaticSize.Y
+
+	LeftScroll.ScrollingDirection =
+		Enum.ScrollingDirection.Y
+
+	LeftScroll.ZIndex = 107
+	LeftScroll.Parent = Page
+
+	local LeftLayout = Instance.new("UIListLayout")
+
+	LeftLayout.Padding = UDim.new(0, 8)
+	LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+	LeftLayout.Parent = LeftScroll
+
+	--==========================================================--
+	-- PARTE DIREITA
+	--==========================================================--
+
+	local RightScroll = Instance.new("ScrollingFrame")
+
+	RightScroll.Name = "RightScroll"
+
+	RightScroll.Size = UDim2.new(
+		0.5,
+		-6,
+		1,
+		0
+	)
+
+	RightScroll.Position = UDim2.new(
+		0.5,
+		6,
+		0,
+		0
+	)
+
+	RightScroll.BackgroundTransparency = 1
+
+	RightScroll.BorderSizePixel = 0
+
+	RightScroll.ScrollBarThickness = 0
+	RightScroll.ScrollBarImageTransparency = 1
+
+	RightScroll.CanvasSize = UDim2.new(
+		0,
+		0,
+		0,
+		0
+	)
+
+	RightScroll.AutomaticCanvasSize =
+		Enum.AutomaticSize.Y
+
+	RightScroll.ScrollingDirection =
+		Enum.ScrollingDirection.Y
+
+	RightScroll.ZIndex = 107
+	RightScroll.Parent = Page
+
+	local RightLayout = Instance.new("UIListLayout")
+
+	RightLayout.Padding = UDim.new(0, 8)
+	RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+	RightLayout.Parent = RightScroll
+
+	Tabs[TabName] = {
+		Button = Tab,
+		Icon = Icon,
+		Indicator = Indicator
+	}
+
+	Pages[TabName] = Page
+
 end
-local aA3wWDz3M={}
-local jHYELsChnCUEQ9ylS=291766343
-for ldFjXP82L5CiNo=#fVJi77PuGw7wZEW2Yw-1,1,-1 do
-  jHYELsChnCUEQ9ylS=(jHYELsChnCUEQ9ylS*1664525+1013904223)%4294967296
-  local hhsZiCr41=jHYELsChnCUEQ9ylS%(ldFjXP82L5CiNo+1)+1
-  aA3wWDz3M[#aA3wWDz3M+1]={ldFjXP82L5CiNo+1,hhsZiCr41}
+
+--==============================================================--
+-- ATUALIZAR ABAS
+--==============================================================--
+
+local function UpdateTabs()
+
+	for Name, Data in pairs(Tabs) do
+
+		local Active = Name == SelectedTab
+
+		Data.Indicator.Visible = Active
+
+		if Active then
+
+			Data.Button.BackgroundColor3 =
+				TAB_ACTIVE
+
+			if Data.Icon then
+
+				TweenService:Create(
+
+					Data.Icon,
+
+					TweenInfo.new(
+						0.18,
+						Enum.EasingStyle.Quad,
+						Enum.EasingDirection.Out
+					),
+
+					{
+						Size =
+							UDim2.fromOffset(
+								23,
+								23
+							),
+
+						Position =
+							UDim2.new(
+								0.5,
+								-11.5,
+								0.5,
+								-11.5
+							),
+
+						ImageColor3 =
+							WHITE
+					}
+
+				):Play()
+
+			end
+
+		else
+
+			Data.Button.BackgroundColor3 =
+				TAB_COLOR
+
+			if Data.Icon then
+
+				TweenService:Create(
+
+					Data.Icon,
+
+					TweenInfo.new(
+						0.18,
+						Enum.EasingStyle.Quad,
+						Enum.EasingDirection.Out
+					),
+
+					{
+						Size =
+							UDim2.fromOffset(
+								19,
+								19
+							),
+
+						Position =
+							UDim2.new(
+								0.5,
+								-9.5,
+								0.5,
+								-9.5
+							),
+
+						ImageColor3 =
+							GRAY
+					}
+
+				):Play()
+
+			end
+
+		end
+
+	end
+
 end
-for ldFjXP82L5CiNo=#aA3wWDz3M,1,-1 do
-  local fGMq9rtVNmmlmeBa=aA3wWDz3M[ldFjXP82L5CiNo]
-  local cRQxxtBofur=fVJi77PuGw7wZEW2Yw[fGMq9rtVNmmlmeBa[1]]
-  fVJi77PuGw7wZEW2Yw[fGMq9rtVNmmlmeBa[1]]=fVJi77PuGw7wZEW2Yw[fGMq9rtVNmmlmeBa[2]]
-  fVJi77PuGw7wZEW2Yw[fGMq9rtVNmmlmeBa[2]]=cRQxxtBofur
+
+--==============================================================--
+-- CLIQUES DAS ABAS
+--==============================================================--
+
+for TabName, Data in pairs(Tabs) do
+
+	Data.Button.MouseButton1Click:Connect(function()
+
+		if SelectedTab == TabName then
+			return
+		end
+
+		SelectedTab = TabName
+
+		for Name, Page in pairs(Pages) do
+
+			Page.Visible =
+				Name == SelectedTab
+
+		end
+
+		UpdateTabs()
+
+		-- SOM AO TROCAR DE ABA
+		PlayHubSound()
+
+	end)
+
 end
-local nf82vicZFY5X5_={180,220,105,173,35,215,224,67,213,244,2,127,220,111,63,156,151,166,251,100,95,227,212,7,112,217}
-local x0uHkvEhYO={}
-for ldFjXP82L5CiNo=1,#fVJi77PuGw7wZEW2Yw do
-  x0uHkvEhYO[ldFjXP82L5CiNo]=string.char(bit32.bxor(fVJi77PuGw7wZEW2Yw[ldFjXP82L5CiNo],nf82vicZFY5X5_[(ldFjXP82L5CiNo-1)%#nf82vicZFY5X5_+1]))
+
+UpdateTabs()
+
+--==============================================================--
+-- DRAG DA INTERFACE
+--==============================================================--
+
+local DraggingWindow = false
+local DragInput = nil
+local DragStart = nil
+local StartWindowPosition = nil
+
+Header.InputBegan:Connect(function(Input)
+
+	if Input.UserInputType == Enum.UserInputType.MouseButton1
+		or Input.UserInputType == Enum.UserInputType.Touch then
+
+		DraggingWindow = true
+		DragInput = Input
+		DragStart = Input.Position
+		StartWindowPosition = Window.Position
+
+		Input.Changed:Connect(function()
+
+			if Input.UserInputState ==
+				Enum.UserInputState.End then
+
+				DraggingWindow = false
+				DragInput = nil
+
+			end
+
+		end)
+
+	end
+
+end)
+
+Header.InputChanged:Connect(function(Input)
+
+	if Input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or Input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		DragInput = Input
+
+	end
+
+end)
+
+UserInputService.InputChanged:Connect(function(Input)
+
+	if not DraggingWindow then
+		return
+	end
+
+	if Input ~= DragInput then
+		return
+	end
+
+	local Delta =
+		Input.Position - DragStart
+
+	local NewX =
+		StartWindowPosition.X.Offset + Delta.X
+
+	local NewY =
+		StartWindowPosition.Y.Offset + Delta.Y
+
+	Window.Position = UDim2.new(
+		StartWindowPosition.X.Scale,
+		NewX,
+		StartWindowPosition.Y.Scale,
+		NewY
+	)
+
+end)
+
+--==============================================================--
+-- ESTADO DA JANELA
+--==============================================================--
+
+local Opened = false
+local Busy = false
+
+local NORMAL_SIZE = UDim2.fromOffset(
+	WINDOW_WIDTH,
+	WINDOW_HEIGHT
+)
+
+local SavedWindowPosition = Window.Position
+
+--==============================================================--
+-- POSIÇÃO DE ABERTURA
+--==============================================================--
+
+local function GetBottomPosition()
+
+	return UDim2.new(
+		0.5,
+		0,
+		1,
+		WINDOW_HEIGHT
+	)
+
 end
-local oVvTduBXZSEfCrVnY3=table.concat(x0uHkvEhYO)
-local kIImT3ZFvrnV9do=math.abs(-66)
-local r7Bg56fHvUwWbcfFiT=math.floor(7)
-local iVz5OjLvU9_l=#"xanBneu0"
-local aQBXxrXA5NB1hZT8cw=string.len("hc_Bd")
-for _=1,0 do end
-local ityRK7xTOT,e5DE1J_q1=loadstring(oVvTduBXZSEfCrVnY3)
-if ityRK7xTOT then
-  ityRK7xTOT()
-else
-  error("Mnx | Public Enemy : "..tostring(e5DE1J_q1))
+
+--==============================================================--
+-- ABRIR
+--==============================================================--
+
+local function OpenWindow()
+
+	if Busy or Opened then
+		return
+	end
+
+	Busy = true
+	Opened = true
+
+	PlayHubSound()
+
+	Window.Visible = true
+
+	Window.Size = NORMAL_SIZE
+
+	Window.Position =
+		GetBottomPosition()
+
+	Window.BackgroundTransparency = 1
+
+	--==========================================================--
+	-- IMAGEM / CONTEÚDO
+	--==========================================================--
+
+	HubBackground.ImageTransparency = 1
+
+	--==========================================================--
+	-- ANIMAÇÃO PARA O CENTRO
+	--==========================================================--
+
+	local WindowTween = TweenService:Create(
+
+		Window,
+
+		TweenInfo.new(
+			0.45,
+			Enum.EasingStyle.Quint,
+			Enum.EasingDirection.Out
+		),
+
+		{
+			Position = SavedWindowPosition,
+			BackgroundTransparency = 0
+		}
+
+	)
+
+	local ImageTween = TweenService:Create(
+
+		HubBackground,
+
+		TweenInfo.new(
+			0.35,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+
+		{
+			ImageTransparency = 0.18
+		}
+
+	)
+
+	WindowTween:Play()
+	ImageTween:Play()
+
+	WindowTween.Completed:Once(function()
+
+		Busy = false
+
+	end)
+
 end
+
+--==============================================================--
+-- FECHAR
+--==============================================================--
+
+local function CloseWindow()
+
+	if Busy or not Opened then
+		return
+	end
+
+	Busy = true
+	Opened = false
+
+	-- Guarda a posição atual para retornar para ela
+	SavedWindowPosition = Window.Position
+
+	PlayHubSound()
+
+	local WindowTween = TweenService:Create(
+
+		Window,
+
+		TweenInfo.new(
+			0.38,
+			Enum.EasingStyle.Quint,
+			Enum.EasingDirection.In
+		),
+
+		{
+			Position = GetBottomPosition(),
+			BackgroundTransparency = 1
+		}
+
+	)
+
+	local ImageTween = TweenService:Create(
+
+		HubBackground,
+
+		TweenInfo.new(
+			0.2,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.In
+		),
+
+		{
+			ImageTransparency = 1
+		}
+
+	)
+
+	WindowTween:Play()
+	ImageTween:Play()
+
+	WindowTween.Completed:Once(function()
+
+		Window.Visible = false
+
+		Window.Position =
+			SavedWindowPosition
+
+		Window.Size =
+			NORMAL_SIZE
+
+		Window.BackgroundTransparency = 0
+
+		HubBackground.ImageTransparency = 0.18
+
+		Busy = false
+
+	end)
+
+end
+
+--==============================================================--
+-- BOTÃO FLUTUANTE
+--==============================================================--
+
+OpenButton.MouseButton1Click:Connect(function()
+
+	if Busy then
+		return
+	end
+
+	if Opened then
+
+		CloseWindow()
+
+	else
+
+		OpenWindow()
+
+	end
+
+end)
+
+--==============================================================--
+-- RIGHT SHIFT
+--==============================================================--
+
+UserInputService.InputBegan:Connect(function(
+	Input,
+	GameProcessed
+)
+
+	if GameProcessed then
+		return
+	end
+
+	if Input.KeyCode ==
+		Enum.KeyCode.RightShift then
+
+		if Busy then
+			return
+		end
+
+		if Opened then
+
+			CloseWindow()
+
+		else
+
+			OpenWindow()
+
+		end
+
+	end
+
+end)
+
+--==============================================================--
+-- BOTÕES DA ABA COMBAT
+--==============================================================--
+
+-- Coloque aqui os botões da aba Combat.
+--
+-- Exemplo:
+--
+-- local CombatButton = Instance.new("TextButton")
+-- CombatButton.Parent = Pages.Combat.LeftScroll
+
+
+--==============================================================--
+-- BOTÕES DA ABA ESP
+--==============================================================--
+
+-- Coloque aqui os botões da aba ESP.
+--
+-- Exemplo:
+--
+-- local ESPButton = Instance.new("TextButton")
+-- ESPButton.Parent = Pages.ESP.LeftScroll
+
+
+--==============================================================--
+-- BOTÕES DA ABA FARM COIN
+--==============================================================--
+
+-- Coloque aqui os botões da aba Farm Coin.
+--
+-- Exemplo:
+--
+-- local FarmButton = Instance.new("TextButton")
+-- FarmButton.Parent = Pages.FarmCoin.LeftScroll
+
+
+--==============================================================--
+-- BOTÕES DA ABA PLAYER
+--==============================================================--
+
+-- Coloque aqui os botões da aba Player.
+--
+-- Exemplo:
+--
+-- local PlayerButton = Instance.new("TextButton")
+-- PlayerButton.Parent = Pages.Player.LeftScroll
+
+
+--==============================================================--
+-- BOTÕES DA ABA TELEPORT & FLING
+--==============================================================--
+
+-- Coloque aqui os botões da aba Teleport & Fling.
+--
+-- Exemplo:
+--
+-- local TeleportButton = Instance.new("TextButton")
+-- TeleportButton.Parent = Pages.Teleport&Fling.LeftScroll
+
+
+--==============================================================--
+-- FIM DO NYX HUB
+--==============================================================--
