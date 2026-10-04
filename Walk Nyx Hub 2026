@@ -2002,275 +2002,380 @@ local KillAuraButton = AddButtonToCard(
 -- ===================================
 
 --==============================================================--
--- KILL AURA → CARD MURDERER 1
+-- CARD MURDERER 1
 --==============================================================--
 
-local KillAuraEnabled = false
+local MurdererCardData = Cards["Card Murderer 1"]
 
-local KillAuraButton = Instance.new("TextButton")
+if MurdererCardData then
 
-KillAuraButton.Name = "KillAura"
-KillAuraButton.Size = UDim2.new(
-	1,
-	-16,
-	0,
-	42
-)
+	-- Faz o card aparecer porque agora existe uma função dentro dele
+	MurdererCardData.Frame.Visible = true
 
-KillAuraButton.BackgroundTransparency = 1
-KillAuraButton.BorderSizePixel = 0
-KillAuraButton.Text = ""
-KillAuraButton.AutoButtonColor = false
 
-KillAuraButton.ZIndex = 115
+	--==========================================================--
+	-- KILL AURA
+	--==========================================================--
 
--- COLOQUE NO CARD MURDERER 1
-KillAuraButton.Parent = CardMurderer1
+	local KillAuraButton = Instance.new("TextButton")
 
+	KillAuraButton.Name = "KillAura"
 
---==============================================================--
--- TEXTO
---==============================================================--
+	KillAuraButton.Size = UDim2.new(
+		1,
+		0,
+		0,
+		40
+	)
 
-local KillAuraText = Instance.new("TextLabel")
+	KillAuraButton.BackgroundColor3 =
+		Color3.fromRGB(21, 21, 21)
 
-KillAuraText.Name = "KillAuraText"
+	KillAuraButton.BorderSizePixel = 0
 
-KillAuraText.Size = UDim2.new(
-	1,
-	-50,
-	1,
-	0
-)
+	KillAuraButton.Text = ""
+	KillAuraButton.AutoButtonColor = false
 
-KillAuraText.Position = UDim2.new(
-	0,
-	4,
-	0,
-	0
-)
+	KillAuraButton.LayoutOrder = 2
 
-KillAuraText.BackgroundTransparency = 1
+	KillAuraButton.ZIndex = 115
 
-KillAuraText.Text = "Kill Aura"
-KillAuraText.TextColor3 = WHITE
+	KillAuraButton.Parent =
+		MurdererCardData.Content
 
-KillAuraText.Font = Enum.Font.GothamMedium
-KillAuraText.TextSize = 12
 
-KillAuraText.TextXAlignment =
-	Enum.TextXAlignment.Left
+	--==========================================================--
+	-- CANTO DO BOTÃO
+	--==========================================================--
 
-KillAuraText.TextYAlignment =
-	Enum.TextYAlignment.Center
+	local KillAuraCorner = Instance.new("UICorner")
 
-KillAuraText.ZIndex = 116
-KillAuraText.Parent = KillAuraButton
+	KillAuraCorner.CornerRadius =
+		UDim.new(0, 7)
 
+	KillAuraCorner.Parent =
+		KillAuraButton
 
---==============================================================--
--- TOGGLE
---==============================================================--
 
-local KillAuraToggle = Instance.new("TextButton")
+	--==========================================================--
+	-- BORDA DO BOTÃO
+	--==========================================================--
 
-KillAuraToggle.Name = "Toggle"
+	local KillAuraStroke = Instance.new("UIStroke")
 
-KillAuraToggle.Size = UDim2.fromOffset(
-	27,
-	27
-)
+	KillAuraStroke.Color =
+		Color3.fromRGB(48, 48, 48)
 
-KillAuraToggle.Position = UDim2.new(
-	1,
-	-31,
-	0.5,
-	-13.5
-)
+	KillAuraStroke.Thickness = 1
 
-KillAuraToggle.BackgroundColor3 =
-	Color3.fromRGB(25, 25, 25)
+	KillAuraStroke.Parent =
+		KillAuraButton
 
-KillAuraToggle.BorderSizePixel = 0
 
-KillAuraToggle.Text = ""
-KillAuraToggle.AutoButtonColor = false
+	--==========================================================--
+	-- TEXTO KILL AURA
+	--==========================================================--
 
-KillAuraToggle.ZIndex = 117
-KillAuraToggle.Parent = KillAuraButton
+	local KillAuraText = Instance.new("TextLabel")
 
+	KillAuraText.Name = "Text"
 
-local ToggleCorner = Instance.new("UICorner")
+	KillAuraText.Size = UDim2.new(
+		1,
+		-55,
+		1,
+		0
+	)
 
-ToggleCorner.CornerRadius =
-	UDim.new(0, 6)
+	KillAuraText.Position = UDim2.new(
+		0,
+		7,
+		0,
+		0
+	)
 
-ToggleCorner.Parent = KillAuraToggle
+	KillAuraText.BackgroundTransparency = 1
 
+	KillAuraText.Text = "Kill Aura"
 
-local ToggleStroke = Instance.new("UIStroke")
+	KillAuraText.TextColor3 =
+		Color3.fromRGB(
+			245,
+			245,
+			245
+		)
 
-ToggleStroke.Color =
-	Color3.fromRGB(70, 70, 70)
+	KillAuraText.Font =
+		Enum.Font.GothamMedium
 
-ToggleStroke.Thickness = 1
+	KillAuraText.TextSize = 12
 
-ToggleStroke.Parent = KillAuraToggle
+	KillAuraText.TextXAlignment =
+		Enum.TextXAlignment.Left
 
+	KillAuraText.TextYAlignment =
+		Enum.TextYAlignment.Center
 
---==============================================================--
--- CHECK
---==============================================================--
+	KillAuraText.ZIndex = 116
 
-local ToggleCheck = Instance.new("TextLabel")
+	KillAuraText.Parent =
+		KillAuraButton
 
-ToggleCheck.Name = "Check"
 
-ToggleCheck.Size = UDim2.new(
-	1,
-	0,
-	1,
-	0
-)
+	--==========================================================--
+	-- TOGGLE
+	--==========================================================--
 
-ToggleCheck.BackgroundTransparency = 1
+	local KillAuraToggle = Instance.new("TextButton")
 
-ToggleCheck.Text = "✔"
+	KillAuraToggle.Name = "Toggle"
 
-ToggleCheck.TextColor3 =
-	Color3.fromRGB(0, 0, 0)
+	KillAuraToggle.Size =
+		UDim2.fromOffset(
+			27,
+			27
+		)
 
-ToggleCheck.Font =
-	Enum.Font.GothamBold
+	KillAuraToggle.Position =
+		UDim2.new(
+			1,
+			-34,
+			0.5,
+			-13.5
+		)
 
-ToggleCheck.TextSize = 17
+	KillAuraToggle.BackgroundColor3 =
+		Color3.fromRGB(
+			25,
+			25,
+			25
+		)
 
-ToggleCheck.TextTransparency = 1
+	KillAuraToggle.BorderSizePixel = 0
 
-ToggleCheck.ZIndex = 118
-ToggleCheck.Parent = KillAuraToggle
+	KillAuraToggle.Text = ""
 
+	KillAuraToggle.AutoButtonColor = false
 
---==============================================================--
--- MOSTRAR CARD
---==============================================================--
+	KillAuraToggle.ZIndex = 117
 
-CardMurderer1.Visible = true
+	KillAuraToggle.Parent =
+		KillAuraButton
 
 
---==============================================================--
--- ANIMAÇÃO DO TOGGLE
---==============================================================--
+	--==========================================================--
+	-- CANTO DO TOGGLE
+	--==========================================================--
 
-KillAuraToggle.MouseButton1Click:Connect(function()
+	local ToggleCorner = Instance.new("UICorner")
 
-	KillAuraEnabled = not KillAuraEnabled
+	ToggleCorner.CornerRadius =
+		UDim.new(0, 6)
 
-	if KillAuraEnabled then
+	ToggleCorner.Parent =
+		KillAuraToggle
 
-		TweenService:Create(
-			KillAuraToggle,
 
-			TweenInfo.new(
-				0.18,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
+	--==========================================================--
+	-- BORDA DO TOGGLE
+	--==========================================================--
 
-			{
-				BackgroundColor3 =
-					Color3.fromRGB(245, 245, 245)
-			}
+	local ToggleStroke = Instance.new("UIStroke")
 
-		):Play()
+	ToggleStroke.Color =
+		Color3.fromRGB(
+			70,
+			70,
+			70
+		)
 
+	ToggleStroke.Thickness = 1
 
-		TweenService:Create(
-			ToggleStroke,
+	ToggleStroke.Parent =
+		KillAuraToggle
 
-			TweenInfo.new(
-				0.18,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
 
-			{
-				Color =
-					Color3.fromRGB(245, 245, 245)
-			}
+	--==========================================================--
+	-- CHECK
+	--==========================================================--
 
-		):Play()
+	local ToggleCheck = Instance.new("TextLabel")
 
+	ToggleCheck.Name = "Check"
 
-		TweenService:Create(
-			ToggleCheck,
+	ToggleCheck.Size =
+		UDim2.new(
+			1,
+			0,
+			1,
+			0
+		)
 
-			TweenInfo.new(
-				0.18,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
+	ToggleCheck.BackgroundTransparency = 1
 
-			{
-				TextTransparency = 0
-			}
+	ToggleCheck.Text = "✔"
 
-		):Play()
+	ToggleCheck.TextColor3 =
+		Color3.fromRGB(
+			0,
+			0,
+			0
+		)
 
-	else
+	ToggleCheck.Font =
+		Enum.Font.GothamBold
 
-		TweenService:Create(
-			KillAuraToggle,
+	ToggleCheck.TextSize = 16
 
-			TweenInfo.new(
-				0.18,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
+	ToggleCheck.TextTransparency = 1
 
-			{
-				BackgroundColor3 =
-					Color3.fromRGB(25, 25, 25)
-			}
+	ToggleCheck.ZIndex = 118
 
-		):Play()
+	ToggleCheck.Parent =
+		KillAuraToggle
 
 
-		TweenService:Create(
-			ToggleStroke,
+	--==========================================================--
+	-- ESTADO
+	--==========================================================--
 
-			TweenInfo.new(
-				0.18,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
+	local KillAuraEnabled = false
 
-			{
-				Color =
-					Color3.fromRGB(70, 70, 70)
-			}
 
-		):Play()
+	--==========================================================--
+	-- ANIMAÇÃO
+	--==========================================================--
 
+	KillAuraToggle.MouseButton1Click:Connect(function()
 
-		TweenService:Create(
-			ToggleCheck,
+		KillAuraEnabled =
+			not KillAuraEnabled
 
-			TweenInfo.new(
-				0.18,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
 
-			{
-				TextTransparency = 1
-			}
+		if KillAuraEnabled then
 
-		):Play()
+			TweenService:Create(
+				KillAuraToggle,
 
-	end
+				TweenInfo.new(
+					0.18,
+					Enum.EasingStyle.Quad,
+					Enum.EasingDirection.Out
+				),
 
-end)
+				{
+					BackgroundColor3 =
+						Color3.fromRGB(
+							245,
+							245,
+							245
+						)
+				}
+
+			):Play()
+
+
+			TweenService:Create(
+				ToggleStroke,
+
+				TweenInfo.new(
+					0.18,
+					Enum.EasingStyle.Quad,
+					Enum.EasingDirection.Out
+				),
+
+				{
+					Color =
+						Color3.fromRGB(
+							245,
+							245,
+							245
+						)
+				}
+
+			):Play()
+
+
+			TweenService:Create(
+				ToggleCheck,
+
+				TweenInfo.new(
+					0.18,
+					Enum.EasingStyle.Quad,
+					Enum.EasingDirection.Out
+				),
+
+				{
+					TextTransparency = 0
+				}
+
+			):Play()
+
+		else
+
+			TweenService:Create(
+				KillAuraToggle,
+
+				TweenInfo.new(
+					0.18,
+					Enum.EasingStyle.Quad,
+					Enum.EasingDirection.Out
+				),
+
+				{
+					BackgroundColor3 =
+						Color3.fromRGB(
+							25,
+							25,
+							25
+						)
+				}
+
+			):Play()
+
+
+			TweenService:Create(
+				ToggleStroke,
+
+				TweenInfo.new(
+					0.18,
+					Enum.EasingStyle.Quad,
+					Enum.EasingDirection.Out
+				),
+
+				{
+					Color =
+						Color3.fromRGB(
+							70,
+							70,
+							70
+						)
+				}
+
+			):Play()
+
+
+			TweenService:Create(
+				ToggleCheck,
+
+				TweenInfo.new(
+					0.18,
+					Enum.EasingStyle.Quad,
+					Enum.EasingDirection.Out
+				),
+
+				{
+					TextTransparency = 1
+				}
+
+			):Play()
+
+		end
+
+	end)
+
+end
+
 
 --==============================================================--
 -- ========================= ESP ===============================--
