@@ -14,7 +14,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 -- CONFIG
 --==============================================================--
 
-local WINDOW_WIDTH = 675
+local WINDOW_WIDTH = 400
 local WINDOW_HEIGHT = 400
 local SIDEBAR_WIDTH = 58
 
