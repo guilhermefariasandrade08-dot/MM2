@@ -52,7 +52,13 @@ local TracersConfig = {
     Thickness = 1
 }
 
+local BoxConfig = {
+    Active = false,
+    Mode = "2D" -- "2D" ou "3D"
+}
+
 local TracersConfig_Active_Check = false
+
 
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
@@ -786,6 +792,168 @@ end)
 
 CreateSlider("ESP", "Espessura da Linha", 1, 10, 1, function(value)
     TracersConfig.Thickness = value
+end)
+
+-- Título da Seção Box ESP
+CreateSection("ESP", "-- // ===== Box ESP ===== \\ --")
+
+-- Dropdown para escolher o modo (2D ou 3D)
+CreateDropdown("ESP", "Estilo da Box", {"2D", "3D"}, "2D", function(option)
+    BoxConfig.Mode = option
+end)
+
+-- Toggle para ativar/desativar a Box
+CreateToggle("ESP", "Ativar Box ESP", false, function(state)
+    BoxConfig.Active = state
+end)
+
+--==============================================================--
+--                SISTEMA DE BOX ESP (2D / 3D)                  --
+--==============================================================--
+
+local BoxesList = {}
+
+local function LimparBoxes()
+    for _, box in pairs(BoxesList) do
+        if type(box) == "table" then
+            for _, drawing in pairs(box) do
+                if drawing then drawing:Remove() end
+            end
+        elseif box then
+            box:Remove()
+        end
+    end
+    table.clear(BoxesList)
+end
+
+RunService.RenderStepped:Connect(function()
+    if not BoxConfig.Active then
+        LimparBoxes()
+        return
+    end
+
+    local jogadoresAtivos = {}
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if ESPConfig and ESPConfig.TargetType == "No my highlight" and p == Player then
+            continue
+        end
+
+        if p.Character then
+            local char = p.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                jogadoresAtivos[p] = true
+                local cor = ObterCorCargo(p.Name)
+                
+                if BoxConfig.Mode == "2D" then
+                    if not BoxesList[p] or BoxesList[p].Type ~= "2D" then
+                        if BoxesList[p] then LimparBoxes() end
+                        local box2D = Drawing.new("Square")
+                        box2D.Visible = false
+                        box2D.Filled = false
+                        box2D.Thickness = 1.5
+                        BoxesList[p] = { Type = "2D", Drawing = box2D }
+                    end
+
+                    local boxObj = BoxesList[p].Drawing
+                    local cf, size = char:GetBoundingBox()
+                    local vector, onScreen = Camera:WorldToViewportPoint(cf.Position)
+
+                    if onScreen then
+                        local scale = 1 / (vector.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 2) * 1000
+                        local w = math.clamp(size.X * scale, 15, 300)
+                        local h = math.clamp(size.Y * scale, 20, 400)
+                        
+                        boxObj.Size = Vector2.new(w, h)
+                        boxObj.Position = Vector2.new(vector.X - w / 2, vector.Y - h / 2)
+                        boxObj.Color = cor
+                        boxObj.Visible = true
+                    else
+                        boxObj.Visible = false
+                    end
+
+                elseif BoxConfig.Mode == "3D" then
+                    if not BoxesList[p] or BoxesList[p].Type ~= "3D" then
+                        if BoxesList[p] then LimparBoxes() end
+                        local lines3D = {}
+                        for i = 1, 12 do
+                            local line = Drawing.new("Line")
+                            line.Visible = false
+                            line.Thickness = 1.5
+                            table.insert(lines3D, line)
+                        end
+                        BoxesList[p] = { Type = "3D", Lines = lines3D }
+                    end
+
+                    local cf, size = char:GetBoundingBox()
+                    local corners = {
+                        cf * CFrame.new(size.X/2, size.Y/2, size.Z/2),
+                        cf * CFrame.new(-size.X/2, size.Y/2, size.Z/2),
+                        cf * CFrame.new(-size.X/2, -size.Y/2, size.Z/2),
+                        cf * CFrame.new(size.X/2, -size.Y/2, size.Z/2),
+                        cf * CFrame.new(size.X/2, size.Y/2, -size.Z/2),
+                        cf * CFrame.new(-size.X/2, size.Y/2, -size.Z/2),
+                        cf * CFrame.new(-size.X/2, -size.Y/2, -size.Z/2),
+                        cf * CFrame.new(size.X/2, -size.Y/2, -size.Z/2),
+                    }
+
+                    local screenCorners = {}
+                    local allOnScreen = true
+
+                    for i, corner in ipairs(corners) do
+                        local screenPos, onScreen = Camera:WorldToViewportPoint(corner.Position)
+                        if not onScreen then allOnScreen = false end
+                        screenCorners[i] = Vector2.new(screenPos.X, screenPos.Y)
+                    end
+
+                    local lines = BoxesList[p].Lines
+                    local connections = {
+                        {1,2}, {2,3}, {3,4}, {4,1},
+                        {5,6}, {6,7}, {7,8}, {8,5},
+                        {1,5}, {2,6}, {3,7}, {4,8}
+                    }
+
+                    if allOnScreen then
+                        for idx, conn in ipairs(connections) do
+                            local l = lines[idx]
+                            l.From = screenCorners[conn[1]]
+                            l.To = screenCorners[conn[2]]
+                            l.Color = cor
+                            l.Visible = true
+                        end
+                    else
+                        for _, l in ipairs(lines) do l.Visible = false end
+                    end
+                end
+            end
+        end
+    end
+
+    for p, boxData in pairs(BoxesList) do
+        if not jogadoresAtivos[p] or not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
+            if type(boxData) == "table" then
+                if boxData.Type == "2D" and boxData.Drawing then boxData.Drawing:Remove() end
+                if boxData.Type == "3D" and boxData.Lines then
+                    for _, l in ipairs(boxData.Lines) do l:Remove() end
+                end
+            end
+            BoxesList[p] = nil
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if BoxesList[p] then
+        local boxData = BoxesList[p]
+        if boxData.Type == "2D" and boxData.Drawing then boxData.Drawing:Remove() end
+        if boxData.Type == "3D" and boxData.Lines then
+            for _, l in ipairs(boxData.Lines) do l:Remove() end
+        end
+        BoxesList[p] = nil
+    end
 end)
 
 --==============================================================--
