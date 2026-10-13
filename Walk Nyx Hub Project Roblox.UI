@@ -1043,9 +1043,276 @@ local function CreateSection(pageName, text)
 end
 
 --==============================================================--
+-- VARIÁVEIS DOS SISTEMAS DE ESP (HIGHLIGHT E TRACERS)
+--==============================================================--
+
+local ESPConfig = {
+    Active = false,
+    TargetType = "No my highlight", -- "My highlight" ou "No my highlight"
+    Mode = "Highlight",            -- "Highlight" ou "Outline"
+    Transparency = 0.5              -- De 0 a 1 (padrão 0.5)
+}
+
+local TracersConfig = {
+    Active = false,
+    Position = "Bottom",
+    Thickness = 1
+}
+
+local TracersConfig_Active_Check = false
+
+-- Variáveis de Cache e Controle de Cargos
+local Highlights = {}
+local TracersList = {}
+local DadosCargos = {}
+local UltimaChecagemCargo = 0
+
+--==============================================================--
 -- 16. ABA ESP — CONTROLES E SISTEMA DE TRACERS
 --==============================================================--
 
+--==============================================================--
+-- BOTÕES E ELEMENTOS DA ABA ESP
+--==============================================================--
+
+-- Seção Highlight
+CreateSection("ESP", "-- // ===== Highlight ===== \\ --")
+
+CreateDropdown("ESP", "Aplicar em Mim", {"No my highlight", "My highlight"}, "No my highlight", function(option)
+    ESPConfig.TargetType = option
+end)
+
+CreateDropdown("ESP", "Estilo do ESP", {"Highlight", "Outline"}, "Highlight", function(option)
+    ESPConfig.Mode = option
+end)
+
+CreateToggle("ESP", "Ativar ESP Highlight", false, function(state)
+    ESPConfig.Active = state
+end)
+
+CreateSlider("ESP", "Transparência ESP (%)", 0, 100, 50, function(value)
+    ESPConfig.Transparency = value / 100
+end)
+
+-- Seção Tracers (Linhas)
+CreateSection("ESP", "-- // ===== Tracers ===== \\ --")
+
+CreateDropdown("ESP", "Origem da Linha", {"Top", "Middle", "Bottom"}, "Bottom", function(option)
+    TracersConfig.Position = option
+end)
+
+CreateToggle("ESP", "Ativar Tracers", false, function(state)
+    TracersConfig.Active = state
+end)
+
+CreateSlider("ESP", "Espessura da Linha", 1, 10, 1, function(value)
+    TracersConfig.Thickness = value
+end)
+
+
+--==============================================================--
+-- SISTEMA DE CARGOS COMPARTILHADO (MM2 + LOBBY)
+--==============================================================--
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local function PegarCargos()
+    if tick() - UltimaChecagemCargo < 2 then return end
+    UltimaChecagemCargo = tick()
+    
+    task.spawn(function()
+        local R = ReplicatedStorage:FindFirstChild("GetPlayerData", true)
+        if not R then return end
+        
+        local ok, d = pcall(function() 
+            return R:InvokeServer() 
+        end)
+        
+        if ok and d then 
+            DadosCargos = d 
+        end
+    end)
+end
+
+local function ObterCorCargo(nomeJogador)
+    local Info = DadosCargos[nomeJogador]
+    local Cor = Color3.fromRGB(255, 255, 255) -- Cor Branca padrão (Lobby)
+    
+    if Info and not Info.Killed and not Info.Dead then
+        if Info.Role == "Murderer" then
+            Cor = Color3.fromRGB(220, 50, 50) -- Vermelho
+        elseif Info.Role == "Sheriff" then
+            Cor = Color3.fromRGB(0, 85, 255) -- Azul
+        elseif Info.Role == "Hero" then
+            Cor = Color3.fromRGB(255, 215, 0) -- Dourado
+        elseif Info.Role == "Innocent" then
+            Cor = Color3.fromRGB(60, 200, 80) -- Verde
+        end
+    end
+    
+    return Cor
+end
+
+-- Loop global para puxar os cargos se qualquer ESP estiver ativo
+RunService.RenderStepped:Connect(function()
+    if ESPConfig.Active or TracersConfig_Active_Check then 
+        PegarCargos() 
+    end
+end)
+
+--==============================================================--
+-- LÓGICA DO ESP HIGHLIGHT
+--==============================================================--
+
+local function LimparEsp()
+    for _, highlight in pairs(Highlights) do
+        if highlight then highlight:Destroy() end
+    end
+    table.clear(Highlights)
+end
+
+RunService.RenderStepped:Connect(function()
+    if not ESPConfig.Active then
+        LimparEsp()
+        return
+    end
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if ESPConfig.TargetType == "No my highlight" and p == Player then
+            if Highlights[p] then
+                Highlights[p]:Destroy()
+                Highlights[p] = nil
+            end
+            continue
+        end
+
+        if p.Character then
+            local highlight = Highlights[p]
+            local cor = ObterCorCargo(p.Name)
+
+            if not highlight or highlight.Parent ~= p.Character then
+                if highlight then highlight:Destroy() end
+
+                local newHighlight = Instance.new("Highlight")
+                newHighlight.Name = "WalkNyx_ESP"
+                newHighlight.Adornee = p.Character
+                newHighlight.FillColor = cor
+                newHighlight.OutlineColor = cor
+                newHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+                if ESPConfig.Mode == "Highlight" then
+                    newHighlight.FillTransparency = ESPConfig.Transparency
+                    newHighlight.OutlineTransparency = 0
+                else
+                    newHighlight.FillTransparency = 1
+                    newHighlight.OutlineTransparency = ESPConfig.Transparency
+                end
+
+                newHighlight.Parent = p.Character
+                Highlights[p] = newHighlight
+            else
+                highlight.FillColor = cor
+                highlight.OutlineColor = cor
+
+                if ESPConfig.Mode == "Highlight" then
+                    highlight.FillTransparency = ESPConfig.Transparency
+                    highlight.OutlineTransparency = 0
+                else
+                    highlight.FillTransparency = 1
+                    highlight.OutlineTransparency = ESPConfig.Transparency
+                end
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if Highlights[p] then
+        Highlights[p]:Destroy()
+        Highlights[p] = nil
+    end
+end)
+
+--==============================================================--
+-- LÓGICA DO SISTEMA DE TRACERS (LINHAS ESP)
+--==============================================================--
+
+local function LimparTracers()
+    for _, line in pairs(TracersList) do
+        if line then line:Remove() end
+    end
+    table.clear(TracersList)
+end
+
+RunService.RenderStepped:Connect(function()
+    TracersConfig_Active_Check = TracersConfig.Active
+    if not TracersConfig.Active then
+        LimparTracers()
+        return
+    end
+
+    local screenSize = Camera.ViewportSize
+    local originPoint = Vector2.new(screenSize.X / 2, screenSize.Y)
+
+    if TracersConfig.Position == "Top" then
+        originPoint = Vector2.new(screenSize.X / 2, 0)
+    elseif TracersConfig.Position == "Middle" then
+        originPoint = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
+    elseif TracersConfig.Position == "Bottom" then
+        originPoint = Vector2.new(screenSize.X / 2, screenSize.Y)
+    end
+
+    local jogadoresAtivos = {}
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if ESPConfig and ESPConfig.TargetType == "No my highlight" and p == Player then
+            continue
+        end
+
+        if p.Character then
+            local char = p.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                jogadoresAtivos[p] = true
+                
+                if not TracersList[p] then
+                    local line = Drawing.new("Line")
+                    line.Visible = false
+                    TracersList[p] = line
+                end
+
+                local line = TracersList[p]
+                local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+
+                if onScreen then
+                    line.From = originPoint
+                    line.To = Vector2.new(vector.X, vector.Y)
+                    line.Color = ObterCorCargo(p.Name)
+                    line.Thickness = TracersConfig.Thickness
+                    line.Visible = true
+                else
+                    line.Visible = false
+                end
+            end
+        end
+    end
+
+    for p, line in pairs(TracersList) do
+        if not jogadoresAtivos[p] or not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
+            if line then line:Remove() end
+            TracersList[p] = nil
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if TracersList[p] then
+        TracersList[p]:Remove()
+        TracersList[p] = nil
+    end
+end)
 
 
 
