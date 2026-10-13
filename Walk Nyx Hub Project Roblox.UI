@@ -796,7 +796,175 @@ CreateSlider("ESP", "Espessura da Linha", 1, 10, 1, function(value)
     TracersConfig.Thickness = value
 end)
 
+-- Título da Seção Name ESP
+CreateSection("ESP", "-- // ===== Name ESP ===== \\ --")
 
+-- Dropdown com a correção integrada do LimparNameESP()
+CreateDropdown("ESP", "Estilo do Name ESP", {"Simple", "Customized"}, "Simple", function(option)
+    NameESPConfig.Mode = option
+    LimparNameESP() -- Limpa instantaneamente para recriar com o novo estilo na hora
+end)
+
+-- Toggle para ativar/desativar o Name ESP
+CreateToggle("ESP", "Ativar Name ESP", false, function(state)
+    NameESPConfig.Active = state
+end)
+
+
+--==============================================================--
+--                SISTEMA DE NAME ESP / BILLBOARD               --
+--==============================================================--
+
+function LimparNameESP()
+    for _, espObj in pairs(NameESPList) do
+        if espObj and espObj.Parent then 
+            espObj:Destroy() 
+        end
+    end
+    table.clear(NameESPList)
+end
+
+local function CriarBillboardPlayer(p)
+    if NameESPList[p] then 
+        NameESPList[p]:Destroy() 
+        NameESPList[p] = nil 
+    end
+
+    if not NameESPConfig.Active then return end
+    if p == Player and not NameESPConfig.IncludeSelf then return end
+
+    local char = p.Character
+    if not char or not char:FindFirstChild("Head") then return end
+
+    local head = char.Head
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "WalkNyx_NameESP"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.ResetOnSpawn = false
+
+    if NameESPConfig.Mode == "Simple" then
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "NameLabel"
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = p.Name
+        nameLabel.TextColor3 = ObterCorCargo(p.Name)
+        nameLabel.TextSize = 14
+        nameLabel.Font = Enum.Font.SourceSansBold
+        nameLabel.TextStrokeTransparency = 0
+        nameLabel.Parent = billboard
+
+    elseif NameESPConfig.Mode == "Customized" then
+        local container = Instance.new("Frame")
+        container.Name = "CustomContainer"
+        container.Size = UDim2.new(0, 0, 0, 30)
+        container.Position = UDim2.new(0.5, 0, 0.5, 0)
+        container.AnchorPoint = Vector2.new(0.5, 0.5)
+        container.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        container.BackgroundTransparency = 0.3
+        container.BorderSizePixel = 0
+        container.Parent = billboard
+
+        local uiCorner = Instance.new("UICorner")
+        uiCorner.CornerRadius = UDim.new(1, 0)
+        uiCorner.Parent = container
+
+        local avatarCircle = Instance.new("ImageLabel")
+        avatarCircle.Name = "AvatarCircle"
+        avatarCircle.Size = UDim2.new(0, 24, 0, 24)
+        avatarCircle.Position = UDim2.new(0, 3, 0.5, 0)
+        avatarCircle.AnchorPoint = Vector2.new(0, 0.5)
+        avatarCircle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        avatarCircle.Image = "rbxthumb://type=AvatarHeadShot&id=" .. p.UserId .. "&w=150&h=150"
+        avatarCircle.Parent = container
+
+        local avatarCorner = Instance.new("UICorner")
+        avatarCorner.CornerRadius = UDim.new(1, 0)
+        avatarCorner.Parent = avatarCircle
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "CustomNameLabel"
+        nameLabel.Size = UDim2.new(0, 0, 1, 0)
+        nameLabel.Position = UDim2.new(0, 32, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = p.Name
+        nameLabel.TextColor3 = ObterCorCargo(p.Name)
+        nameLabel.TextSize = 13
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.AutomaticSize = Enum.AutomaticSize.X
+        nameLabel.Parent = container
+
+        task.spawn(function()
+            task.wait(0.05)
+            if container and nameLabel then 
+                container.Size = UDim2.new(0, nameLabel.AbsoluteSize.X + 38, 0, 28) 
+            end
+        end)
+    end
+
+    billboard.Parent = head
+    NameESPList[p] = billboard
+end
+
+RunService.RenderStepped:Connect(function()
+    if not NameESPConfig.Active then
+        LimparNameESP()
+        return
+    end
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p == Player and not NameESPConfig.IncludeSelf then
+            if NameESPList[p] then 
+                NameESPList[p]:Destroy() 
+                NameESPList[p] = nil 
+            end
+            continue
+        end
+
+        if p.Character then
+            local char = p.Character
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+
+            if hum and hum.Health > 0 and hrp then
+                local billboard = NameESPList[p]
+                local novaCor = ObterCorCargo(p.Name)
+
+                -- Se não existe ou foi limpo pela mudança do dropdown, recria na hora
+                if not billboard or billboard.Parent ~= char:FindFirstChild("Head") then
+                    CriarBillboardPlayer(p)
+                else
+                    -- Atualiza a cor em tempo real instantaneamente
+                    if NameESPConfig.Mode == "Simple" then
+                        local lbl = billboard:FindFirstChild("NameLabel")
+                        if lbl then lbl.TextColor3 = novaCor end
+                    elseif NameESPConfig.Mode == "Customized" then
+                        local cont = billboard:FindFirstChild("CustomContainer")
+                        if cont then
+                            local lbl = cont:FindFirstChild("CustomNameLabel")
+                            if lbl then lbl.TextColor3 = novaCor end
+                        end
+                    end
+                end
+            else
+                if NameESPList[p] then 
+                    NameESPList[p]:Destroy() 
+                    NameESPList[p] = nil 
+                end
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if NameESPList[p] then
+        NameESPList[p]:Destroy()
+        NameESPList[p] = nil
+    end
+end)
 
 --==============================================================--
 -- 14. LÓGICA DE EXECUÇÃO: HIGHLIGHT E TRACERS
