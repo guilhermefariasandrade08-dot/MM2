@@ -1176,13 +1176,19 @@ CreateSlider("Jogador", "Força do Pulo", 50, 130, 50, function(value)
     PlayerConfig.JumpValue = value
 end)
 
-CreateToggle("Jogador", "Fling", "Ativar Fly", false, function(state)
+-- ============================
+-- SEÇÃO: FLY
+-- ============================
+CreateSection("Jogador", "-- // ===== Fly ===== \\ --")
+
+CreateToggle("Jogador", "Ativar Fly", false, function(state)
     ToggleFly(state)
 end)
 
-CreateSlider("Jogador", "Fling", "Velocidade do Fly", 16, 120, 50, function(value)
+CreateSlider("Jogador", "Velocidade do Fly", 16, 120, 50, function(value)
     FlyVelocidade = value
 end)
+
 
 -- ==============================================================--
 -- SISTEMA DE LÓGICA DO FLY
