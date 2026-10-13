@@ -633,16 +633,17 @@ local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, ca
 end
 
 --==============================================================--
--- 14. SISTEMA DE DROPDOWNS
+-- 14. SISTEMA DE DROPDOWNS (COM SUPORTE A VALOR PADRÃO)
 --==============================================================--
 
-local function CreateDropdown(pageName, text, options, callback)
+local function CreateDropdown(pageName, text, options, defaultValue, callback)
     local page = Pages[pageName]
     if not page then return end
 
     options = options or {}
 
-    local selected = nil
+    -- Se não for passado defaultValue, pega a primeira opção do array
+    local selected = defaultValue or options[1]
     local expanded = false
 
     local row = Create("Frame", {
@@ -672,15 +673,16 @@ local function CreateDropdown(pageName, text, options, callback)
         UDim2.new(0.52, -10, 1, 0)
     )
 
+    -- Define o texto inicial com a opção já selecionada
     local selectedLabel = Label(
         header,
-        "Selecionar",
+        selected and tostring(selected) or "Selecionar",
         10,
         UDim2.new(0.52, 0, 0, 0),
         UDim2.new(0.48, -30, 1, 0)
     )
 
-    selectedLabel.TextColor3 = C.Gray
+    selectedLabel.TextColor3 = selected and C.White or C.Gray
     selectedLabel.TextXAlignment = Enum.TextXAlignment.Right
 
     local arrow = Label(
@@ -730,6 +732,7 @@ local function CreateDropdown(pageName, text, options, callback)
         optionButton.Activated:Connect(function()
             selected = option
             selectedLabel.Text = tostring(option)
+            selectedLabel.TextColor3 = C.White
             SetExpanded(false)
 
             if callback then
@@ -744,6 +747,13 @@ local function CreateDropdown(pageName, text, options, callback)
         SetExpanded(not expanded)
     end)
 
+    -- Dispara o callback inicial com o valor padrão
+    if selected and callback then
+        task.spawn(function()
+            callback(selected)
+        end)
+    end
+
     return {
         Get = function()
             return selected
@@ -754,6 +764,7 @@ local function CreateDropdown(pageName, text, options, callback)
                 if available == option then
                     selected = option
                     selectedLabel.Text = tostring(option)
+                    selectedLabel.TextColor3 = C.White
 
                     if callback then
                         callback(option)
