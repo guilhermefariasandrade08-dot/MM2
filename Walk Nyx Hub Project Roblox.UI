@@ -85,6 +85,10 @@ local WalkFlingAtivo = false
 local FlingConnection = nil
 local FlingPower = 500000
 
+local InfiniteJumpActive = false
+local NoclipActive = false
+local NoclipConnection = nil
+
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
@@ -1193,12 +1197,67 @@ CreateSlider("Jogador", "Velocidade do Fly", 16, 120, 50, function(value)
     FlyVelocidade = value
 end)
 
+CreateToggle("Jogador", "Ativar Pulo Infinito", false, function(state)
+    InfiniteJumpActive = state
+end)
+
+CreateToggle("Jogador", "Ativar Noclip", false, function(state)
+    ToggleNoclip(state)
+end)
+
 CreateToggle("Jogador", "Ativar Walk Fling", false, function(state)
     ToggleWalkFling(state)
 end)
 
 CreateToggle("Jogador", "Ativar Anti Fling", false, function(state)
     getgenv().AntiFling = state
+end)
+
+-- ==============================================================--
+-- SISTEMAS DE LÓGICA (INFINITE JUMP E NOCLIP)
+-- ==============================================================--
+
+-- Lógica do Infinite Jump
+UserInputService.JumpRequest:Connect(function()
+    if InfiniteJumpActive then
+        local char = Player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+-- Lógica do Noclip
+function ToggleNoclip(state)
+    NoclipActive = state
+
+    if not NoclipActive then
+        if NoclipConnection then
+            NoclipConnection:Disconnect()
+            NoclipConnection = nil
+        end
+        return
+    end
+
+    NoclipConnection = RunService.Stepped:Connect(function()
+        if not NoclipActive then return end
+        local char = Player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanCollide then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+Player.CharacterAdded:Connect(function()
+    if NoclipActive then
+        task.wait(1)
+        ToggleNoclip(true)
+    end
 end)
 
 -- ==============================================================--
