@@ -81,6 +81,10 @@ local success, PlayerModule = pcall(function()
 end)
 local controls = success and PlayerModule:GetControls() or nil
 
+local WalkFlingAtivo = false
+local FlingConnection = nil
+local FlingPower = 500000
+
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
@@ -1179,7 +1183,7 @@ end)
 -- ============================
 -- SEÇÃO: FLY
 -- ============================
-CreateSection("Jogador", "-- // ===== Fly ===== \\ --")
+CreateSection("Jogador", "-- // ===== Extras ===== \\ --")
 
 CreateToggle("Jogador", "Ativar Fly", false, function(state)
     ToggleFly(state)
@@ -1187,6 +1191,90 @@ end)
 
 CreateSlider("Jogador", "Velocidade do Fly", 16, 120, 50, function(value)
     FlyVelocidade = value
+end)
+
+CreateToggle("Jogador", "Ativar Walk Fling", false, function(state)
+    ToggleWalkFling(state)
+end)
+
+CreateToggle("Jogador", "Ativar Anti Fling", false, function(state)
+    getgenv().AntiFling = state
+end)
+
+-- ==============================================================--
+-- SISTEMA DE LÓGICA DO WALK FLING E ANTI FLING
+-- ==============================================================--
+
+function ToggleWalkFling(state)
+    WalkFlingAtivo = state
+
+    if not WalkFlingAtivo then
+        if FlingConnection then
+            FlingConnection:Disconnect()
+            FlingConnection = nil
+        end
+        return
+    end
+
+    FlingConnection = RunService.Heartbeat:Connect(function()
+        if not WalkFlingAtivo then return end
+
+        local char = Player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+        if hrp and humanoid then
+            for _, part in ipairs(char:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+
+            local oldCFrame = hrp.CFrame
+            local vel = hrp.AssemblyLinearVelocity
+
+            hrp.CFrame = oldCFrame * CFrame.Angles(0, math.rad(math.random(1, 360)), 0)
+            hrp.AssemblyAngularVelocity = Vector3.new(0, FlingPower, 0)
+
+            RunService.RenderStepped:Wait()
+            if hrp then
+                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                if humanoid.MoveDirection.Magnitude > 0 then
+                    hrp.AssemblyLinearVelocity = vel
+                else
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                end
+            end
+        end
+    end)
+end
+
+Player.CharacterAdded:Connect(function()
+    if WalkFlingAtivo then
+        task.wait(1.5)
+        ToggleWalkFling(true)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if getgenv().AntiFling then
+            pcall(function()
+                for _, OtherPlayer in ipairs(Players:GetPlayers()) do
+                    if OtherPlayer ~= Player and OtherPlayer.Character then
+                        for _, Part in ipairs(OtherPlayer.Character:GetChildren()) do
+                            if Part:IsA("BasePart") then
+                                Part.CanCollide = false
+                                Part.AssemblyLinearVelocity = Vector3.zero
+                                Part.AssemblyAngularVelocity = Vector3.zero
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        RunService.Stepped:Wait()
+    end
 end)
 
 
