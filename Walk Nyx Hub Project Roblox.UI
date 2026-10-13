@@ -39,6 +39,7 @@ local C = {
 -- 03. VARIÁVEIS DOS RECURSOS E CONFIGURAÇÕES DO ESP
 --==============================================================--
 
+-- ABA ESP 
 local ESPConfig = {
     Active = false,
     TargetType = "No my highlight",
@@ -61,6 +62,15 @@ local NameESPConfig = {
 }
 
 local NameESPList = {}
+
+-- ABA JOGADOR
+
+local PlayerConfig = {
+    SpeedActive = false,
+    SpeedValue = 16,
+    JumpActive = false,
+    JumpValue = 50
+}
 
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
@@ -1125,6 +1135,61 @@ Players.PlayerRemoving:Connect(function(p)
     if TracersList[p] then
         TracersList[p]:Remove()
         TracersList[p] = nil
+    end
+end)
+
+-- ===========================================================
+-- BOOTOES E SISTEMA DA ABA JOGADOR
+-- ===========================================================
+
+-- Título da Seção Speed
+CreateSection("Jogador", "-- // ===== Speed (Velocidade) ===== \\ --")
+
+CreateToggle("Jogador", "Ativar Speed", false, function(state)
+    PlayerConfig.SpeedActive = state
+    if not state and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        Player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
+    end
+end)
+
+CreateSlider("Jogador", "Velocidade", 16, 50, 16, function(value)
+    PlayerConfig.SpeedValue = value
+end)
+
+-- Título da Seção Jump Power
+CreateSection("Jogador", "-- // ===== Jump Power (Pulo) ===== \\ --")
+
+CreateToggle("Jogador", "Ativar Jump Power", false, function(state)
+    PlayerConfig.JumpActive = state
+    if not state and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        Player.Character:FindFirstChildOfClass("Humanoid").JumpPower = 50
+    end
+end)
+
+CreateSlider("Jogador", "Força do Pulo", 50, 130, 50, function(value)
+    PlayerConfig.JumpValue = value
+end)
+
+
+--==============================================================--
+--                SISTEMA DE SPEED E JUMP POWER                 --
+--==============================================================--
+
+RunService.RenderStepped:Connect(function()
+    local char = Player.Character
+    if not char then return end
+    
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    -- Lógica do Speed
+    if PlayerConfig.SpeedActive then
+        hum.WalkSpeed = PlayerConfig.SpeedValue
+    end
+
+    -- Lógica do Jump Power
+    if PlayerConfig.JumpActive then
+        hum.JumpPower = PlayerConfig.JumpValue
     end
 end)
 
