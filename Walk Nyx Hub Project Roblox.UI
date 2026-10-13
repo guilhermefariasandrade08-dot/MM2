@@ -1022,7 +1022,172 @@ end
 --==============================================================--
 -- 18. ABA ESP — VARIÁVEIS E CONTROLES
 --==============================================================--
+-- Tracer / Linhas
+local TracerAtivo = false
+local TracerOrigem = "Cima"
+local TracerCor = Color3.fromRGB(255, 0, 0)
+local TracerEspessura = 2
+local TracerDistanciaMax = 500
+local TracerIgnorarAmigos = true
+local TracerStorage = {}
 
+-- Toggle das Linhas
+CreateToggle("ESP", "📏 Mostrar Linhas", false, function(estado)
+    TracerAtivo = estado
+end)
+
+-- Lista de onde sai a linha
+CreateDropdown("ESP", "Origem da Linha", {
+    "Cima",
+    "Celular",
+    "Embaixo",
+    "Meio"
+}, function(selecionado)
+    TracerOrigem = selecionado
+end)
+
+--==============================================================--
+--                  SISTEMA DE LINHAS (TRACER)                  --
+--==============================================================--
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- Função para pegar posição de origem da linha
+local function GetOrigemTela()
+    local tamanhoTela = Camera.ViewportSize
+    if TracerOrigem == "Cima" then
+        return Vector2.new(tamanhoTela.X / 2, 0)
+    elseif TracerOrigem == "Celular" then
+        return Vector2.new(tamanhoTela.X / 2, tamanhoTela.Y * 0.85)
+    elseif TracerOrigem == "Embaixo" then
+        return Vector2.new(tamanhoTela.X / 2, tamanhoTela.Y)
+    elseif TracerOrigem == "Meio" then
+        return Vector2.new(tamanhoTela.X / 2, tamanhoTela.Y / 2)
+    end
+    return Vector2.new(tamanhoTela.X / 2, 0)
+end
+
+-- Verificar se jogador é amigo
+local function EhAmigo(player)
+    return LocalPlayer:IsFriendsWith(player.UserId)
+end
+
+-- Verificar se está vivo
+local function EstaVivo(player)
+    local char = player.Character
+    if not char then return false end
+    local hum = char:FindFirstChild("Humanoid")
+    return hum and hum.Health > 0
+end
+
+-- Criar linha para um jogador
+local function CriarLinha(player)
+    local Line = Instance.new("Frame")
+    Line.Name = "Tracer_" .. player.Name
+    Line.BackgroundColor3 = TracerCor
+    Line.BorderSizePixel = 0
+    Line.Visible = false
+    Line.ZIndex = 50
+    Line.Parent = PlayerGui
+    TracerStorage[player] = Line
+end
+
+-- Remover linha
+local function RemoverLinha(player)
+    if TracerStorage[player] then
+        TracerStorage[player]:Destroy()
+        TracerStorage[player] = nil
+    end
+end
+
+-- Desenhar linha entre dois pontos
+local function DesenharLinha(frame, pontoA, pontoB)
+    local distancia = (pontoB - pontoA).Magnitude
+    local centro = (pontoA + pontoB) / 2
+    local angulo = math.atan2(pontoB.Y - pontoA.Y, pontoB.X - pontoA.X)
+    
+    frame.Size = UDim2.new(0, distancia, 0, TracerEspessura, 0, 0)
+    frame.Position = UDim2.new(0, centro.X - distancia/2, 0, centro.Y - TracerEspessura/2, 0, 0)
+    frame.Rotation = math.deg(angulo)
+    frame.Visible = true
+end
+
+-- Quando jogador entra
+Players.PlayerAdded:Connect(function(player)
+    task.wait(0.1)
+    if TracerAtivo then
+        CriarLinha(player)
+    end
+end)
+
+-- Quando jogador sai
+Players.PlayerRemoving:Connect(function(player)
+    RemoverLinha(player)
+end)
+
+-- Loop principal das linhas
+RunService.RenderStepped:Connect(function()
+    -- Limpa linhas se desativado
+    if not TracerAtivo then
+        for _, linha in pairs(TracerStorage) do
+            linha.Visible = false
+        end
+        return
+    end
+
+    local origemTela = GetOrigemTela()
+    local euPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    
+    -- Verifica todos os jogadores
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        
+        -- Ignorar amigos se ativado
+        if TracerIgnorarAmigos and EhAmigo(player) then
+            if TracerStorage[player] then
+                TracerStorage[player].Visible = false
+            end
+            continue
+        end
+        
+        -- Verificar se tem linha criada
+        if not TracerStorage[player] then
+            CriarLinha(player)
+        end
+        
+        local linha = TracerStorage[player]
+        local char = player.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        
+        -- Sem personagem ou morto = esconde linha
+        if not root or not EstaVivo(player) then
+            linha.Visible = false
+            continue
+        end
+        
+        -- Verificar distância máxima
+        if euPos and (euPos.Position - root.Position).Magnitude > TracerDistanciaMax then
+            linha.Visible = false
+            continue
+        end
+        
+        -- Converter posição 3D para 2D da tela
+        local posTela, visivel = Camera:WorldToViewportPoint(root.Position)
+        
+        if visivel then
+            local alvo = Vector2.new(posTela.X, posTela.Y)
+            DesenharLinha(linha, origemTela, alvo)
+            linha.BackgroundColor3 = TracerCor
+        else
+            linha.Visible = false
+        end
+    end
+end)
+
+print("[✅ SISTEMA DE LINHAS CARREGADO]")
 
 --==============================================================--
 -- 19. ABA PLAYER — VARIÁVEIS E CONTROLES
