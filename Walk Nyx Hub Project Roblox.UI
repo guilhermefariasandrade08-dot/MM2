@@ -1075,116 +1075,6 @@ CreateSlider("ESP", "Transparência ESP (%)", 0, 100, 50, function(value)
     ESPConfig.Transparency = value / 100
 end)
 
--- =====================================
-
--- Título da Seção Tracers
-CreateSection("ESP", "-- // ===== Tracers ===== \\ --")
-
--- Dropdown para escolher a posição da origem
-CreateDropdown("ESP", "Origem da Linha", {"Top", "Middle", "Bottom"}, "Bottom", function(option)
-    TracersConfig.Position = option
-end)
-
--- Toggle para ativar/desativar as linhas
-CreateToggle("ESP", "Ativar Tracers", false, function(state)
-    TracersConfig.Active = state
-end)
-
--- Slider para espessura da linha
-CreateSlider("ESP", "Espessura da Linha", 1, 10, 1, function(value)
-    TracersConfig.Thickness = value
-end)
-
---==============================================================--
---                SISTEMA DE TRACERS (LINHAS ESP)               --
---==============================================================--
-
-local TracersConfig = {
-    Active = false,
-    Position = "Bottom",
-    Thickness = 1
-}
-
-local TracersList = {}
-
-local function LimparTracers()
-    for _, line in pairs(TracersList) do
-        if line then line:Remove() end
-    end
-    table.clear(TracersList)
-end
-
-RunService.RenderStepped:Connect(function()
-    TracersConfig_Active_Check = TracersConfig.Active
-    if not TracersConfig.Active then
-        LimparTracers()
-        return
-    end
-
-    local screenSize = Camera.ViewportSize
-    local originPoint = Vector2.new(screenSize.X / 2, screenSize.Y)
-
-    if TracersConfig.Position == "Top" then
-        originPoint = Vector2.new(screenSize.X / 2, 0)
-    elseif TracersConfig.Position == "Middle" then
-        originPoint = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
-    elseif TracersConfig.Position == "Bottom" then
-        originPoint = Vector2.new(screenSize.X / 2, screenSize.Y)
-    end
-
-    local jogadoresAtivos = {}
-
-    for _, p in ipairs(Players:GetPlayers()) do
-        -- Respeita a opção de ignorar o jogador local quando TargetType for "No my highlight"
-        if ESPConfig and ESPConfig.TargetType == "No my highlight" and p == Player then
-            continue
-        end
-
-        if p.Character then
-            local char = p.Character
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            
-            if hrp and hum and hum.Health > 0 then
-                jogadoresAtivos[p] = true
-                
-                if not TracersList[p] then
-                    local line = Drawing.new("Line")
-                    line.Visible = false
-                    TracersList[p] = line
-                end
-
-                local line = TracersList[p]
-                local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-
-                if onScreen then
-                    line.From = originPoint
-                    line.To = Vector2.new(vector.X, vector.Y)
-                    line.Color = ObterCorCargo(p.Name)
-                    line.Thickness = TracersConfig.Thickness
-                    line.Visible = true
-                else
-                    line.Visible = false
-                end
-            end
-        end
-    end
-
-    for p, line in pairs(TracersList) do
-        if not jogadoresAtivos[p] or not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
-            if line then line:Remove() end
-            TracersList[p] = nil
-        end
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(p)
-    if TracersList[p] then
-        TracersList[p]:Remove()
-        TracersList[p] = nil
-    end
-end)
-
 --==============================================================--
 -- SISTEMA DE CARGOS COMPARTILHADO (MM2 + LOBBY)
 --==============================================================--
@@ -1311,6 +1201,116 @@ Players.PlayerRemoving:Connect(function(p)
     if Highlights[p] then
         Highlights[p]:Destroy()
         Highlights[p] = nil
+    end
+end)
+
+-- ===================================
+
+-- Título da Seção Tracers
+CreateSection("ESP", "-- // ===== Tracers ===== \\ --")
+
+-- Dropdown para escolher a posição da origem
+CreateDropdown("ESP", "Origem da Linha", {"Top", "Middle", "Bottom"}, "Bottom", function(option)
+    TracersConfig.Position = option
+end)
+
+-- Toggle para ativar/desativar as linhas
+CreateToggle("ESP", "Ativar Tracers", false, function(state)
+    TracersConfig.Active = state
+end)
+
+-- Slider para espessura da linha
+CreateSlider("ESP", "Espessura da Linha", 1, 10, 1, function(value)
+    TracersConfig.Thickness = value
+end)
+
+--==============================================================--
+--                SISTEMA DE TRACERS (LINHAS ESP)               --
+--==============================================================--
+
+local TracersConfig = {
+    Active = false,
+    Position = "Bottom",
+    Thickness = 1
+}
+
+local TracersList = {}
+
+local function LimparTracers()
+    for _, line in pairs(TracersList) do
+        if line then line:Remove() end
+    end
+    table.clear(TracersList)
+end
+
+RunService.RenderStepped:Connect(function()
+    TracersConfig_Active_Check = TracersConfig.Active
+    if not TracersConfig.Active then
+        LimparTracers()
+        return
+    end
+
+    local screenSize = Camera.ViewportSize
+    local originPoint = Vector2.new(screenSize.X / 2, screenSize.Y)
+
+    if TracersConfig.Position == "Top" then
+        originPoint = Vector2.new(screenSize.X / 2, 0)
+    elseif TracersConfig.Position == "Middle" then
+        originPoint = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
+    elseif TracersConfig.Position == "Bottom" then
+        originPoint = Vector2.new(screenSize.X / 2, screenSize.Y)
+    end
+
+    local jogadoresAtivos = {}
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        -- Respeita a opção de ignorar o jogador local quando TargetType for "No my highlight"
+        if ESPConfig and ESPConfig.TargetType == "No my highlight" and p == Player then
+            continue
+        end
+
+        if p.Character then
+            local char = p.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                jogadoresAtivos[p] = true
+                
+                if not TracersList[p] then
+                    local line = Drawing.new("Line")
+                    line.Visible = false
+                    TracersList[p] = line
+                end
+
+                local line = TracersList[p]
+                local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+
+                if onScreen then
+                    line.From = originPoint
+                    line.To = Vector2.new(vector.X, vector.Y)
+                    line.Color = ObterCorCargo(p.Name)
+                    line.Thickness = TracersConfig.Thickness
+                    line.Visible = true
+                else
+                    line.Visible = false
+                end
+            end
+        end
+    end
+
+    for p, line in pairs(TracersList) do
+        if not jogadoresAtivos[p] or not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
+            if line then line:Remove() end
+            TracersList[p] = nil
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if TracersList[p] then
+        TracersList[p]:Remove()
+        TracersList[p] = nil
     end
 end)
 
