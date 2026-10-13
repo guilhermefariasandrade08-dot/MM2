@@ -1035,14 +1035,18 @@ CreateDropdown("ESP", "Origem da Linha", {"Topo", "Centro", "Baixo"}, function(o
     OrigemTracer = option
 end)
 
+-- Slider para controlar a grossura da linha (de 1 a 10, com padrão 1)
+CreateSlider("ESP", "Grossura da Linha", 1, 10, 1, function(value)
+    GrossuraTracer = value
+end)
+
 --==============================================================--
--- SISTEMA DE TRACERS (LINHAS ESP)
+-- SISTEMA DE TRACERS (ATUALIZADO: COR BRANCA E GROSSURA VARIÁVEL)
 --==============================================================--
 
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
--- Tabela para guardar os objetos de linha de cada jogador
 local TracersCache = {}
 
 local function CriarTracer(player)
@@ -1050,8 +1054,8 @@ local function CriarTracer(player)
 
     local line = Drawing.new("Line")
     line.Visible = false
-    line.Color = Color3.fromRGB(45, 125, 255) -- Usa a mesma cor azul da sua UI
-    line.Thickness = 1
+    line.Color = Color3.fromRGB(245, 245, 245) -- Cor branca exigida
+    line.Thickness = GrossuraTracer or 1
     line.Transparency = 1
 
     TracersCache[player] = line
@@ -1062,10 +1066,8 @@ for _, p in ipairs(Players:GetPlayers()) do
     CriarTracer(p)
 end
 
--- Adicionar novos jogadores que entram
 Players.PlayerAdded:Connect(CriarTracer)
 
--- Remover jogadores que saem
 Players.PlayerRemoving:Connect(function(player)
     if TracersCache[player] then
         TracersCache[player]:Remove()
@@ -1073,7 +1075,7 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Loop de atualização executado a cada frame
+-- Loop de atualização
 RunService.RenderStepped:Connect(function()
     for _, player in ipairs(Players:GetPlayers()) do
         local line = TracersCache[player]
@@ -1083,12 +1085,13 @@ RunService.RenderStepped:Connect(function()
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             local rootPart = character and character:FindFirstChild("HumanoidRootPart")
 
-            -- Condição para mostrar: Toggle ligado, personagem existe, vivo (vida > 0)
+            -- Atualiza a grossura em tempo real conforme o slider
+            line.Thickness = GrossuraTracer or 1
+
             if TracerAtivo and character and humanoid and rootPart and humanoid.Health > 0 then
                 local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
 
                 if onScreen then
-                    -- Definir de onde a linha vai partir na tela com base na escolha do dropdown
                     local originPoint
                     local viewportSize = Camera.ViewportSize
 
@@ -1112,8 +1115,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
-
 
 --==============================================================--
 -- 20. CONFIRMAÇÃO DE FECHAMENTO
