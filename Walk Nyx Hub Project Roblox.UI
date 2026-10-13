@@ -89,6 +89,15 @@ local InfiniteJumpActive = false
 local NoclipActive = false
 local NoclipConnection = nil
 
+local ExibirBotaoInvisivel = false
+local InvisivelAtivo = false
+local InvisivelButtonGui = nil
+local InvisivelFloatBtn = nil
+local UltimaPosicaoBotao = UDim2.new(0, 70, 0.5, -20)
+local Personagem = nil
+local Humanoid = nil
+local Raiz = nil
+local PartesCorpo = {}
 
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
@@ -1160,6 +1169,20 @@ end)
 -- BOOTOES E SISTEMA DA ABA JOGADOR
 -- ===========================================================
 
+-- ============================
+-- SEÇÃO: INVISÍVEL
+-- ============================
+CreateSection("Jogador", "-- // ===== Invisível ===== \\ --")
+
+CreateToggle("Jogador", "Mostrar Botão Invisível", false, function(state)
+    ExibirBotaoInvisivel = state
+    
+    if not InvisivelButtonGui then
+        CreateInvisivelButton()
+    else
+        InvisivelButtonGui.Enabled = ExibirBotaoInvisivel
+    end
+end)
 
 
 -- Título da Seção Speed
@@ -1216,6 +1239,136 @@ CreateToggle("Jogador", "Ativar Anti Fling", false, function(state)
     getgenv().AntiFling = state
 end)
 
+-- ==============================================================--
+-- SISTEMA DE LÓGICA DO INVISÍVEL E BOTÃO FLUTUANTE
+-- ==============================================================--
+
+function AtualizarVisualBotaoFlutuante()
+    if not InvisivelFloatBtn then return end
+    
+    local targetBg = InvisivelAtivo and Color3.fromRGB(40, 200, 80) or Color3.fromRGB(11, 12, 16)
+    local targetStroke = InvisivelAtivo and Color3.fromRGB(60, 220, 100) or Color3.fromRGB(39, 40, 48)
+
+    Tween(InvisivelFloatBtn, { BackgroundColor3 = targetBg }, 0.2)
+    Outline(InvisivelFloatBtn, targetStroke, 1.5)
+end
+
+function CreateInvisivelButton()
+    if InvisivelButtonGui then 
+        InvisivelButtonGui.Enabled = ExibirBotaoInvisivel
+        return 
+    end
+
+    InvisivelButtonGui = Create("ScreenGui", {
+        Name = "WalkNyx_InvisivelGui",
+        ResetOnSpawn = false,
+        IgnoreGuiInset = true,
+        DisplayOrder = 999998,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        Enabled = ExibirBotaoInvisivel
+    }, PlayerGui)
+
+    InvisivelFloatBtn = Create("TextButton", {
+        Name = "InvisivelFloatBtn",
+        Size = UDim2.fromOffset(110, 40),
+        Position = UltimaPosicaoBotao,
+        BackgroundColor3 = Color3.fromRGB(11, 12, 16),
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        Text = "Invisível",
+        TextColor3 = Color3.fromRGB(245, 245, 245),
+        TextSize = 13,
+        Font = Enum.Font.GothamBold,
+        AutoButtonColor = false,
+        Active = true,
+        Draggable = true
+    }, InvisivelButtonGui)
+
+    Round(InvisivelFloatBtn, 8)
+    Outline(InvisivelFloatBtn, Color3.fromRGB(39, 40, 48), 1.5)
+
+    -- Salva a posição sempre que arrastar o botão pela tela
+    InvisivelFloatBtn.Changed:Connect(function(property)
+        if property == "Position" then
+            UltimaPosicaoBotao = InvisivelFloatBtn.Position
+        end
+    end)
+
+    -- Clicar no botão flutuante liga/desliga a invisibilidade de verdade
+    InvisivelFloatBtn.Activated:Connect(function()
+        InvisivelAtivo = not InvisivelAtivo
+        AtualizarVisualBotaoFlutuante()
+    end)
+
+    AtualizarVisualBotaoFlutuante()
+end
+
+local function ConfigurarPersonagem()
+    Personagem = Player.Character or Player.CharacterAdded:Wait()
+    Humanoid = Personagem:WaitForChild("Humanoid")
+    Raiz = Personagem:WaitForChild("HumanoidRootPart")
+    
+    PartesCorpo = {}
+    for _, obj in ipairs(Personagem:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            table.insert(PartesCorpo, obj)
+        end
+    end
+end
+
+Player.CharacterAdded:Connect(function(novoChar)
+    task.wait(0.5)
+    ConfigurarPersonagem()
+end)
+
+RunService.Heartbeat:Connect(function()
+    if not InvisivelAtivo then return end
+    
+    if not Personagem or not Personagem.Parent or not Raiz or not Humanoid or Humanoid.Health <= 0 then
+        ConfigurarPersonagem()
+        return
+    end
+
+    for _, parte in ipairs(PartesCorpo) do
+        if parte and parte.Parent then
+            if parte.Name == "HumanoidRootPart" then
+                parte.Transparency = 1
+            else
+                parte.Transparency = 0.5
+            end
+        end
+    end
+
+    local PosOriginal = Raiz.CFrame
+    local CamOffset = Humanoid.CameraOffset
+    
+    Raiz.CFrame = PosOriginal * CFrame.new(0, -200000, 0)
+    Humanoid.CameraOffset = Raiz.CFrame:ToObjectSpace(CFrame.new(PosOriginal.Position)).Position
+    
+    RunService.RenderStepped:Wait()
+    
+    if Raiz and Raiz.Parent then
+        Raiz.CFrame = PosOriginal
+        Humanoid.CameraOffset = CamOffset
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        if not InvisivelAtivo and Personagem and Humanoid and Humanoid.Health > 0 then
+            for _, parte in ipairs(PartesCorpo) do
+                if parte and parte.Parent and parte.Name ~= "HumanoidRootPart" then
+                    parte.Transparency = 0
+                end
+            end
+        end
+    end
+end)
+
+if Player.Character then
+    ConfigurarPersonagem()
+end
 
 
 -- ==============================================================--
