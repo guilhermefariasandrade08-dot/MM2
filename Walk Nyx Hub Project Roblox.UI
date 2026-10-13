@@ -1176,11 +1176,11 @@ CreateSlider("Jogador", "Força do Pulo", 50, 130, 50, function(value)
     PlayerConfig.JumpValue = value
 end)
 
-CreateToggle("Fling", "Ativar Fly", false, function(state)
+CreateToggle("Jogador", "Fling", "Ativar Fly", false, function(state)
     ToggleFly(state)
 end)
 
-CreateSlider("Fling", "Velocidade do Fly", 16, 120, 50, function(value)
+CreateSlider("Jogador", "Fling", "Velocidade do Fly", 16, 120, 50, function(value)
     FlyVelocidade = value
 end)
 
