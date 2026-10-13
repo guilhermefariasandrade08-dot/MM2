@@ -1,6 +1,6 @@
 --==============================================================--
 --                 SCRIPT AIMBOT ROBLOX                         --
---                    UI PERSONALIZÁVEL                         --
+--               LAYOUT LATERAL & 550x370                       --
 --==============================================================--
 
 --==============================================================--
@@ -35,7 +35,6 @@ local C = {
 --==============================================================--
 -- 03. VARIÁVEIS DOS RECURSOS
 --==============================================================--
--- Coloque aqui as variáveis compartilhadas entre as abas.
 
 local RecursoPrincipalAtivo = false
 local Intensidade = 50
@@ -119,13 +118,13 @@ local GUI = Create("ScreenGui", {
 }, PlayerGui)
 
 --==============================================================--
--- 06. JANELA PRINCIPAL
+-- 06. JANELA PRINCIPAL (NOVO TAMANHO: 550x370)
 --==============================================================--
 
 local Window = Create("Frame", {
     Name = "Window",
-    Size = UDim2.fromOffset(375, 325),
-    Position = UDim2.new(0.5, -187.5, 0.5, -162.5),
+    Size = UDim2.fromOffset(550, 370),
+    Position = UDim2.new(0.5, -275, 0.5, -185),
     BackgroundColor3 = C.Black,
     BorderSizePixel = 0,
     Visible = true,
@@ -141,7 +140,7 @@ Outline(Window, C.Border, 1)
 
 local Header = Create("Frame", {
     Name = "Header",
-    Size = UDim2.new(1, 0, 0, 43),
+    Size = UDim2.new(1, 0, 0, 40),
     Position = UDim2.fromOffset(0, 0),
     BackgroundColor3 = C.Black,
     BorderSizePixel = 0,
@@ -171,8 +170,8 @@ HeaderTitle.ZIndex = 3
 
 local Close = Create("TextButton", {
     Name = "CloseButton",
-    Size = UDim2.fromOffset(27, 27),
-    Position = UDim2.new(1, -35, 0, 8),
+    Size = UDim2.fromOffset(26, 26),
+    Position = UDim2.new(1, -34, 0, 7),
     BackgroundColor3 = C.Element,
     BorderSizePixel = 0,
     Text = "×",
@@ -204,31 +203,35 @@ Create("Frame", {
 }, Header)
 
 --==============================================================--
--- 08. BARRA DE ABAS
+-- 08. BARRA DE ABAS LATERAL (ESQUERDA)
 --==============================================================--
 
-local TabBar = Create("Frame", {
+local TabBar = Create("ScrollingFrame", {
     Name = "TabBar",
-    Position = UDim2.fromOffset(8, 50),
-    Size = UDim2.new(1, -16, 0, 34),
+    Position = UDim2.fromOffset(10, 50),
+    Size = UDim2.fromOffset(135, 310),
     BackgroundTransparency = 1,
-    BorderSizePixel = 0
+    BorderSizePixel = 0,
+    ScrollBarThickness = 0,
+    ScrollingDirection = Enum.ScrollingDirection.Y,
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    CanvasSize = UDim2.new()
 }, Window)
 
 Create("UIListLayout", {
-    FillDirection = Enum.FillDirection.Horizontal,
+    FillDirection = Enum.FillDirection.Vertical,
     Padding = UDim.new(0, 5),
     SortOrder = Enum.SortOrder.LayoutOrder
 }, TabBar)
 
 --==============================================================--
--- 09. ÁREA DE CONTEÚDO E PÁGINAS
+-- 09. ÁREA DE CONTEÚDO E PÁGINAS (DIREITA)
 --==============================================================--
 
 local Content = Create("Frame", {
     Name = "Content",
-    Position = UDim2.fromOffset(8, 91),
-    Size = UDim2.new(1, -16, 1, -99),
+    Position = UDim2.fromOffset(155, 50),
+    Size = UDim2.fromOffset(385, 310),
     BackgroundColor3 = C.Content,
     BorderSizePixel = 0,
     ClipsDescendants = true
@@ -270,13 +273,18 @@ local function CreatePage(name)
     return page
 end
 
--- Criar as páginas disponíveis.
-CreatePage("Main")
+-- Criar as páginas
+CreatePage("Informação")
+CreatePage("Murderer")
+CreatePage("Sheriff")
 CreatePage("ESP")
-CreatePage("Player")
+CreatePage("Farm coin")
+CreatePage("Jogador")
+CreatePage("Teleporte")
+CreatePage("Fling")
 
 --==============================================================--
--- 10. SELECIONAR E CRIAR ABAS
+-- 10. SELECIONAR E CRIAR ABAS LATERAIS (PROTEGIDAS CONTRA TRADUÇÃO)
 --==============================================================--
 
 local function SelectPage(name)
@@ -301,13 +309,15 @@ local function SelectPage(name)
 end
 
 local function CreateTab(name, order)
+    local protectedName = "\226\128\139" .. name
+
     local button = Create("TextButton", {
         Name = name .. "Tab",
-        Size = UDim2.new(1 / 3, -4, 1, 0),
+        Size = UDim2.fromOffset(135, 32),
         BackgroundColor3 = C.Black,
         BorderSizePixel = 0,
-        Text = name,
-        TextSize = 11,
+        Text = protectedName,
+        TextSize = 12,
         TextColor3 = C.Gray,
         Font = Enum.Font.Gotham,
         AutoButtonColor = false,
@@ -336,9 +346,14 @@ local function CreateTab(name, order)
     TabButtons[name] = button
 end
 
-CreateTab("Main", 1)
-CreateTab("ESP", 2)
-CreateTab("Player", 3)
+CreateTab("Informação", 1)
+CreateTab("Murderer", 2)
+CreateTab("Sheriff", 3)
+CreateTab("ESP", 4)
+CreateTab("Farm coin", 5)
+CreateTab("Jogador", 6)
+CreateTab("Teleporte", 7)
+CreateTab("Fling", 8)
 
 --==============================================================--
 -- 11. SISTEMA DE BOTÕES
@@ -633,7 +648,7 @@ local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, ca
 end
 
 --==============================================================--
--- 14. SISTEMA DE DROPDOWNS (COM SUPORTE A VALOR PADRÃO)
+-- 14. SISTEMA DE DROPDOWNS
 --==============================================================--
 
 local function CreateDropdown(pageName, text, options, defaultValue, callback)
@@ -641,8 +656,6 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
     if not page then return end
 
     options = options or {}
-
-    -- Se não for passado defaultValue, pega a primeira opção do array
     local selected = defaultValue or options[1]
     local expanded = false
 
@@ -673,7 +686,6 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
         UDim2.new(0.52, -10, 1, 0)
     )
 
-    -- Define o texto inicial com a opção já selecionada
     local selectedLabel = Label(
         header,
         selected and tostring(selected) or "Selecionar",
@@ -747,7 +759,6 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
         SetExpanded(not expanded)
     end)
 
-    -- Dispara o callback inicial com o valor padrão
     if selected and callback then
         task.spawn(function()
             callback(selected)
@@ -780,7 +791,7 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
 end
 
 --==============================================================--
--- 15. SISTEMA DE TECLAS DE ATALHO
+-- 15. SISTEMA DE TECLAS DE ATALHO (KEYBINDS)
 --==============================================================--
 
 local Keybinds = {}
@@ -1001,37 +1012,13 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 --==============================================================--
--- 16. FUNÇÕES QUE EXECUTAM AS AÇÕES
---==============================================================--
--- Coloque aqui as funções reais dos recursos do seu próprio jogo.
--- Exemplo de estrutura:
-
-local function ExecutarAcaoPrincipal()
-    if not RecursoPrincipalAtivo then
-        print("Ative o recurso primeiro.")
-        return
-    end
-
-    print("Ação principal executada.")
-end
-
-local function AtualizarIntensidade(valor)
-    Intensidade = valor
-    print("Intensidade atualizada:", Intensidade)
-end
-
-local function AlterarModo(modo)
-    ModoSelecionado = modo
-    print("Modo selecionado:", ModoSelecionado)
-end
-
---==============================================================--
--- 17. ABA MAIN — VARIÁVEIS E CONTROLES
+-- 16. ABA ESP — CONTROLES E SISTEMA DE TRACERS
 --==============================================================--
 
 
+
 --==============================================================--
--- 20. CONFIRMAÇÃO DE FECHAMENTO
+-- 17. CONFIRMAÇÃO DE FECHAMENTO
 --==============================================================--
 
 local Confirm = Create("Frame", {
@@ -1103,7 +1090,7 @@ Close.Activated:Connect(function()
 end)
 
 --==============================================================--
--- 21. BOTÃO FLUTUANTE
+-- 18. BOTÃO FLUTUANTE
 --==============================================================--
 
 local FloatingButton = Create("TextButton", {
@@ -1136,7 +1123,7 @@ FloatingButton.Activated:Connect(function()
 end)
 
 --==============================================================--
--- 22. ARRASTAR A JANELA SEM MOVER A CÂMERA
+-- 19. ARRASTAR A JANELA SEM MOVER A CÂMERA
 --==============================================================--
 
 local dragging = false
@@ -1152,7 +1139,6 @@ Header.InputBegan:Connect(function(input)
         return
     end
 
-    -- Não iniciar outro arrasto enquanto um já estiver ativo.
     if dragging then
         return
     end
@@ -1162,7 +1148,6 @@ Header.InputBegan:Connect(function(input)
     dragStart = input.Position
     startPosition = Window.Position
 
-    -- O movimento da interface será controlado pelo InputChanged abaixo.
     input.Changed:Connect(function()
         if input.UserInputState == Enum.UserInputState.End
             and activeInput == input then
@@ -1212,9 +1197,9 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 --==============================================================--
--- 23. INICIALIZAÇÃO
+-- 20. INICIALIZAÇÃO
 --==============================================================--
 
-SelectPage("Main")
+SelectPage("Informação")
 
-print("Script Aimbot Roblox carregado!")
+print("Script Roblox carregado com sucesso!")
