@@ -1015,6 +1015,161 @@ end)
 -- 16. ABA ESP — CONTROLES E SISTEMA DE TRACERS
 --==============================================================--
 
+local ESPConfig = {
+    Active = false,
+    TargetType = "No my highlight", -- "My highlight" ou "No my highlight"
+    Mode = "Highlight",            -- "Highlight" ou "Outline"
+    Transparency = 0.5              -- De 0 a 1 (padrão 0.5)
+}
+
+-- 1. Dropdown para aplicar no próprio jogador ou não
+CreateDropdown("ESP", "Aplicar em Mim", {"No my highlight", "My highlight"}, "No my highlight", function(option)
+    ESPConfig.TargetType = option
+end)
+
+-- 2. Dropdown para escolher o modo visual (Highlight preenchido ou apenas Outline)
+CreateDropdown("ESP", "Estilo do ESP", {"Highlight", "Outline"}, "Highlight", function(option)
+    ESPConfig.Mode = option
+end)
+
+-- 3. Toggle para Ligar/Desligar o ESP
+CreateToggle("ESP", "Ativar ESP Highlight", false, function(state)
+    ESPConfig.Active = state
+end)
+
+-- 4. Slider de Transparência (0% a 100%)
+CreateSlider("ESP", "Transparência ESP (%)", 0, 100, 50, function(value)
+    ESPConfig.Transparency = value / 100
+end)
+
+--==============================================================--
+-- SISTEMA DE CARGOS COMPARTILHADO (MM2 + LOBBY)
+--==============================================================--
+
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local DadosCargos = {}
+local UltimaChecagemCargo = 0
+
+local function PegarCargos()
+    if tick() - UltimaChecagemCargo < 2 then return end
+    UltimaChecagemCargo = tick()
+    
+    task.spawn(function()
+        local R = ReplicatedStorage:FindFirstChild("GetPlayerData", true)
+        if not R then return end
+        
+        local ok, d = pcall(function() 
+            return R:InvokeServer() 
+        end)
+        
+        if ok and d then 
+            DadosCargos = d 
+        end
+    end)
+end
+
+local function ObterCorCargo(nomeJogador)
+    local Info = DadosCargos[nomeJogador]
+    local Cor = Color3.fromRGB(255, 255, 255) -- Cor Branca padrão (Lobby / Sem cargo ativo)
+    
+    if Info and not Info.Killed and not Info.Dead then
+        if Info.Role == "Murderer" then
+            Cor = Color3.fromRGB(220, 50, 50) -- Vermelho
+        elseif Info.Role == "Sheriff" then
+            Cor = Color3.fromRGB(0, 85, 255) -- Azul
+        elseif Info.Role == "Hero" then
+            Cor = Color3.fromRGB(255, 215, 0) -- Dourado
+        elseif Info.Role == "Innocent" then
+            Cor = Color3.fromRGB(60, 200, 80) -- Verde
+        end
+    end
+    
+    return Cor
+end
+
+--==============================================================--
+-- SISTEMA DE ESP HIGHLIGHT
+--==============================================================--
+
+local Highlights = {}
+
+local function LimparEsp()
+    for _, highlight in pairs(Highlights) do
+        if highlight then 
+            highlight:Destroy() 
+        end
+    end
+    table.clear(Highlights)
+end
+
+RunService.RenderStepped:Connect(function()
+    if not ESPConfig.Active then
+        LimparEsp()
+        return
+    end
+
+    PegarCargos()
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        -- Se "No my highlight" estiver ativo, ignora o próprio jogador
+        if ESPConfig.TargetType == "No my highlight" and p == Player then
+            if Highlights[p] then
+                Highlights[p]:Destroy()
+                Highlights[p] = nil
+            end
+            continue
+        end
+
+        if p.Character then
+            local highlight = Highlights[p]
+            local cor = ObterCorCargo(p.Name)
+
+            if not highlight or highlight.Parent ~= p.Character then
+                if highlight then 
+                    highlight:Destroy() 
+                end
+
+                local newHighlight = Instance.new("Highlight")
+                newHighlight.Name = "WalkNyx_ESP"
+                newHighlight.Adornee = p.Character
+                newHighlight.FillColor = cor
+                newHighlight.OutlineColor = cor
+                newHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+                if ESPConfig.Mode == "Highlight" then
+                    newHighlight.FillTransparency = ESPConfig.Transparency
+                    newHighlight.OutlineTransparency = 0
+                else
+                    newHighlight.FillTransparency = 1
+                    newHighlight.OutlineTransparency = ESPConfig.Transparency
+                end
+
+                newHighlight.Parent = p.Character
+                Highlights[p] = newHighlight
+            else
+                highlight.FillColor = cor
+                highlight.OutlineColor = cor
+
+                if ESPConfig.Mode == "Highlight" then
+                    highlight.FillTransparency = ESPConfig.Transparency
+                    highlight.OutlineTransparency = 0
+                else
+                    highlight.FillTransparency = 1
+                    highlight.OutlineTransparency = ESPConfig.Transparency
+                end
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if Highlights[p] then
+        Highlights[p]:Destroy()
+        Highlights[p] = nil
+    end
+end)
 
 
 --==============================================================--
