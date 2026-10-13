@@ -813,6 +813,8 @@ end)
 --                SISTEMA DE NAME ESP / BILLBOARD               --
 --==============================================================--
 
+local NameESPList = {}
+
 local function LimparNameESP()
     for _, espObj in pairs(NameESPList) do
         if espObj and espObj.Parent then 
@@ -842,6 +844,7 @@ local function CriarBillboardPlayer(p)
     billboard.StudsOffset = Vector3.new(0, 2.5, 0)
     billboard.AlwaysOnTop = true
     billboard.ResetOnSpawn = false
+    billboard:SetAttribute("CurrentMode", NameESPConfig.Mode)
 
     if NameESPConfig.Mode == "Simple" then
         local nameLabel = Instance.new("TextLabel")
@@ -929,10 +932,16 @@ RunService.RenderStepped:Connect(function()
 
             if hum and hum.Health > 0 and hrp then
                 local billboard = NameESPList[p]
-                if not billboard or billboard.Parent ~= char:FindFirstChild("Head") then
+                local novaCor = ObterCorCargo(p.Name)
+
+                -- Recria caso o Billboard não exista, mude de cabeça ou altere o modo (Simple/Customized)
+                if not billboard or billboard.Parent ~= char:FindFirstChild("Head") or billboard:GetAttribute("CurrentMode") ~= NameESPConfig.Mode then
                     CriarBillboardPlayer(p)
-                else
-                    local novaCor = ObterCorCargo(p.Name)
+                    billboard = NameESPList[p]
+                end
+
+                -- Atualiza a cor em tempo real instantaneamente
+                if billboard then
                     if NameESPConfig.Mode == "Simple" then
                         local lbl = billboard:FindFirstChild("NameLabel")
                         if lbl then lbl.TextColor3 = novaCor end
