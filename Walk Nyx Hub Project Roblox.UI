@@ -1012,6 +1012,37 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 --==============================================================--
+-- SISTEMA DE TÍTULOS / SEÇÃO CENTRALIZADA
+--==============================================================--
+
+local function CreateSection(pageName, text)
+    local page = Pages[pageName]
+    if not page then return end
+
+    local row = Create("Frame", {
+        Name = "Section_" .. text,
+        Size = UDim2.new(1, 0, 0, 26),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        LayoutOrder = #page:GetChildren()
+    }, page)
+
+    local sectionLabel = Label(
+        row,
+        text,
+        11,
+        UDim2.new(0, 0, 0, 0),
+        UDim2.new(1, 0, 1, 0)
+    )
+
+    sectionLabel.TextXAlignment = Enum.TextXAlignment.Center
+    sectionLabel.TextColor3 = C.Gray -- Ou C.Blue se quiser que se destaque mais
+    sectionLabel.Font = Enum.Font.GothamBold
+
+    return row
+end
+
+--==============================================================--
 -- 16. ABA ESP — CONTROLES E SISTEMA DE TRACERS
 --==============================================================--
 
@@ -1021,6 +1052,8 @@ local ESPConfig = {
     Mode = "Highlight",            -- "Highlight" ou "Outline"
     Transparency = 0.5              -- De 0 a 1 (padrão 0.5)
 }
+
+CreateSection("ESP", "-- // ===== Highlight ===== \\ --")
 
 -- 1. Dropdown para aplicar no próprio jogador ou não
 CreateDropdown("ESP", "Aplicar em Mim", {"No my highlight", "My highlight"}, "No my highlight", function(option)
