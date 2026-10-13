@@ -1,390 +1,1262 @@
 --==============================================================--
---                  SCRIPT AIMBOT INTERFACE                     --
---                INTERFACE VISUAL COM SCROLL                   --
+--                 SCRIPT AIMBOT ROBLOX                         --
+--                    UI PERSONALIZÁVEL                         --
+--==============================================================--
+
+--==============================================================--
+-- 01. SERVIÇOS E VARIÁVEIS GLOBAIS
 --==============================================================--
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
---==============================================================--
--- CONFIGURAÇÕES GERAIS
---==============================================================--
-
-local WINDOW_WIDTH = 375
-local WINDOW_HEIGHT = 325
-
-local BLACK = Color3.fromRGB(5, 5, 5)
-local DARK = Color3.fromRGB(12, 12, 12)
-local CONTENT_COLOR = Color3.fromRGB(16, 16, 16)
-local WHITE = Color3.fromRGB(245, 245, 245)
-local GRAY = Color3.fromRGB(145, 145, 145)
-local BORDER = Color3.fromRGB(45, 45, 45)
+local GUI_NAME = "ScriptAimbotRoblox"
 
 --==============================================================--
--- SCREEN GUI
+-- 02. CORES DA INTERFACE
 --==============================================================--
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ScriptAimbotInterface"
-screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
-screenGui.DisplayOrder = 999
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = playerGui
+local C = {
+    Black = Color3.fromRGB(5, 5, 5),
+    Sidebar = Color3.fromRGB(8, 8, 8),
+    Content = Color3.fromRGB(13, 13, 13),
+    Element = Color3.fromRGB(19, 19, 19),
+    Hover = Color3.fromRGB(30, 30, 30),
+    White = Color3.fromRGB(245, 245, 245),
+    Gray = Color3.fromRGB(130, 130, 130),
+    Border = Color3.fromRGB(43, 43, 43),
+    Blue = Color3.fromRGB(45, 125, 255),
+}
 
 --==============================================================--
--- FUNÇÕES VISUAIS
+-- 03. VARIÁVEIS DOS RECURSOS
+--==============================================================--
+-- Coloque aqui as variáveis compartilhadas entre as abas.
+
+local RecursoPrincipalAtivo = false
+local Intensidade = 50
+local ModoSelecionado = "Padrão"
+
+--==============================================================--
+-- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
 
-local function addCorner(object, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius)
-    corner.Parent = object
-    return corner
+local function Create(class, props, parent)
+    local obj = Instance.new(class)
+
+    for key, value in pairs(props or {}) do
+        obj[key] = value
+    end
+
+    obj.Parent = parent
+    return obj
 end
 
-local function addStroke(object, color, thickness)
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = color
-    stroke.Thickness = thickness
-    stroke.Parent = object
-    return stroke
+local function Round(obj, radius)
+    return Create("UICorner", {
+        CornerRadius = UDim.new(0, radius or 7)
+    }, obj)
 end
 
-local function createText(parent, text, size, position, dimensions)
-    local label = Instance.new("TextLabel")
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = WHITE
-    label.Font = Enum.Font.Gotham
-    label.TextSize = size
-    label.Position = position
-    label.Size = dimensions
-    label.Parent = parent
-    return label
+local function Outline(obj, color, thickness)
+    return Create("UIStroke", {
+        Color = color or C.Border,
+        Thickness = thickness or 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    }, obj)
+end
+
+local function Tween(obj, props, duration)
+    local animation = TweenService:Create(
+        obj,
+        TweenInfo.new(
+            duration or 0.18,
+            Enum.EasingStyle.Quart,
+            Enum.EasingDirection.Out
+        ),
+        props
+    )
+
+    animation:Play()
+    return animation
+end
+
+local function Label(parent, text, size, position, dimensions)
+    return Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = position,
+        Size = dimensions,
+        Text = text,
+        TextSize = size or 12,
+        TextColor3 = C.White,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        TextTruncate = Enum.TextTruncate.AtEnd
+    }, parent)
 end
 
 --==============================================================--
--- JANELA PRINCIPAL
+-- 05. REMOVER GUI ANTIGA E CRIAR SCREEN GUI
 --==============================================================--
 
-local window = Instance.new("Frame")
-window.Name = "MainWindow"
-window.Size = UDim2.fromOffset(WINDOW_WIDTH, WINDOW_HEIGHT)
-window.Position = UDim2.new(
-    0.5, -WINDOW_WIDTH / 2,
-    0.5, -WINDOW_HEIGHT / 2
-)
-window.BackgroundColor3 = BLACK
-window.BorderSizePixel = 0
-window.Visible = false
-window.Active = true
-window.ClipsDescendants = true
-window.Parent = screenGui
+local previous = PlayerGui:FindFirstChild(GUI_NAME)
 
-addCorner(window, 12)
-addStroke(window, BORDER, 1)
+if previous then
+    previous:Destroy()
+end
+
+local GUI = Create("ScreenGui", {
+    Name = GUI_NAME,
+    ResetOnSpawn = false,
+    IgnoreGuiInset = true,
+    DisplayOrder = 999999,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+}, PlayerGui)
 
 --==============================================================--
--- CABEÇALHO
+-- 06. JANELA PRINCIPAL
 --==============================================================--
 
-local header = Instance.new("Frame")
-header.Name = "Header"
-header.Size = UDim2.new(1, 0, 0, 48)
-header.BackgroundColor3 = BLACK
-header.BorderSizePixel = 0
-header.Active = true
-header.Parent = window
+local Window = Create("Frame", {
+    Name = "Window",
+    Size = UDim2.fromOffset(375, 325),
+    Position = UDim2.new(0.5, -187.5, 0.5, -162.5),
+    BackgroundColor3 = C.Black,
+    BorderSizePixel = 0,
+    Visible = true,
+    ClipsDescendants = true
+}, GUI)
 
-addCorner(header, 12)
+Round(Window, 12)
+Outline(Window, C.Border, 1)
 
-local headerCover = Instance.new("Frame")
-headerCover.Size = UDim2.new(1, 0, 0, 12)
-headerCover.Position = UDim2.new(0, 0, 1, -12)
-headerCover.BackgroundColor3 = BLACK
-headerCover.BorderSizePixel = 0
-headerCover.Parent = header
+--==============================================================--
+-- 07. CABEÇALHO
+--==============================================================--
 
-local title = createText(
-    header,
+local Header = Create("Frame", {
+    Name = "Header",
+    Size = UDim2.new(1, 0, 0, 43),
+    Position = UDim2.fromOffset(0, 0),
+    BackgroundColor3 = C.Black,
+    BorderSizePixel = 0,
+    ZIndex = 2
+}, Window)
+
+Round(Header, 12)
+
+Create("Frame", {
+    Name = "HeaderBottomCover",
+    Position = UDim2.new(0, 0, 1, -12),
+    Size = UDim2.new(1, 0, 0, 12),
+    BackgroundColor3 = C.Black,
+    BorderSizePixel = 0,
+    ZIndex = 2
+}, Header)
+
+local HeaderTitle = Label(
+    Header,
     "Script Aimbot Roblox",
-    16,
-    UDim2.fromOffset(12, 0),
-    UDim2.new(1, -60, 1, 0)
+    14,
+    UDim2.fromOffset(13, 0),
+    UDim2.new(1, -55, 1, 0)
 )
 
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Font = Enum.Font.GothamMedium
+HeaderTitle.ZIndex = 3
 
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.fromOffset(28, 28)
-closeButton.Position = UDim2.new(1, -36, 0, 10)
-closeButton.BackgroundColor3 = DARK
-closeButton.Text = "×"
-closeButton.TextColor3 = WHITE
-closeButton.TextSize = 23
-closeButton.Font = Enum.Font.Gotham
-closeButton.BorderSizePixel = 0
-closeButton.Parent = header
+local Close = Create("TextButton", {
+    Name = "CloseButton",
+    Size = UDim2.fromOffset(27, 27),
+    Position = UDim2.new(1, -35, 0, 8),
+    BackgroundColor3 = C.Element,
+    BorderSizePixel = 0,
+    Text = "×",
+    TextSize = 20,
+    TextColor3 = C.White,
+    Font = Enum.Font.Gotham,
+    AutoButtonColor = false,
+    ZIndex = 4
+}, Header)
 
-addCorner(closeButton, 7)
-addStroke(closeButton, BORDER, 1)
+Round(Close, 6)
+Outline(Close, C.Border, 1)
 
---==============================================================--
--- BARRA DE ABAS NO TOPO
---==============================================================--
+Close.MouseEnter:Connect(function()
+    Tween(Close, { BackgroundColor3 = C.Hover })
+end)
 
-local tabBar = Instance.new("Frame")
-tabBar.Name = "TabBar"
-tabBar.Position = UDim2.fromOffset(8, 55)
-tabBar.Size = UDim2.new(1, -16, 0, 40)
-tabBar.BackgroundTransparency = 1
-tabBar.BorderSizePixel = 0
-tabBar.Parent = window
+Close.MouseLeave:Connect(function()
+    Tween(Close, { BackgroundColor3 = C.Element })
+end)
 
-local tabList = Instance.new("UIListLayout")
-tabList.FillDirection = Enum.FillDirection.Horizontal
-tabList.HorizontalAlignment = Enum.HorizontalAlignment.Left
-tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-tabList.SortOrder = Enum.SortOrder.LayoutOrder
-tabList.Padding = UDim.new(0, 6)
-tabList.Parent = tabBar
+Create("Frame", {
+    Name = "HeaderDivider",
+    Position = UDim2.new(0, 0, 1, -1),
+    Size = UDim2.new(1, 0, 0, 1),
+    BackgroundColor3 = C.Border,
+    BorderSizePixel = 0,
+    ZIndex = 5
+}, Header)
 
 --==============================================================--
--- ÁREA DE CONTEÚDO
+-- 08. BARRA DE ABAS
 --==============================================================--
 
-local content = Instance.new("Frame")
-content.Name = "Content"
-content.Position = UDim2.fromOffset(8, 102)
-content.Size = UDim2.new(1, -16, 1, -110)
-content.BackgroundColor3 = CONTENT_COLOR
-content.BorderSizePixel = 0
-content.ClipsDescendants = true
-content.Parent = window
+local TabBar = Create("Frame", {
+    Name = "TabBar",
+    Position = UDim2.fromOffset(8, 50),
+    Size = UDim2.new(1, -16, 0, 34),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0
+}, Window)
 
-addCorner(content, 9)
+Create("UIListLayout", {
+    FillDirection = Enum.FillDirection.Horizontal,
+    Padding = UDim.new(0, 5),
+    SortOrder = Enum.SortOrder.LayoutOrder
+}, TabBar)
 
 --==============================================================--
--- CRIAR PÁGINAS COM SCROLL AUTOMÁTICO
+-- 09. ÁREA DE CONTEÚDO E PÁGINAS
 --==============================================================--
 
-local pages = {}
-local tabButtons = {}
+local Content = Create("Frame", {
+    Name = "Content",
+    Position = UDim2.fromOffset(8, 91),
+    Size = UDim2.new(1, -16, 1, -99),
+    BackgroundColor3 = C.Content,
+    BorderSizePixel = 0,
+    ClipsDescendants = true
+}, Window)
 
-local function createPage(name)
-    local scroll = Instance.new("ScrollingFrame")
-    scroll.Name = name .. "Page"
-    scroll.Size = UDim2.fromScale(1, 1)
-    scroll.Position = UDim2.fromOffset(0, 0)
-    scroll.BackgroundTransparency = 1
-    scroll.BorderSizePixel = 0
-    scroll.ScrollBarThickness = 0
-    scroll.ScrollingDirection = Enum.ScrollingDirection.Y
-    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scroll.Active = true
-    scroll.Visible = false
-    scroll.Parent = content
+Round(Content, 8)
+Outline(Content, C.Border, 1)
 
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 10)
-    padding.PaddingBottom = UDim.new(0, 10)
-    padding.PaddingLeft = UDim.new(0, 10)
-    padding.PaddingRight = UDim.new(0, 10)
-    padding.Parent = scroll
+local Pages = {}
+local TabButtons = {}
+local ActivePage
 
-    local layout = Instance.new("UIListLayout")
-    layout.FillDirection = Enum.FillDirection.Vertical
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 8)
-    layout.Parent = scroll
+local function CreatePage(name)
+    local page = Create("ScrollingFrame", {
+        Name = name .. "Page",
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 0,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(),
+        Visible = false
+    }, Content)
 
-    pages[name] = scroll
+    Create("UIPadding", {
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 8),
+        PaddingLeft = UDim.new(0, 8),
+        PaddingRight = UDim.new(0, 8)
+    }, page)
 
-    return scroll
+    Create("UIListLayout", {
+        Padding = UDim.new(0, 7),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    }, page)
+
+    Pages[name] = page
+    return page
 end
 
-createPage("Main")
-createPage("ESP")
-createPage("Player")
+-- Criar as páginas disponíveis.
+CreatePage("Main")
+CreatePage("ESP")
+CreatePage("Player")
 
 --==============================================================--
--- CRIAR BOTÕES DAS ABAS
+-- 10. SELECIONAR E CRIAR ABAS
 --==============================================================--
 
-local function createTab(name, order)
-    local button = Instance.new("TextButton")
-    button.Name = name .. "Tab"
-    button.Size = UDim2.new(0, 112, 0, 36)
-    button.BackgroundColor3 = DARK
-    button.BorderSizePixel = 0
-    button.Text = name
-    button.TextColor3 = GRAY
-    button.TextSize = 15
-    button.Font = Enum.Font.GothamMedium
-    button.LayoutOrder = order
-    button.AutoButtonColor = false
-    button.Parent = tabBar
+local function SelectPage(name)
+    if not Pages[name] then
+        return
+    end
 
-    addCorner(button, 7)
+    ActivePage = name
 
-    tabButtons[name] = button
-
-    return button
-end
-
-createTab("Main", 1)
-createTab("ESP", 2)
-createTab("Player", 3)
-
---==============================================================--
--- TROCAR DE ABA
---==============================================================--
-
-local function selectTab(name)
-    for pageName, page in pairs(pages) do
+    for pageName, page in pairs(Pages) do
         page.Visible = pageName == name
     end
 
-    for tabName, button in pairs(tabButtons) do
+    for tabName, button in pairs(TabButtons) do
         local selected = tabName == name
 
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.15),
-            {
-                BackgroundColor3 = selected
-                    and Color3.fromRGB(30, 30, 30)
-                    or DARK,
-
-                TextColor3 = selected and WHITE or GRAY
-            }
-        ):Play()
+        Tween(button, {
+            BackgroundColor3 = selected and C.Hover or C.Black,
+            TextColor3 = selected and C.White or C.Gray
+        })
     end
 end
 
-for name, button in pairs(tabButtons) do
-    button.Activated:Connect(function()
-        selectTab(name)
+local function CreateTab(name, order)
+    local button = Create("TextButton", {
+        Name = name .. "Tab",
+        Size = UDim2.new(1 / 3, -4, 1, 0),
+        BackgroundColor3 = C.Black,
+        BorderSizePixel = 0,
+        Text = name,
+        TextSize = 11,
+        TextColor3 = C.Gray,
+        Font = Enum.Font.Gotham,
+        AutoButtonColor = false,
+        LayoutOrder = order
+    }, TabBar)
+
+    Round(button, 6)
+    Outline(button, C.Border, 1)
+
+    button.MouseEnter:Connect(function()
+        if ActivePage ~= name then
+            Tween(button, { BackgroundColor3 = C.Hover })
+        end
     end)
+
+    button.MouseLeave:Connect(function()
+        if ActivePage ~= name then
+            Tween(button, { BackgroundColor3 = C.Black })
+        end
+    end)
+
+    button.Activated:Connect(function()
+        SelectPage(name)
+    end)
+
+    TabButtons[name] = button
 end
 
-selectTab("Main")
+CreateTab("Main", 1)
+CreateTab("ESP", 2)
+CreateTab("Player", 3)
 
 --==============================================================--
--- FUNÇÃO PARA CRIAR BOTÕES NAS PÁGINAS
+-- 11. SISTEMA DE BOTÕES
 --==============================================================--
 
-local function addPageButton(pageName, buttonText, callback)
-    local page = pages[pageName]
+local function CreateButton(pageName, text, callback)
+    local page = Pages[pageName]
+    if not page then return end
 
-    if not page then
-        warn("Aba não encontrada: " .. tostring(pageName))
-        return nil
-    end
+    local button = Create("TextButton", {
+        Name = "Button_" .. text,
+        Size = UDim2.new(1, 0, 0, 35),
+        BackgroundColor3 = C.Element,
+        BorderSizePixel = 0,
+        Text = text,
+        TextColor3 = C.White,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        AutoButtonColor = false,
+        LayoutOrder = #page:GetChildren()
+    }, page)
 
-    local button = Instance.new("TextButton")
-    button.Name = "OptionButton"
-    button.Size = UDim2.new(1, 0, 0, 38)
-    button.BackgroundColor3 = DARK
-    button.BorderSizePixel = 0
-    button.Text = buttonText
-    button.TextColor3 = WHITE
-    button.TextSize = 14
-    button.Font = Enum.Font.Gotham
-    button.TextXAlignment = Enum.TextXAlignment.Left
-    button.AutoButtonColor = true
-    button.Parent = page
+    Round(button, 7)
+    Outline(button, C.Border, 1)
 
-    local padding = Instance.new("UIPadding")
-    padding.PaddingLeft = UDim.new(0, 12)
-    padding.Parent = button
+    button.MouseEnter:Connect(function()
+        Tween(button, { BackgroundColor3 = C.Hover })
+    end)
 
-    addCorner(button, 7)
-    addStroke(button, BORDER, 1)
+    button.MouseLeave:Connect(function()
+        Tween(button, { BackgroundColor3 = C.Element })
+    end)
 
-    if callback then
-        button.Activated:Connect(callback)
-    end
+    button.Activated:Connect(function()
+        if callback then
+            callback()
+        end
+    end)
 
     return button
 end
 
 --==============================================================--
---                 ABA MAIN — SEUS ELEMENTOS                   --
+-- 12. SISTEMA DE TOGGLES
 --==============================================================--
 
-local mainPage = pages.Main
+local function CreateToggle(pageName, text, defaultValue, callback)
+    local page = Pages[pageName]
+    if not page then return end
 
--- >>> INÍCIO DO CONTEÚDO DA ABA MAIN <<<
+    local state = defaultValue == true
 
-addPageButton("Main", "Opção Main")
-addPageButton("Main", "Outra opção")
+    local row = Create("Frame", {
+        Name = "Toggle_" .. text,
+        Size = UDim2.new(1, 0, 0, 38),
+        BackgroundColor3 = C.Element,
+        BorderSizePixel = 0,
+        LayoutOrder = #page:GetChildren()
+    }, page)
 
--- >>> FIM DO CONTEÚDO DA ABA MAIN <<<
+    Round(row, 7)
+    Outline(row, C.Border, 1)
 
+    Label(
+        row,
+        text,
+        11,
+        UDim2.fromOffset(10, 0),
+        UDim2.new(1, -60, 1, 0)
+    )
+
+    local track = Create("Frame", {
+        Size = UDim2.fromOffset(36, 20),
+        Position = UDim2.new(1, -45, 0.5, -10),
+        BackgroundColor3 = state and C.Blue or Color3.fromRGB(48, 48, 48),
+        BorderSizePixel = 0
+    }, row)
+
+    Round(track, 20)
+
+    local knob = Create("Frame", {
+        Size = UDim2.fromOffset(14, 14),
+        Position = state
+            and UDim2.new(1, -17, 0.5, -7)
+            or UDim2.new(0, 3, 0.5, -7),
+        BackgroundColor3 = C.White,
+        BorderSizePixel = 0
+    }, track)
+
+    Round(knob, 20)
+
+    local hitbox = Create("TextButton", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false
+    }, row)
+
+    local function SetState(value, fireCallback)
+        state = value == true
+
+        Tween(track, {
+            BackgroundColor3 = state and C.Blue or Color3.fromRGB(48, 48, 48)
+        })
+
+        Tween(knob, {
+            Position = state
+                and UDim2.new(1, -17, 0.5, -7)
+                or UDim2.new(0, 3, 0.5, -7)
+        })
+
+        if fireCallback and callback then
+            callback(state)
+        end
+    end
+
+    hitbox.Activated:Connect(function()
+        SetState(not state, true)
+    end)
+
+    return {
+        Get = function()
+            return state
+        end,
+
+        Set = function(value)
+            SetState(value, true)
+        end
+    }
+end
 
 --==============================================================--
---                 ABA ESP — SEUS ELEMENTOS                    --
+-- 13. SISTEMA DE SLIDERS
 --==============================================================--
 
-local espPage = pages.ESP
+local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, callback)
+    local page = Pages[pageName]
+    if not page then return end
 
--- >>> INÍCIO DO CONTEÚDO DA ABA ESP <<<
+    minValue = tonumber(minValue) or 0
+    maxValue = tonumber(maxValue) or 100
 
-addPageButton("ESP", "Opção visual ESP")
-addPageButton("ESP", "Outra opção visual")
+    if maxValue < minValue then
+        minValue, maxValue = maxValue, minValue
+    end
 
--- >>> FIM DO CONTEÚDO DA ABA ESP <<<
+    local value = math.clamp(
+        tonumber(defaultValue) or minValue,
+        minValue,
+        maxValue
+    )
 
+    local row = Create("Frame", {
+        Name = "Slider_" .. text,
+        Size = UDim2.new(1, 0, 0, 58),
+        BackgroundColor3 = C.Element,
+        BorderSizePixel = 0,
+        LayoutOrder = #page:GetChildren()
+    }, page)
+
+    Round(row, 7)
+    Outline(row, C.Border, 1)
+
+    Label(
+        row,
+        text,
+        11,
+        UDim2.fromOffset(10, 2),
+        UDim2.new(1, -65, 0, 23)
+    )
+
+    local valueLabel = Label(
+        row,
+        tostring(value),
+        11,
+        UDim2.new(1, -50, 0, 2),
+        UDim2.fromOffset(40, 23)
+    )
+
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+    local track = Create("Frame", {
+        Position = UDim2.new(0, 10, 0, 39),
+        Size = UDim2.new(1, -20, 0, 5),
+        BackgroundColor3 = Color3.fromRGB(48, 48, 48),
+        BorderSizePixel = 0
+    }, row)
+
+    Round(track, 10)
+
+    local fill = Create("Frame", {
+        Size = UDim2.new(0, 0, 1, 0),
+        BackgroundColor3 = C.Blue,
+        BorderSizePixel = 0
+    }, track)
+
+    Round(fill, 10)
+
+    local knob = Create("Frame", {
+        Size = UDim2.fromOffset(13, 13),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0, 0, 0.5, 0),
+        BackgroundColor3 = C.White,
+        BorderSizePixel = 0,
+        ZIndex = 2
+    }, track)
+
+    Round(knob, 20)
+
+    local dragging = false
+
+    local function SetValue(newValue, fireCallback)
+        value = math.clamp(
+            math.floor((tonumber(newValue) or minValue) + 0.5),
+            minValue,
+            maxValue
+        )
+
+        local ratio = maxValue == minValue and 0
+            or (value - minValue) / (maxValue - minValue)
+
+        fill.Size = UDim2.new(ratio, 0, 1, 0)
+        knob.Position = UDim2.new(ratio, 0, 0.5, 0)
+        valueLabel.Text = tostring(value)
+
+        if fireCallback and callback then
+            callback(value)
+        end
+    end
+
+    local function UpdateFromInput(input)
+        local width = track.AbsoluteSize.X
+        if width <= 0 then return end
+
+        local ratio = math.clamp(
+            (input.Position.X - track.AbsolutePosition.X) / width,
+            0,
+            1
+        )
+
+        SetValue(minValue + (maxValue - minValue) * ratio, true)
+    end
+
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            UpdateFromInput(input)
+        end
+    end)
+
+    knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            UpdateFromInput(input)
+        end
+    end)
+
+    local moveConnection = UserInputService.InputChanged:Connect(function(input)
+        if not dragging then return end
+
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch then
+            UpdateFromInput(input)
+        end
+    end)
+
+    local endConnection = UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    row.Destroying:Connect(function()
+        moveConnection:Disconnect()
+        endConnection:Disconnect()
+    end)
+
+    SetValue(value, false)
+
+    return {
+        Get = function()
+            return value
+        end,
+
+        Set = function(newValue)
+            SetValue(newValue, true)
+        end
+    }
+end
 
 --==============================================================--
---                ABA PLAYER — SEUS ELEMENTOS                  --
+-- 14. SISTEMA DE DROPDOWNS
 --==============================================================--
 
-local playerPage = pages.Player
+local function CreateDropdown(pageName, text, options, callback)
+    local page = Pages[pageName]
+    if not page then return end
 
--- >>> INÍCIO DO CONTEÚDO DA ABA PLAYER <<<
+    options = options or {}
 
-addPageButton("Player", "Opção de jogador")
-addPageButton("Player", "Outra opção de jogador")
+    local selected = nil
+    local expanded = false
 
--- >>> FIM DO CONTEÚDO DA ABA PLAYER <<<
+    local row = Create("Frame", {
+        Name = "Dropdown_" .. text,
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundColor3 = C.Element,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        LayoutOrder = #page:GetChildren()
+    }, page)
 
+    Round(row, 7)
+    Outline(row, C.Border, 1)
+
+    local header = Create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 35),
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false
+    }, row)
+
+    Label(
+        header,
+        text,
+        11,
+        UDim2.fromOffset(10, 0),
+        UDim2.new(0.52, -10, 1, 0)
+    )
+
+    local selectedLabel = Label(
+        header,
+        "Selecionar",
+        10,
+        UDim2.new(0.52, 0, 0, 0),
+        UDim2.new(0.48, -30, 1, 0)
+    )
+
+    selectedLabel.TextColor3 = C.Gray
+    selectedLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+    local arrow = Label(
+        header,
+        "⌄",
+        15,
+        UDim2.new(1, -27, 0, 0),
+        UDim2.fromOffset(18, 35)
+    )
+
+    arrow.TextXAlignment = Enum.TextXAlignment.Center
+
+    local optionButtons = {}
+
+    local function SetExpanded(open)
+        expanded = open
+
+        row.Size = UDim2.new(
+            1, 0,
+            0, expanded and (38 + #options * 28) or 36
+        )
+
+        arrow.Text = expanded and "⌃" or "⌄"
+
+        for _, button in ipairs(optionButtons) do
+            button.Visible = expanded
+        end
+    end
+
+    for index, option in ipairs(options) do
+        local optionButton = Create("TextButton", {
+            Name = "Option" .. index,
+            Position = UDim2.new(0, 6, 0, 38 + (index - 1) * 28),
+            Size = UDim2.new(1, -12, 0, 26),
+            BackgroundColor3 = C.Content,
+            BorderSizePixel = 0,
+            Text = tostring(option),
+            TextColor3 = C.White,
+            TextSize = 11,
+            Font = Enum.Font.Gotham,
+            AutoButtonColor = false,
+            Visible = false
+        }, row)
+
+        Round(optionButton, 5)
+
+        optionButton.Activated:Connect(function()
+            selected = option
+            selectedLabel.Text = tostring(option)
+            SetExpanded(false)
+
+            if callback then
+                callback(option)
+            end
+        end)
+
+        table.insert(optionButtons, optionButton)
+    end
+
+    header.Activated:Connect(function()
+        SetExpanded(not expanded)
+    end)
+
+    return {
+        Get = function()
+            return selected
+        end,
+
+        Set = function(option)
+            for _, available in ipairs(options) do
+                if available == option then
+                    selected = option
+                    selectedLabel.Text = tostring(option)
+
+                    if callback then
+                        callback(option)
+                    end
+
+                    return true
+                end
+            end
+
+            return false
+        end
+    }
+end
 
 --==============================================================--
--- ARRASTAR A JANELA
+-- 15. SISTEMA DE TECLAS DE ATALHO
+--==============================================================--
+
+local Keybinds = {}
+local KeyCapture = nil
+
+local function IsAllowedKey(keyCode)
+    return keyCode
+        and keyCode.EnumType == Enum.KeyCode
+        and keyCode.Name:match("^[A-Z]$") ~= nil
+end
+
+local function CreateKeybind(pageName, text, defaultKey, callback)
+    local page = Pages[pageName]
+    if not page then return end
+
+    local assignedKey
+
+    if type(defaultKey) == "string" and #defaultKey == 1 then
+        local candidate = Enum.KeyCode[string.upper(defaultKey)]
+
+        if IsAllowedKey(candidate) then
+            assignedKey = candidate
+        end
+    elseif typeof(defaultKey) == "EnumItem" and IsAllowedKey(defaultKey) then
+        assignedKey = defaultKey
+    end
+
+    local row = Create("Frame", {
+        Name = "Keybind_" .. text,
+        Size = UDim2.new(1, 0, 0, 38),
+        BackgroundColor3 = C.Element,
+        BorderSizePixel = 0,
+        LayoutOrder = #page:GetChildren()
+    }, page)
+
+    Round(row, 7)
+    Outline(row, C.Border, 1)
+
+    Label(
+        row,
+        text,
+        11,
+        UDim2.fromOffset(10, 0),
+        UDim2.new(1, -85, 1, 0)
+    )
+
+    local keyButton = Create("TextButton", {
+        Name = "KeyButton",
+        Size = UDim2.fromOffset(49, 26),
+        Position = UDim2.new(1, -57, 0.5, -13),
+        BackgroundColor3 = C.Content,
+        BorderSizePixel = 0,
+        Text = assignedKey and assignedKey.Name or "...",
+        TextColor3 = C.White,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        AutoButtonColor = false
+    }, row)
+
+    Round(keyButton, 6)
+    Outline(keyButton, C.Border, 1)
+
+    local mobilePanel = Create("Frame", {
+        Name = "MobileKeyPicker",
+        Size = UDim2.fromOffset(240, 190),
+        Position = UDim2.new(0.5, -120, 0.5, -95),
+        BackgroundColor3 = C.Black,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 30
+    }, GUI)
+
+    Round(mobilePanel, 9)
+    Outline(mobilePanel, C.White, 1)
+
+    local pickerTitle = Label(
+        mobilePanel,
+        "Escolher tecla",
+        12,
+        UDim2.fromOffset(10, 5),
+        UDim2.new(1, -20, 0, 25)
+    )
+    pickerTitle.ZIndex = 31
+
+    local letterGrid = Create("Frame", {
+        Position = UDim2.fromOffset(8, 35),
+        Size = UDim2.new(1, -16, 1, -43),
+        BackgroundTransparency = 1,
+        ZIndex = 31
+    }, mobilePanel)
+
+    Create("UIGridLayout", {
+        CellSize = UDim2.fromOffset(29, 27),
+        CellPadding = UDim2.fromOffset(3, 3),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    }, letterGrid)
+
+    local function AssignKey(keyCode)
+        assignedKey = keyCode
+        keyButton.Text = keyCode.Name
+        keyButton.BackgroundColor3 = C.Content
+
+        if KeyCapture and KeyCapture.Button == keyButton then
+            KeyCapture = nil
+        end
+
+        mobilePanel.Visible = false
+    end
+
+    for letterCode = string.byte("A"), string.byte("Z") do
+        local letter = string.char(letterCode)
+
+        local letterButton = Create("TextButton", {
+            Name = "Key_" .. letter,
+            BackgroundColor3 = C.Element,
+            BorderSizePixel = 0,
+            Text = letter,
+            TextColor3 = C.White,
+            TextSize = 11,
+            Font = Enum.Font.Gotham,
+            AutoButtonColor = false,
+            LayoutOrder = letterCode - string.byte("A") + 1,
+            ZIndex = 32
+        }, letterGrid)
+
+        Round(letterButton, 5)
+
+        letterButton.Activated:Connect(function()
+            if KeyCapture and KeyCapture.Button == keyButton then
+                KeyCapture.Assign(Enum.KeyCode[letter])
+            end
+        end)
+    end
+
+    keyButton.Activated:Connect(function()
+        KeyCapture = {
+            Button = keyButton,
+            Assign = AssignKey
+        }
+
+        keyButton.Text = "..."
+
+        if UserInputService.TouchEnabled then
+            mobilePanel.Visible = true
+        else
+            keyButton.Text = "Pressione..."
+        end
+
+        Tween(keyButton, {
+            BackgroundColor3 = C.Blue
+        })
+    end)
+
+    table.insert(Keybinds, {
+        GetKey = function()
+            return assignedKey
+        end,
+
+        GetCallback = function()
+            return callback
+        end,
+
+        Row = row
+    })
+
+    return {
+        Get = function()
+            return assignedKey
+        end,
+
+        Set = function(key)
+            local candidate
+
+            if type(key) == "string" and #key == 1 then
+                candidate = Enum.KeyCode[string.upper(key)]
+            elseif typeof(key) == "EnumItem" then
+                candidate = key
+            end
+
+            if IsAllowedKey(candidate) then
+                AssignKey(candidate)
+                return true
+            end
+
+            return false
+        end
+    }
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if input.UserInputType ~= Enum.UserInputType.Keyboard then
+        return
+    end
+
+    if KeyCapture then
+        if IsAllowedKey(input.KeyCode) then
+            local capture = KeyCapture
+            capture.Assign(input.KeyCode)
+        end
+
+        return
+    end
+
+    if processed then return end
+
+    for _, bind in ipairs(Keybinds) do
+        if bind.Row.Parent
+            and bind.GetKey()
+            and input.KeyCode == bind.GetKey() then
+
+            local callback = bind.GetCallback()
+
+            if callback then
+                callback(input.KeyCode)
+            end
+        end
+    end
+end)
+
+--==============================================================--
+-- 16. FUNÇÕES QUE EXECUTAM AS AÇÕES
+--==============================================================--
+-- Coloque aqui as funções reais dos recursos do seu próprio jogo.
+-- Exemplo de estrutura:
+
+local function ExecutarAcaoPrincipal()
+    if not RecursoPrincipalAtivo then
+        print("Ative o recurso primeiro.")
+        return
+    end
+
+    print("Ação principal executada.")
+end
+
+local function AtualizarIntensidade(valor)
+    Intensidade = valor
+    print("Intensidade atualizada:", Intensidade)
+end
+
+local function AlterarModo(modo)
+    ModoSelecionado = modo
+    print("Modo selecionado:", ModoSelecionado)
+end
+
+--==============================================================--
+-- 17. ABA MAIN — VARIÁVEIS E CONTROLES
+--==============================================================--
+
+-- [MAIN - VARIÁVEIS]
+-- Declare aqui variáveis específicas da aba Main.
+
+-- [MAIN - BOTÕES]
+CreateButton("Main", "Executar ação", function()
+    ExecutarAcaoPrincipal()
+end)
+
+-- [MAIN - TOGGLES]
+local MainToggle = CreateToggle(
+    "Main",
+    "Ativar recurso",
+    false,
+    function(estado)
+        RecursoPrincipalAtivo = estado
+        print("Recurso principal:", estado)
+    end
+)
+
+-- [MAIN - SLIDERS]
+local MainSlider = CreateSlider(
+    "Main",
+    "Intensidade",
+    0,
+    100,
+    50,
+    function(valor)
+        AtualizarIntensidade(valor)
+    end
+)
+
+-- [MAIN - DROPDOWNS]
+local MainDropdown = CreateDropdown(
+    "Main",
+    "Selecionar modo",
+    {"Padrão", "Modo 2", "Modo 3"},
+    function(opcao)
+        AlterarModo(opcao)
+    end
+)
+
+-- [MAIN - TECLAS DE ATALHO]
+local MainKeybind = CreateKeybind(
+    "Main",
+    "Atalho do recurso",
+    "K",
+    function()
+        MainToggle.Set(not MainToggle.Get())
+    end
+)
+
+--==============================================================--
+-- 18. ABA ESP — VARIÁVEIS E CONTROLES
+--==============================================================--
+
+-- [ESP - VARIÁVEIS]
+-- Declare aqui variáveis exclusivas da aba ESP.
+
+-- [ESP - BOTÕES]
+-- Exemplo:
+-- CreateButton("ESP", "Meu botão", function()
+--     print("Botão da aba ESP clicado.")
+-- end)
+
+-- [ESP - TOGGLES]
+-- Exemplo:
+-- local ESPToggle = CreateToggle("ESP", "Ativar opção visual", false, function(estado)
+--     print("Opção visual:", estado)
+-- end)
+
+-- [ESP - SLIDERS]
+-- Adicione os CreateSlider da aba ESP aqui.
+
+-- [ESP - DROPDOWNS]
+-- Adicione os CreateDropdown da aba ESP aqui.
+
+-- [ESP - TECLAS DE ATALHO]
+-- Adicione os CreateKeybind da aba ESP aqui.
+
+--==============================================================--
+-- 19. ABA PLAYER — VARIÁVEIS E CONTROLES
+--==============================================================--
+
+-- [PLAYER - VARIÁVEIS]
+-- Declare aqui variáveis exclusivas da aba Player.
+
+-- [PLAYER - BOTÕES]
+-- Adicione os CreateButton da aba Player aqui.
+
+-- [PLAYER - TOGGLES]
+-- Adicione os CreateToggle da aba Player aqui.
+
+-- [PLAYER - SLIDERS]
+-- Adicione os CreateSlider da aba Player aqui.
+
+-- [PLAYER - DROPDOWNS]
+-- Adicione os CreateDropdown da aba Player aqui.
+
+-- [PLAYER - TECLAS DE ATALHO]
+-- Adicione os CreateKeybind da aba Player aqui.
+
+--==============================================================--
+-- 20. CONFIRMAÇÃO DE FECHAMENTO
+--==============================================================--
+
+local Confirm = Create("Frame", {
+    Name = "CloseConfirmation",
+    Size = UDim2.fromOffset(255, 130),
+    Position = UDim2.new(0.5, -127.5, 0.5, -65),
+    BackgroundColor3 = C.Black,
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 50
+}, GUI)
+
+Round(Confirm, 9)
+Outline(Confirm, C.White, 1)
+
+local confirmTitle = Label(
+    Confirm,
+    "Script Aimbot Roblox",
+    13,
+    UDim2.fromOffset(13, 8),
+    UDim2.new(1, -26, 0, 25)
+)
+confirmTitle.ZIndex = 51
+
+local confirmText = Label(
+    Confirm,
+    "Deseja fechar a interface completamente?",
+    10,
+    UDim2.fromOffset(13, 36),
+    UDim2.new(1, -26, 0, 32)
+)
+
+confirmText.TextColor3 = C.Gray
+confirmText.TextWrapped = true
+confirmText.ZIndex = 51
+
+local function ConfirmButton(text, x, callback)
+    local button = Create("TextButton", {
+        Size = UDim2.fromOffset(104, 30),
+        Position = UDim2.new(0, x, 1, -40),
+        BackgroundColor3 = C.Element,
+        BorderSizePixel = 0,
+        Text = text,
+        TextColor3 = C.White,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        AutoButtonColor = false,
+        ZIndex = 51
+    }, Confirm)
+
+    Round(button, 6)
+    Outline(button, C.Border, 1)
+
+    button.Activated:Connect(callback)
+
+    return button
+end
+
+ConfirmButton("Sim", 13, function()
+    GUI:Destroy()
+end)
+
+ConfirmButton("Não", 138, function()
+    Confirm.Visible = false
+end)
+
+Close.Activated:Connect(function()
+    Confirm.Visible = true
+end)
+
+--==============================================================--
+-- 21. BOTÃO FLUTUANTE
+--==============================================================--
+
+local FloatingButton = Create("TextButton", {
+    Name = "FloatingButton",
+    Size = UDim2.fromOffset(43, 43),
+    Position = UDim2.new(0, 16, 0.5, -21),
+    BackgroundColor3 = C.Black,
+    BorderSizePixel = 0,
+    Text = "S",
+    TextColor3 = C.White,
+    TextSize = 20,
+    Font = Enum.Font.GothamMedium,
+    AutoButtonColor = false,
+    ZIndex = 10
+}, GUI)
+
+Round(FloatingButton, 11)
+Outline(FloatingButton, C.White, 1)
+
+FloatingButton.MouseEnter:Connect(function()
+    Tween(FloatingButton, { BackgroundColor3 = C.Element })
+end)
+
+FloatingButton.MouseLeave:Connect(function()
+    Tween(FloatingButton, { BackgroundColor3 = C.Black })
+end)
+
+FloatingButton.Activated:Connect(function()
+    Window.Visible = not Window.Visible
+end)
+
+--==============================================================--
+-- 22. ARRASTAR A JANELA
 --==============================================================--
 
 local dragging = false
 local dragStart
 local startPosition
 
-header.InputBegan:Connect(function(input)
+Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
 
         dragging = true
         dragStart = input.Position
-        startPosition = window.Position
+        startPosition = Window.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and (
-        input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch
-    ) then
+    if not dragging then return end
+
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+
         local delta = input.Position - dragStart
 
-        window.Position = UDim2.new(
+        Window.Position = UDim2.new(
             startPosition.X.Scale,
             startPosition.X.Offset + delta.X,
             startPosition.Y.Scale,
@@ -393,165 +1265,10 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end)
-
 --==============================================================--
--- BOTÃO FLUTUANTE
+-- 23. INICIALIZAÇÃO
 --==============================================================--
 
-local floatingButton = Instance.new("TextButton")
-floatingButton.Name = "FloatingButton"
-floatingButton.Size = UDim2.fromOffset(48, 48)
-floatingButton.Position = UDim2.new(0, 18, 0.5, -24)
-floatingButton.BackgroundColor3 = BLACK
-floatingButton.BorderSizePixel = 0
-floatingButton.Text = "S"
-floatingButton.TextColor3 = WHITE
-floatingButton.TextSize = 20
-floatingButton.Font = Enum.Font.GothamMedium
-floatingButton.AutoButtonColor = false
-floatingButton.Parent = screenGui
+SelectPage("Main")
 
-addCorner(floatingButton, 12)
-addStroke(floatingButton, WHITE, 1)
-
-local floatingDragging = false
-local floatingDragStart
-local floatingStartPosition
-local floatingMoved = false
-
-floatingButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-
-        floatingDragging = true
-        floatingMoved = false
-        floatingDragStart = input.Position
-        floatingStartPosition = floatingButton.Position
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if floatingDragging and (
-        input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch
-    ) then
-        local delta = input.Position - floatingDragStart
-
-        if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
-            floatingMoved = true
-        end
-
-        floatingButton.Position = UDim2.new(
-            floatingStartPosition.X.Scale,
-            floatingStartPosition.X.Offset + delta.X,
-            floatingStartPosition.Y.Scale,
-            floatingStartPosition.Y.Offset + delta.Y
-        )
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-        floatingDragging = false
-    end
-end)
-
-floatingButton.Activated:Connect(function()
-    if floatingMoved then
-        floatingMoved = false
-        return
-    end
-
-    window.Visible = not window.Visible
-end)
-
---==============================================================--
--- PAINEL DE CONFIRMAÇÃO DE FECHAMENTO
---==============================================================--
-
-local confirmation = Instance.new("Frame")
-confirmation.Name = "CloseConfirmation"
-confirmation.AnchorPoint = Vector2.new(0.5, 0.5)
-confirmation.Position = UDim2.fromScale(0.5, 0.5)
-confirmation.Size = UDim2.fromOffset(270, 140)
-confirmation.BackgroundColor3 = BLACK
-confirmation.BorderSizePixel = 0
-confirmation.Visible = false
-confirmation.ZIndex = 10
-confirmation.Parent = window
-
-addCorner(confirmation, 10)
-addStroke(confirmation, WHITE, 1)
-
-local confirmationTitle = createText(
-    confirmation,
-    "Fechar interface?",
-    15,
-    UDim2.new(0, 10, 0, 12),
-    UDim2.new(1, -20, 0, 25)
-)
-confirmationTitle.ZIndex = 11
-
-local confirmationText = createText(
-    confirmation,
-    "Deseja fechar a interface agora?",
-    12,
-    UDim2.new(0, 10, 0, 42),
-    UDim2.new(1, -20, 0, 22)
-)
-confirmationText.TextColor3 = GRAY
-confirmationText.ZIndex = 11
-
-local function createConfirmationButton(text, position)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.fromOffset(108, 32)
-    button.Position = position
-    button.BackgroundColor3 = DARK
-    button.BorderSizePixel = 0
-    button.Text = text
-    button.TextColor3 = WHITE
-    button.TextSize = 13
-    button.Font = Enum.Font.Gotham
-    button.ZIndex = 11
-    button.Parent = confirmation
-
-    addCorner(button, 6)
-    addStroke(button, BORDER, 1)
-
-    return button
-end
-
-local yesButton = createConfirmationButton(
-    "Sim",
-    UDim2.new(0, 17, 1, -43)
-)
-
-local noButton = createConfirmationButton(
-    "Não",
-    UDim2.new(1, -125, 1, -43)
-)
-
-closeButton.Activated:Connect(function()
-    confirmation.Visible = true
-end)
-
-noButton.Activated:Connect(function()
-    confirmation.Visible = false
-end)
-
-yesButton.Activated:Connect(function()
-    screenGui:Destroy()
-end)
-
---==============================================================--
--- FINALIZADO
---==============================================================--
-
-print("Interface carregada com abas e rolagem automática!")
+print("Script Aimbot Roblox carregado!")
