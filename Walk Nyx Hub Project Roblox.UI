@@ -1075,6 +1075,118 @@ CreateSlider("ESP", "Transparência ESP (%)", 0, 100, 50, function(value)
     ESPConfig.Transparency = value / 100
 end)
 
+
+
+
+-- Título da Seção Linhas (Tracers)
+CreateSection("ESP", "-- // ===== Tracers ===== \\ --")
+
+-- Dropdown com a origem da linha em inglês
+CreateDropdown("ESP", "Origem da Linha", {"Top", "Center", "Bottom"}, "Center", function(option)
+    OrigemTracer = option
+end)
+
+-- Toggle para ativar/desativar as linhas
+CreateToggle("ESP", "Ativar Tracers", false, function(state)
+    TracerAtivo = state
+end)
+
+-- Slider para controlar a espessura da linha (1 a 10)
+CreateSlider("ESP", "Espessura da Linha", 1, 10, 1, function(value)
+    GrossuraTracer = value
+end)
+
+--==============================================================--
+-- SISTEMA DE TRACERS (COM COR POR CARGO E SUPORTE A 600M)
+--==============================================================--
+
+local TracerAtivo = false
+local OrigemTracer = "Center"
+local GrossuraTracer = 1
+
+local TracersCache = {}
+
+local function CriarTracer(player)
+    if player == Player then return end
+
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Color = Color3.fromRGB(255, 255, 255)
+    line.Thickness = GrossuraTracer or 1
+    line.Transparency = 1
+
+    TracersCache[player] = line
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    CriarTracer(p)
+end
+
+Players.PlayerAdded:Connect(CriarTracer)
+
+Players.PlayerRemoving:Connect(function(player)
+    if TracersCache[player] then
+        TracersCache[player]:Remove()
+        TracersCache[player] = nil
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    local meuPersonagem = Player.Character
+    local meuRoot = meuPersonagem and meuPersonagem:FindFirstChild("HumanoidRootPart")
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        local line = TracersCache[player]
+
+        if line then
+            local character = player.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+            if TracerAtivo and meuRoot and character and humanoid and rootPart and humanoid.Health > 0 then
+                -- Oculta caso a opção "No my highlight/No ESP my player" esteja ativa para o próprio jogador
+                if ESPConfig.TargetType == "No my highlight" and player == Player then
+                    line.Visible = false
+                    continue
+                end
+
+                local distancia = (meuRoot.Position - rootPart.Position).Magnitude
+
+                if distancia <= DistanciaMaximaESP then
+                    local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+
+                    if onScreen then
+                        local viewportSize = Camera.ViewportSize
+                        local originPoint
+
+                        -- Ajusta o ponto de origem em inglês ("Top", "Center", "Bottom")
+                        if OrigemTracer == "Top" then
+                            originPoint = Vector2.new(viewportSize.X / 2, 0)
+                        elseif OrigemTracer == "Bottom" then
+                            originPoint = Vector2.new(viewportSize.X / 2, viewportSize.Y)
+                        else -- "Center"
+                            originPoint = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+                        end
+
+                        -- Puxa a cor do cargo em tempo real (Murderer, Sheriff, Hero, Innocent, Lobby)
+                        line.Color = ObterCorCargo(player.Name)
+                        line.Thickness = GrossuraTracer or 1
+                        line.From = originPoint
+                        line.To = Vector2.new(vector.X, vector.Y)
+                        line.Visible = true
+                    else
+                        line.Visible = false
+                    end
+                else
+                    line.Visible = false
+                end
+            else
+                line.Visible = false
+            end
+        end
+    end
+end)
+
 --==============================================================--
 -- SISTEMA DE CARGOS COMPARTILHADO (MM2 + LOBBY)
 --==============================================================--
