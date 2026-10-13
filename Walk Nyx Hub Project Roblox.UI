@@ -1018,6 +1018,102 @@ end
 -- 17. ABA MAIN — VARIÁVEIS E CONTROLES
 --==============================================================--
 
+--==============================================================--
+-- 18. ABA ESP - VARIÁVEIS E CONTROLE 
+--==============================================================--
+
+local TracerAtivo = false
+local OrigemTracer = "Centro" -- Padrão
+
+-- Toggle para ligar/desligar as linhas
+CreateToggle("ESP", "Linhas (Tracers)", false, function(state)
+    TracerAtivo = state
+end)
+
+-- Dropdown para escolher de onde a linha vai sair
+CreateDropdown("ESP", "Origem da Linha", {"Topo", "Centro", "Baixo"}, function(option)
+    OrigemTracer = option
+end)
+
+--==============================================================--
+-- SISTEMA DE TRACERS (LINHAS ESP)
+--==============================================================--
+
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+
+-- Tabela para guardar os objetos de linha de cada jogador
+local TracersCache = {}
+
+local function CriarTracer(player)
+    if player == Player then return end
+
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Color = Color3.fromRGB(45, 125, 255) -- Usa a mesma cor azul da sua UI
+    line.Thickness = 1
+    line.Transparency = 1
+
+    TracersCache[player] = line
+end
+
+-- Criar para quem já está no jogo
+for _, p in ipairs(Players:GetPlayers()) do
+    CriarTracer(p)
+end
+
+-- Adicionar novos jogadores que entram
+Players.PlayerAdded:Connect(CriarTracer)
+
+-- Remover jogadores que saem
+Players.PlayerRemoving:Connect(function(player)
+    if TracersCache[player] then
+        TracersCache[player]:Remove()
+        TracersCache[player] = nil
+    end
+end)
+
+-- Loop de atualização executado a cada frame
+RunService.RenderStepped:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        local line = TracersCache[player]
+        
+        if line then
+            local character = player.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+            -- Condição para mostrar: Toggle ligado, personagem existe, vivo (vida > 0)
+            if TracerAtivo and character and humanoid and rootPart and humanoid.Health > 0 then
+                local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+
+                if onScreen then
+                    -- Definir de onde a linha vai partir na tela com base na escolha do dropdown
+                    local originPoint
+                    local viewportSize = Camera.ViewportSize
+
+                    if OrigemTracer == "Topo" then
+                        originPoint = Vector2.new(viewportSize.X / 2, 0)
+                    elseif OrigemTracer == "Baixo" then
+                        originPoint = Vector2.new(viewportSize.X / 2, viewportSize.Y)
+                    else -- "Centro"
+                        originPoint = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+                    end
+
+                    line.From = originPoint
+                    line.To = Vector2.new(vector.X, vector.Y)
+                    line.Visible = true
+                else
+                    line.Visible = false
+                end
+            else
+                line.Visible = false
+            end
+        end
+    end
+end)
+
+
 
 --==============================================================--
 -- 20. CONFIRMAÇÃO DE FECHAMENTO
