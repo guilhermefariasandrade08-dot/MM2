@@ -1043,8 +1043,8 @@ CreateToggle("ESP", "Linhas (Tracers)", false, function(state)
     TracerAtivo = state
 end)
 
--- Dropdown para escolher de onde a linha vai sair
-CreateDropdown("ESP", "Origem da Linha", {"Topo", "Centro", "Baixo"}, function(option)
+-- O quarto parâmetro "Centro" define o valor que já vem selecionado de fábrica
+CreateDropdown("ESP", "Origem da Linha", {"Topo", "Centro", "Baixo"}, "Centro", function(option)
     OrigemTracer = option
 end)
 
