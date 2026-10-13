@@ -91,6 +91,8 @@ local NoclipConnection = nil
 
 local InvisivelAtivo = false
 local InvisivelButtonGui = nil
+local InvisivelFloatBtn = nil
+local UltimaPosicaoBotao = UDim2.new(0, 70, 0.5, -20) -- Posição inicial padrão
 local Personagem = nil
 local Humanoid = nil
 local Raiz = nil
@@ -1169,21 +1171,23 @@ end)
 -- ============================
 -- SEÇÃO: INVISÍVEL
 -- ============================
+-- ============================
+-- SEÇÃO: INVISÍVEL
+-- ============================
 CreateSection("Jogador", "-- // ===== Invisível ===== \\ --")
 
 local InvisivelToggleState = CreateToggle("Jogador", "Ativar Invisível", false, function(state)
     InvisivelAtivo = state
     
-    if InvisivelAtivo then
-        if not InvisivelButtonGui then
-            CreateInvisivelButton()
-        end
+    if not InvisivelButtonGui then
+        CreateInvisivelButton()
     else
-        if InvisivelButtonGui then
-            RemoveInvisivelButton()
-        end
+        InvisivelButtonGui.Visible = InvisivelAtivo
     end
+
+    AtualizarVisualBotaoFlutuante()
 end)
+
 
 -- Título da Seção Speed
 CreateSection("Jogador", "-- // ===== Moviment ===== \\ --")
@@ -1240,11 +1244,24 @@ CreateToggle("Jogador", "Ativar Anti Fling", false, function(state)
 end)
 
 -- ==============================================================--
--- SISTEMA DE LÓGICA DO INVISÍVEL E BOTÃO FLUTUANTE RETANGULAR
+-- SISTEMA DE LÓGICA DO INVISÍVEL E BOTÃO FLUTUANTE PERSISTENTE
 -- ==============================================================--
 
+function AtualizarVisualBotaoFlutuante()
+    if not InvisivelFloatBtn then return end
+    
+    local targetBg = InvisivelAtivo and Color3.fromRGB(40, 200, 80) or Color3.fromRGB(11, 12, 16)
+    local targetStroke = InvisivelAtivo and Color3.fromRGB(60, 220, 100) or Color3.fromRGB(39, 40, 48)
+
+    Tween(InvisivelFloatBtn, { BackgroundColor3 = targetBg }, 0.2)
+    Outline(InvisivelFloatBtn, targetStroke, 1.5)
+end
+
 function CreateInvisivelButton()
-    if InvisivelButtonGui then return end
+    if InvisivelButtonGui then 
+        InvisivelButtonGui.Visible = InvisivelAtivo
+        return 
+    end
 
     InvisivelButtonGui = Create("ScreenGui", {
         Name = "WalkNyx_InvisivelGui",
@@ -1254,10 +1271,10 @@ function CreateInvisivelButton()
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     }, PlayerGui)
 
-    local btn = Create("TextButton", {
+    InvisivelFloatBtn = Create("TextButton", {
         Name = "InvisivelFloatBtn",
         Size = UDim2.fromOffset(110, 40),
-        Position = UDim2.new(0, 70, 0.5, -20),
+        Position = UltimaPosicaoBotao,
         BackgroundColor3 = Color3.fromRGB(11, 12, 16),
         BackgroundTransparency = 0.3,
         BorderSizePixel = 0,
@@ -1267,37 +1284,29 @@ function CreateInvisivelButton()
         Font = Enum.Font.GothamBold,
         AutoButtonColor = false,
         Active = true,
-        Draggable = true
+        Draggable = true,
+        Visible = InvisivelAtivo
     }, InvisivelButtonGui)
 
-    Round(btn, 8)
-    Outline(btn, Color3.fromRGB(39, 40, 48), 1.5)
+    Round(InvisivelFloatBtn, 8)
+    Outline(InvisivelFloatBtn, Color3.fromRGB(39, 40, 48), 1.5)
 
-    -- Atualiza as cores iniciais do botão flutuante com base no estado
-    if InvisivelAtivo then
-        Tween(btn, { BackgroundColor3 = Color3.fromRGB(40, 200, 80) }, 0.2)
-        Outline(btn, Color3.fromRGB(60, 220, 100), 1.5)
-    end
+    -- Salva a posição sempre que parar de arrastar
+    InvisivelFloatBtn.Changed:Connect(function(property)
+        if property == "Position" then
+            UltimaPosicaoBotao = InvisivelFloatBtn.Position
+        end
+    end)
 
-    btn.Activated:Connect(function()
+    InvisivelFloatBtn.Activated:Connect(function()
         InvisivelAtivo = not InvisivelAtivo
         
-        -- Atualiza o toggle principal da UI também
+        -- Atualiza o toggle lá dentro da UI principal
         InvisivelToggleState.Set(InvisivelAtivo)
-
-        local targetBg = InvisivelAtivo and Color3.fromRGB(40, 200, 80) or Color3.fromRGB(11, 12, 16)
-        local targetStroke = InvisivelAtivo and Color3.fromRGB(60, 220, 100) or Color3.fromRGB(39, 40, 48)
-
-        Tween(btn, { BackgroundColor3 = targetBg }, 0.2)
-        Outline(btn, targetStroke, 1.5)
+        AtualizarVisualBotaoFlutuante()
     end)
-end
 
-function RemoveInvisivelButton()
-    if InvisivelButtonGui then
-        InvisivelButtonGui:Destroy()
-        InvisivelButtonGui = nil
-    end
+    AtualizarVisualBotaoFlutuante()
 end
 
 local function ConfigurarPersonagem()
