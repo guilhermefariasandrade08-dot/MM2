@@ -10,6 +10,9 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Camera = workspace.CurrentCamera
 
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
@@ -33,12 +36,23 @@ local C = {
 }
 
 --==============================================================--
--- 03. VARIÁVEIS DOS RECURSOS
+-- 03. VARIÁVEIS DOS RECURSOS E CONFIGURAÇÕES DO ESP
 --==============================================================--
 
-local RecursoPrincipalAtivo = false
-local Intensidade = 50
-local ModoSelecionado = "Padrão"
+local ESPConfig = {
+    Active = false,
+    TargetType = "No my highlight",
+    Mode = "Highlight",
+    Transparency = 0.5
+}
+
+local TracersConfig = {
+    Active = false,
+    Position = "Bottom",
+    Thickness = 1
+}
+
+local TracersConfig_Active_Check = false
 
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
@@ -284,7 +298,7 @@ CreatePage("Teleporte")
 CreatePage("Fling")
 
 --==============================================================--
--- 10. SELECIONAR E CRIAR ABAS LATERAIS (PROTEGIDAS CONTRA TRADUÇÃO)
+-- 10. SELECIONAR E CRIAR ABAS LATERAIS
 --==============================================================--
 
 local function SelectPage(name)
@@ -356,8 +370,35 @@ CreateTab("Teleporte", 7)
 CreateTab("Fling", 8)
 
 --==============================================================--
--- 11. SISTEMA DE BOTÕES
+-- 11. SISTEMA DE ELEMENTOS DA UI
 --==============================================================--
+
+local function CreateSection(pageName, text)
+    local page = Pages[pageName]
+    if not page then return end
+
+    local row = Create("Frame", {
+        Name = "Section_" .. text,
+        Size = UDim2.new(1, 0, 0, 26),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        LayoutOrder = #page:GetChildren()
+    }, page)
+
+    local sectionLabel = Label(
+        row,
+        text,
+        11,
+        UDim2.new(0, 0, 0, 0),
+        UDim2.new(1, 0, 1, 0)
+    )
+
+    sectionLabel.TextXAlignment = Enum.TextXAlignment.Center
+    sectionLabel.TextColor3 = C.Gray
+    sectionLabel.Font = Enum.Font.GothamBold
+
+    return row
+end
 
 local function CreateButton(pageName, text, callback)
     local page = Pages[pageName]
@@ -388,17 +429,11 @@ local function CreateButton(pageName, text, callback)
     end)
 
     button.Activated:Connect(function()
-        if callback then
-            callback()
-        end
+        if callback then callback() end
     end)
 
     return button
 end
-
---==============================================================--
--- 12. SISTEMA DE TOGGLES
---==============================================================--
 
 local function CreateToggle(pageName, text, defaultValue, callback)
     local page = Pages[pageName]
@@ -417,13 +452,7 @@ local function CreateToggle(pageName, text, defaultValue, callback)
     Round(row, 7)
     Outline(row, C.Border, 1)
 
-    Label(
-        row,
-        text,
-        11,
-        UDim2.fromOffset(10, 0),
-        UDim2.new(1, -60, 1, 0)
-    )
+    Label(row, text, 11, UDim2.fromOffset(10, 0), UDim2.new(1, -60, 1, 0))
 
     local track = Create("Frame", {
         Size = UDim2.fromOffset(36, 20),
@@ -436,9 +465,7 @@ local function CreateToggle(pageName, text, defaultValue, callback)
 
     local knob = Create("Frame", {
         Size = UDim2.fromOffset(14, 14),
-        Position = state
-            and UDim2.new(1, -17, 0.5, -7)
-            or UDim2.new(0, 3, 0.5, -7),
+        Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7),
         BackgroundColor3 = C.White,
         BorderSizePixel = 0
     }, track)
@@ -454,20 +481,9 @@ local function CreateToggle(pageName, text, defaultValue, callback)
 
     local function SetState(value, fireCallback)
         state = value == true
-
-        Tween(track, {
-            BackgroundColor3 = state and C.Blue or Color3.fromRGB(48, 48, 48)
-        })
-
-        Tween(knob, {
-            Position = state
-                and UDim2.new(1, -17, 0.5, -7)
-                or UDim2.new(0, 3, 0.5, -7)
-        })
-
-        if fireCallback and callback then
-            callback(state)
-        end
+        Tween(track, { BackgroundColor3 = state and C.Blue or Color3.fromRGB(48, 48, 48) })
+        Tween(knob, { Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7) })
+        if fireCallback and callback then callback(state) end
     end
 
     hitbox.Activated:Connect(function()
@@ -475,19 +491,10 @@ local function CreateToggle(pageName, text, defaultValue, callback)
     end)
 
     return {
-        Get = function()
-            return state
-        end,
-
-        Set = function(value)
-            SetState(value, true)
-        end
+        Get = function() return state end,
+        Set = function(value) SetState(value, true) end
     }
 end
-
---==============================================================--
--- 13. SISTEMA DE SLIDERS
---==============================================================--
 
 local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, callback)
     local page = Pages[pageName]
@@ -495,16 +502,9 @@ local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, ca
 
     minValue = tonumber(minValue) or 0
     maxValue = tonumber(maxValue) or 100
+    if maxValue < minValue then minValue, maxValue = maxValue, minValue end
 
-    if maxValue < minValue then
-        minValue, maxValue = maxValue, minValue
-    end
-
-    local value = math.clamp(
-        tonumber(defaultValue) or minValue,
-        minValue,
-        maxValue
-    )
+    local value = math.clamp(tonumber(defaultValue) or minValue, minValue, maxValue)
 
     local row = Create("Frame", {
         Name = "Slider_" .. text,
@@ -517,22 +517,9 @@ local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, ca
     Round(row, 7)
     Outline(row, C.Border, 1)
 
-    Label(
-        row,
-        text,
-        11,
-        UDim2.fromOffset(10, 2),
-        UDim2.new(1, -65, 0, 23)
-    )
+    Label(row, text, 11, UDim2.fromOffset(10, 2), UDim2.new(1, -65, 0, 23))
 
-    local valueLabel = Label(
-        row,
-        tostring(value),
-        11,
-        UDim2.new(1, -50, 0, 2),
-        UDim2.fromOffset(40, 23)
-    )
-
+    local valueLabel = Label(row, tostring(value), 11, UDim2.new(1, -50, 0, 2), UDim2.fromOffset(40, 23))
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
 
     local track = Create("Frame", {
@@ -566,48 +553,32 @@ local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, ca
     local dragging = false
 
     local function SetValue(newValue, fireCallback)
-        value = math.clamp(
-            math.floor((tonumber(newValue) or minValue) + 0.5),
-            minValue,
-            maxValue
-        )
-
-        local ratio = maxValue == minValue and 0
-            or (value - minValue) / (maxValue - minValue)
+        value = math.clamp(math.floor((tonumber(newValue) or minValue) + 0.5), minValue, maxValue)
+        local ratio = maxValue == minValue and 0 or (value - minValue) / (maxValue - minValue)
 
         fill.Size = UDim2.new(ratio, 0, 1, 0)
         knob.Position = UDim2.new(ratio, 0, 0.5, 0)
         valueLabel.Text = tostring(value)
 
-        if fireCallback and callback then
-            callback(value)
-        end
+        if fireCallback and callback then callback(value) end
     end
 
     local function UpdateFromInput(input)
         local width = track.AbsoluteSize.X
         if width <= 0 then return end
-
-        local ratio = math.clamp(
-            (input.Position.X - track.AbsolutePosition.X) / width,
-            0,
-            1
-        )
-
+        local ratio = math.clamp((input.Position.X - track.AbsolutePosition.X) / width, 0, 1)
         SetValue(minValue + (maxValue - minValue) * ratio, true)
     end
 
     track.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             UpdateFromInput(input)
         end
     end)
 
     knob.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             UpdateFromInput(input)
         end
@@ -615,16 +586,13 @@ local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, ca
 
     local moveConnection = UserInputService.InputChanged:Connect(function(input)
         if not dragging then return end
-
-        if input.UserInputType == Enum.UserInputType.MouseMovement
-            or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             UpdateFromInput(input)
         end
     end)
 
     local endConnection = UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
@@ -637,19 +605,10 @@ local function CreateSlider(pageName, text, minValue, maxValue, defaultValue, ca
     SetValue(value, false)
 
     return {
-        Get = function()
-            return value
-        end,
-
-        Set = function(newValue)
-            SetValue(newValue, true)
-        end
+        Get = function() return value end,
+        Set = function(newValue) SetValue(newValue, true) end
     }
 end
-
---==============================================================--
--- 14. SISTEMA DE DROPDOWNS
---==============================================================--
 
 local function CreateDropdown(pageName, text, options, defaultValue, callback)
     local page = Pages[pageName]
@@ -678,50 +637,22 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
         AutoButtonColor = false
     }, row)
 
-    Label(
-        header,
-        text,
-        11,
-        UDim2.fromOffset(10, 0),
-        UDim2.new(0.52, -10, 1, 0)
-    )
+    Label(header, text, 11, UDim2.fromOffset(10, 0), UDim2.new(0.52, -10, 1, 0))
 
-    local selectedLabel = Label(
-        header,
-        selected and tostring(selected) or "Selecionar",
-        10,
-        UDim2.new(0.52, 0, 0, 0),
-        UDim2.new(0.48, -30, 1, 0)
-    )
-
+    local selectedLabel = Label(header, selected and tostring(selected) or "Selecionar", 10, UDim2.new(0.52, 0, 0, 0), UDim2.new(0.48, -30, 1, 0))
     selectedLabel.TextColor3 = selected and C.White or C.Gray
     selectedLabel.TextXAlignment = Enum.TextXAlignment.Right
 
-    local arrow = Label(
-        header,
-        "⌄",
-        15,
-        UDim2.new(1, -27, 0, 0),
-        UDim2.fromOffset(18, 35)
-    )
-
+    local arrow = Label(header, "⌄", 15, UDim2.new(1, -27, 0, 0), UDim2.fromOffset(18, 35))
     arrow.TextXAlignment = Enum.TextXAlignment.Center
 
     local optionButtons = {}
 
     local function SetExpanded(open)
         expanded = open
-
-        row.Size = UDim2.new(
-            1, 0,
-            0, expanded and (38 + #options * 28) or 36
-        )
-
+        row.Size = UDim2.new(1, 0, 0, expanded and (38 + #options * 28) or 36)
         arrow.Text = expanded and "⌃" or "⌄"
-
-        for _, button in ipairs(optionButtons) do
-            button.Visible = expanded
-        end
+        for _, button in ipairs(optionButtons) do button.Visible = expanded end
     end
 
     for index, option in ipairs(options) do
@@ -746,10 +677,7 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
             selectedLabel.Text = tostring(option)
             selectedLabel.TextColor3 = C.White
             SetExpanded(false)
-
-            if callback then
-                callback(option)
-            end
+            if callback then callback(option) end
         end)
 
         table.insert(optionButtons, optionButton)
@@ -760,361 +688,32 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
     end)
 
     if selected and callback then
-        task.spawn(function()
-            callback(selected)
-        end)
+        task.spawn(function() callback(selected) end)
     end
 
     return {
-        Get = function()
-            return selected
-        end,
-
+        Get = function() return selected end,
         Set = function(option)
             for _, available in ipairs(options) do
                 if available == option then
                     selected = option
                     selectedLabel.Text = tostring(option)
                     selectedLabel.TextColor3 = C.White
-
-                    if callback then
-                        callback(option)
-                    end
-
+                    if callback then callback(option) end
                     return true
                 end
             end
-
             return false
         end
     }
 end
 
 --==============================================================--
--- 15. SISTEMA DE TECLAS DE ATALHO (KEYBINDS)
+-- 12. SISTEMA DE CARGOS COMPARTILHADO (MM2)
 --==============================================================--
 
-local Keybinds = {}
-local KeyCapture = nil
-
-local function IsAllowedKey(keyCode)
-    return keyCode
-        and keyCode.EnumType == Enum.KeyCode
-        and keyCode.Name:match("^[A-Z]$") ~= nil
-end
-
-local function CreateKeybind(pageName, text, defaultKey, callback)
-    local page = Pages[pageName]
-    if not page then return end
-
-    local assignedKey
-
-    if type(defaultKey) == "string" and #defaultKey == 1 then
-        local candidate = Enum.KeyCode[string.upper(defaultKey)]
-
-        if IsAllowedKey(candidate) then
-            assignedKey = candidate
-        end
-    elseif typeof(defaultKey) == "EnumItem" and IsAllowedKey(defaultKey) then
-        assignedKey = defaultKey
-    end
-
-    local row = Create("Frame", {
-        Name = "Keybind_" .. text,
-        Size = UDim2.new(1, 0, 0, 38),
-        BackgroundColor3 = C.Element,
-        BorderSizePixel = 0,
-        LayoutOrder = #page:GetChildren()
-    }, page)
-
-    Round(row, 7)
-    Outline(row, C.Border, 1)
-
-    Label(
-        row,
-        text,
-        11,
-        UDim2.fromOffset(10, 0),
-        UDim2.new(1, -85, 1, 0)
-    )
-
-    local keyButton = Create("TextButton", {
-        Name = "KeyButton",
-        Size = UDim2.fromOffset(49, 26),
-        Position = UDim2.new(1, -57, 0.5, -13),
-        BackgroundColor3 = C.Content,
-        BorderSizePixel = 0,
-        Text = assignedKey and assignedKey.Name or "...",
-        TextColor3 = C.White,
-        TextSize = 11,
-        Font = Enum.Font.Gotham,
-        AutoButtonColor = false
-    }, row)
-
-    Round(keyButton, 6)
-    Outline(keyButton, C.Border, 1)
-
-    local mobilePanel = Create("Frame", {
-        Name = "MobileKeyPicker",
-        Size = UDim2.fromOffset(240, 190),
-        Position = UDim2.new(0.5, -120, 0.5, -95),
-        BackgroundColor3 = C.Black,
-        BorderSizePixel = 0,
-        Visible = false,
-        ZIndex = 30
-    }, GUI)
-
-    Round(mobilePanel, 9)
-    Outline(mobilePanel, C.White, 1)
-
-    local pickerTitle = Label(
-        mobilePanel,
-        "Escolher tecla",
-        12,
-        UDim2.fromOffset(10, 5),
-        UDim2.new(1, -20, 0, 25)
-    )
-    pickerTitle.ZIndex = 31
-
-    local letterGrid = Create("Frame", {
-        Position = UDim2.fromOffset(8, 35),
-        Size = UDim2.new(1, -16, 1, -43),
-        BackgroundTransparency = 1,
-        ZIndex = 31
-    }, mobilePanel)
-
-    Create("UIGridLayout", {
-        CellSize = UDim2.fromOffset(29, 27),
-        CellPadding = UDim2.fromOffset(3, 3),
-        SortOrder = Enum.SortOrder.LayoutOrder
-    }, letterGrid)
-
-    local function AssignKey(keyCode)
-        assignedKey = keyCode
-        keyButton.Text = keyCode.Name
-        keyButton.BackgroundColor3 = C.Content
-
-        if KeyCapture and KeyCapture.Button == keyButton then
-            KeyCapture = nil
-        end
-
-        mobilePanel.Visible = false
-    end
-
-    for letterCode = string.byte("A"), string.byte("Z") do
-        local letter = string.char(letterCode)
-
-        local letterButton = Create("TextButton", {
-            Name = "Key_" .. letter,
-            BackgroundColor3 = C.Element,
-            BorderSizePixel = 0,
-            Text = letter,
-            TextColor3 = C.White,
-            TextSize = 11,
-            Font = Enum.Font.Gotham,
-            AutoButtonColor = false,
-            LayoutOrder = letterCode - string.byte("A") + 1,
-            ZIndex = 32
-        }, letterGrid)
-
-        Round(letterButton, 5)
-
-        letterButton.Activated:Connect(function()
-            if KeyCapture and KeyCapture.Button == keyButton then
-                KeyCapture.Assign(Enum.KeyCode[letter])
-            end
-        end)
-    end
-
-    keyButton.Activated:Connect(function()
-        KeyCapture = {
-            Button = keyButton,
-            Assign = AssignKey
-        }
-
-        keyButton.Text = "..."
-
-        if UserInputService.TouchEnabled then
-            mobilePanel.Visible = true
-        else
-            keyButton.Text = "Pressione..."
-        end
-
-        Tween(keyButton, {
-            BackgroundColor3 = C.Blue
-        })
-    end)
-
-    table.insert(Keybinds, {
-        GetKey = function()
-            return assignedKey
-        end,
-
-        GetCallback = function()
-            return callback
-        end,
-
-        Row = row
-    })
-
-    return {
-        Get = function()
-            return assignedKey
-        end,
-
-        Set = function(key)
-            local candidate
-
-            if type(key) == "string" and #key == 1 then
-                candidate = Enum.KeyCode[string.upper(key)]
-            elseif typeof(key) == "EnumItem" then
-                candidate = key
-            end
-
-            if IsAllowedKey(candidate) then
-                AssignKey(candidate)
-                return true
-            end
-
-            return false
-        end
-    }
-end
-
-UserInputService.InputBegan:Connect(function(input, processed)
-    if input.UserInputType ~= Enum.UserInputType.Keyboard then
-        return
-    end
-
-    if KeyCapture then
-        if IsAllowedKey(input.KeyCode) then
-            local capture = KeyCapture
-            capture.Assign(input.KeyCode)
-        end
-
-        return
-    end
-
-    if processed then return end
-
-    for _, bind in ipairs(Keybinds) do
-        if bind.Row.Parent
-            and bind.GetKey()
-            and input.KeyCode == bind.GetKey() then
-
-            local callback = bind.GetCallback()
-
-            if callback then
-                callback(input.KeyCode)
-            end
-        end
-    end
-end)
-
---==============================================================--
--- SISTEMA DE TÍTULOS / SEÇÃO CENTRALIZADA
---==============================================================--
-
-local function CreateSection(pageName, text)
-    local page = Pages[pageName]
-    if not page then return end
-
-    local row = Create("Frame", {
-        Name = "Section_" .. text,
-        Size = UDim2.new(1, 0, 0, 26),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        LayoutOrder = #page:GetChildren()
-    }, page)
-
-    local sectionLabel = Label(
-        row,
-        text,
-        11,
-        UDim2.new(0, 0, 0, 0),
-        UDim2.new(1, 0, 1, 0)
-    )
-
-    sectionLabel.TextXAlignment = Enum.TextXAlignment.Center
-    sectionLabel.TextColor3 = C.Gray -- Ou C.Blue se quiser que se destaque mais
-    sectionLabel.Font = Enum.Font.GothamBold
-
-    return row
-end
-
---==============================================================--
--- VARIÁVEIS DOS SISTEMAS DE ESP (HIGHLIGHT E TRACERS)
---==============================================================--
-
-local ESPConfig = {
-    Active = false,
-    TargetType = "No my highlight", -- "My highlight" ou "No my highlight"
-    Mode = "Highlight",            -- "Highlight" ou "Outline"
-    Transparency = 0.5              -- De 0 a 1 (padrão 0.5)
-}
-
-local TracersConfig = {
-    Active = false,
-    Position = "Bottom",
-    Thickness = 1
-}
-
-local TracersConfig_Active_Check = false
-
--- Variáveis de Cache e Controle de Cargos
-local Highlights = {}
-local TracersList = {}
 local DadosCargos = {}
 local UltimaChecagemCargo = 0
-
---==============================================================--
--- 16. ABA ESP — CONTROLES E SISTEMA DE TRACERS
---==============================================================--
-
---==============================================================--
--- BOTÕES E ELEMENTOS DA ABA ESP
---==============================================================--
-
--- Seção Highlight
-CreateSection("ESP", "-- // ===== Highlight ===== \\ --")
-
-CreateDropdown("ESP", "Aplicar em Mim", {"No my highlight", "My highlight"}, "No my highlight", function(option)
-    ESPConfig.TargetType = option
-end)
-
-CreateDropdown("ESP", "Estilo do ESP", {"Highlight", "Outline"}, "Highlight", function(option)
-    ESPConfig.Mode = option
-end)
-
-CreateToggle("ESP", "Ativar ESP Highlight", false, function(state)
-    ESPConfig.Active = state
-end)
-
-CreateSlider("ESP", "Transparência ESP (%)", 0, 100, 50, function(value)
-    ESPConfig.Transparency = value / 100
-end)
-
--- Seção Tracers (Linhas)
-CreateSection("ESP", "-- // ===== Tracers ===== \\ --")
-
-CreateDropdown("ESP", "Origem da Linha", {"Top", "Middle", "Bottom"}, "Bottom", function(option)
-    TracersConfig.Position = option
-end)
-
-CreateToggle("ESP", "Ativar Tracers", false, function(state)
-    TracersConfig.Active = state
-end)
-
-CreateSlider("ESP", "Espessura da Linha", 1, 10, 1, function(value)
-    TracersConfig.Thickness = value
-end)
-
-
---==============================================================--
--- SISTEMA DE CARGOS COMPARTILHADO (MM2 + LOBBY)
---==============================================================--
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local function PegarCargos()
     if tick() - UltimaChecagemCargo < 2 then return end
@@ -1136,33 +735,71 @@ end
 
 local function ObterCorCargo(nomeJogador)
     local Info = DadosCargos[nomeJogador]
-    local Cor = Color3.fromRGB(255, 255, 255) -- Cor Branca padrão (Lobby)
+    local Cor = Color3.fromRGB(255, 255, 255)
     
     if Info and not Info.Killed and not Info.Dead then
         if Info.Role == "Murderer" then
-            Cor = Color3.fromRGB(220, 50, 50) -- Vermelho
+            Cor = Color3.fromRGB(220, 50, 50)
         elseif Info.Role == "Sheriff" then
-            Cor = Color3.fromRGB(0, 85, 255) -- Azul
+            Cor = Color3.fromRGB(0, 85, 255)
         elseif Info.Role == "Hero" then
-            Cor = Color3.fromRGB(255, 215, 0) -- Dourado
+            Cor = Color3.fromRGB(255, 215, 0)
         elseif Info.Role == "Innocent" then
-            Cor = Color3.fromRGB(60, 200, 80) -- Verde
+            Cor = Color3.fromRGB(60, 200, 80)
         end
     end
     
     return Cor
 end
 
--- Loop global para puxar os cargos se qualquer ESP estiver ativo
+--==============================================================--
+-- 13. CONTEÚDO DA ABA ESP (CHAMADAS DOS ELEMENTOS)
+--==============================================================--
+
+CreateSection("ESP", "-- // ===== Highlight ===== \\ --")
+
+CreateDropdown("ESP", "Aplicar em Mim", {"No my highlight", "My highlight"}, "No my highlight", function(option)
+    ESPConfig.TargetType = option
+end)
+
+CreateDropdown("ESP", "Estilo do ESP", {"Highlight", "Outline"}, "Highlight", function(option)
+    ESPConfig.Mode = option
+end)
+
+CreateToggle("ESP", "Ativar ESP Highlight", false, function(state)
+    ESPConfig.Active = state
+end)
+
+CreateSlider("ESP", "Transparência ESP (%)", 0, 100, 50, function(value)
+    ESPConfig.Transparency = value / 100
+end)
+
+CreateSection("ESP", "-- // ===== Tracers ===== \\ --")
+
+CreateDropdown("ESP", "Origem da Linha", {"Top", "Middle", "Bottom"}, "Bottom", function(option)
+    TracersConfig.Position = option
+end)
+
+CreateToggle("ESP", "Ativar Tracers", false, function(state)
+    TracersConfig.Active = state
+end)
+
+CreateSlider("ESP", "Espessura da Linha", 1, 10, 1, function(value)
+    TracersConfig.Thickness = value
+end)
+
+--==============================================================--
+-- 14. LÓGICA DE EXECUÇÃO: HIGHLIGHT E TRACERS
+--==============================================================--
+
 RunService.RenderStepped:Connect(function()
     if ESPConfig.Active or TracersConfig_Active_Check then 
         PegarCargos() 
     end
 end)
 
---==============================================================--
--- LÓGICA DO ESP HIGHLIGHT
---==============================================================--
+-- Sistema de Highlight
+local Highlights = {}
 
 local function LimparEsp()
     for _, highlight in pairs(Highlights) do
@@ -1233,9 +870,8 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
---==============================================================--
--- LÓGICA DO SISTEMA DE TRACERS (LINHAS ESP)
---==============================================================--
+-- Sistema de Tracers
+local TracersList = {}
 
 local function LimparTracers()
     for _, line in pairs(TracersList) do
@@ -1314,10 +950,8 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
-
-
 --==============================================================--
--- 17. CONFIRMAÇÃO DE FECHAMENTO
+-- 15. CONFIRMAÇÃO DE FECHAMENTO E BOTÃO FLUTUANTE
 --==============================================================--
 
 local Confirm = Create("Frame", {
@@ -1333,23 +967,10 @@ local Confirm = Create("Frame", {
 Round(Confirm, 9)
 Outline(Confirm, C.White, 1)
 
-local confirmTitle = Label(
-    Confirm,
-    "Script Aimbot Roblox",
-    13,
-    UDim2.fromOffset(13, 8),
-    UDim2.new(1, -26, 0, 25)
-)
+local confirmTitle = Label(Confirm, "Script Aimbot Roblox", 13, UDim2.fromOffset(13, 8), UDim2.new(1, -26, 0, 25))
 confirmTitle.ZIndex = 51
 
-local confirmText = Label(
-    Confirm,
-    "Deseja fechar a interface completamente?",
-    10,
-    UDim2.fromOffset(13, 36),
-    UDim2.new(1, -26, 0, 32)
-)
-
+local confirmText = Label(Confirm, "Deseja fechar a interface completamente?", 10, UDim2.fromOffset(13, 36), UDim2.new(1, -26, 0, 32))
 confirmText.TextColor3 = C.Gray
 confirmText.TextWrapped = true
 confirmText.ZIndex = 51
@@ -1370,27 +991,14 @@ local function ConfirmButton(text, x, callback)
 
     Round(button, 6)
     Outline(button, C.Border, 1)
-
     button.Activated:Connect(callback)
-
     return button
 end
 
-ConfirmButton("Sim", 13, function()
-    GUI:Destroy()
-end)
+ConfirmButton("Sim", 13, function() GUI:Destroy() end)
+ConfirmButton("Não", 138, function() Confirm.Visible = false end)
 
-ConfirmButton("Não", 138, function()
-    Confirm.Visible = false
-end)
-
-Close.Activated:Connect(function()
-    Confirm.Visible = true
-end)
-
---==============================================================--
--- 18. BOTÃO FLUTUANTE
---==============================================================--
+Close.Activated:Connect(function() Confirm.Visible = true end)
 
 local FloatingButton = Create("TextButton", {
     Name = "FloatingButton",
@@ -1409,47 +1017,27 @@ local FloatingButton = Create("TextButton", {
 Round(FloatingButton, 11)
 Outline(FloatingButton, C.White, 1)
 
-FloatingButton.MouseEnter:Connect(function()
-    Tween(FloatingButton, { BackgroundColor3 = C.Element })
-end)
+FloatingButton.MouseEnter:Connect(function() Tween(FloatingButton, { BackgroundColor3 = C.Element }) end)
+FloatingButton.MouseLeave:Connect(function() Tween(FloatingButton, { BackgroundColor3 = C.Black }) end)
+FloatingButton.Activated:Connect(function() Window.Visible = not Window.Visible end)
 
-FloatingButton.MouseLeave:Connect(function()
-    Tween(FloatingButton, { BackgroundColor3 = C.Black })
-end)
-
-FloatingButton.Activated:Connect(function()
-    Window.Visible = not Window.Visible
-end)
-
---==============================================================--
--- 19. ARRASTAR A JANELA SEM MOVER A CÂMERA
---==============================================================--
-
+-- Arrastar Janela
 local dragging = false
 local dragStart = nil
 local startPosition = nil
 local activeInput = nil
 
 Header.Active = true
-
 Header.InputBegan:Connect(function(input)
-    if input.UserInputType ~= Enum.UserInputType.MouseButton1
-        and input.UserInputType ~= Enum.UserInputType.Touch then
-        return
-    end
-
-    if dragging then
-        return
-    end
-
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+    if dragging then return end
     dragging = true
     activeInput = input
     dragStart = input.Position
     startPosition = Window.Position
 
     input.Changed:Connect(function()
-        if input.UserInputState == Enum.UserInputState.End
-            and activeInput == input then
+        if input.UserInputState == Enum.UserInputState.End and activeInput == input then
             dragging = false
             activeInput = nil
         end
@@ -1457,48 +1045,22 @@ Header.InputBegan:Connect(function(input)
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if not dragging or not activeInput then
-        return
-    end
-
-    local isMouseMove =
-        activeInput.UserInputType == Enum.UserInputType.MouseButton1
-        and input.UserInputType == Enum.UserInputType.MouseMovement
-
-    local isTouchMove =
-        activeInput.UserInputType == Enum.UserInputType.Touch
-        and input == activeInput
-
-    if not isMouseMove and not isTouchMove then
-        return
-    end
+    if not dragging or not activeInput then return end
+    local isMouseMove = activeInput.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseMovement
+    local isTouchMove = activeInput.UserInputType == Enum.UserInputType.Touch and input == activeInput
+    if not isMouseMove and not isTouchMove then return end
 
     local delta = input.Position - dragStart
-
-    Window.Position = UDim2.new(
-        startPosition.X.Scale,
-        startPosition.X.Offset + delta.X,
-        startPosition.Y.Scale,
-        startPosition.Y.Offset + delta.Y
-    )
+    Window.Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if not activeInput then
-        return
-    end
-
-    if input == activeInput
-        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if not activeInput then return end
+    if input == activeInput or input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
         activeInput = nil
     end
 end)
 
---==============================================================--
--- 20. INICIALIZAÇÃO
---==============================================================--
-
 SelectPage("Informação")
-
 print("Script Roblox carregado com sucesso!")
