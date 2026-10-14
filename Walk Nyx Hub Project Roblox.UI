@@ -39,6 +39,16 @@ local C = {
 -- 03. VARIÁVEIS DOS RECURSOS E CONFIGURAÇÕES DO ESP
 --==============================================================--
 
+-- ============================
+-- VARIÁVEIS: KILL AURA
+-- ============================
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() and Players.LocalPlayer
+
+local KillAuraAtivo = false
+local RaioKillAura = 15
+local MostrarCirculoAura = false
+local ContornoVermelhoFolder = nil
 
 -- ABA ESP 
 local ESPConfig = {
@@ -818,8 +828,159 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
 end
 
 -- ============================
--- SEÇÃO: MURDERER (KILL AURA)
+-- SEÇÃO: KILL AURA
 -- ============================
+CreateSection("Murderer", "-- // ===== Kill Aura ===== \\ --")
+
+CreateToggle("Murderer", "Ligar Kill Aura", false, function(state)
+    KillAuraAtivo = state
+end)
+
+CreateToggle("Murderer", "Ver Círculo do Raio", false, function(state)
+    MostrarCirculoAura = state
+    if not MostrarCirculoAura and ContornoVermelhoFolder then
+        ContornoVermelhoFolder:Destroy()
+        ContornoVermelhoFolder = nil
+    end
+end)
+
+CreateSlider("Murderer", "Distância do Kill Aura", 5, 50, 15, function(value)
+    RaioKillAura = value
+end)
+
+-- =========================================================================
+-- 🗡️ SISTEMA COMPLETO: KILL AURA + CÍRCULO TRACEJADO
+-- =========================================================================
+
+local function PlayerTemFaca()
+    local Char = LocalPlayer.Character
+    if not Char then return false end
+    if Char:FindFirstChild("Knife") then return true end
+    if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Knife") then return true end
+    return false
+end
+
+local function ExecutarAtaque(Alvo)
+    local Char = LocalPlayer.Character
+    if not Char then return end
+    
+    local Faca = Char:FindFirstChild("Knife") or (LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Knife"))
+    if not Faca then return end
+    
+    if Faca.Parent ~= Char then 
+        Faca.Parent = Char 
+        task.wait(0.02) 
+    end
+    
+    local Eventos = Faca:FindFirstChild("Events")
+    if not Eventos then return end
+
+    if Alvo and Alvo.Character and Alvo.Character:FindFirstChild("Head") then
+        pcall(function()
+            Eventos.KnifeStabbed:FireServer()
+            Eventos.HandleTouched:FireServer(Alvo.Character.Head)
+        end)
+    end
+end
+
+local function AtualizarCirculoAura()
+    if not LocalPlayer then return end
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+    if not MostrarCirculoAura or not hrp then
+        if ContornoVermelhoFolder then
+            ContornoVermelhoFolder:Destroy()
+            ContornoVermelhoFolder = nil
+        end
+        return
+    end
+
+    if not ContornoVermelhoFolder or not ContornoVermelhoFolder.Parent then
+        ContornoVermelhoFolder = Instance.new("Folder")
+        ContornoVermelhoFolder.Name = "KillAuraDashedBorderRed"
+        ContornoVermelhoFolder.Parent = hrp
+    else
+        ContornoVermelhoFolder:ClearAllChildren()
+    end
+
+    ContornoVermelhoFolder.Parent = hrp
+
+    local numTracos = math.clamp(math.floor(RaioKillAura * 1.5), 12, 48)
+    for i = 1, numTracos do
+        local angulo = (i / numTracos) * (math.pi * 2)
+        local part = Instance.new("Part")
+        part.Name = "Dash"
+        part.Size = Vector3.new(0.6, 0.1, 1.2)
+        part.Color = Color3.fromRGB(255, 0, 0)
+        part.Material = Enum.Material.Neon
+        part.Transparency = 0.1
+        part.Anchored = false
+        part.CanCollide = false
+        part.CastShadow = false
+
+        local highlight = Instance.new("Highlight")
+        highlight.Adornee = part
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+        highlight.FillTransparency = 0
+        highlight.OutlineTransparency = 0
+        highlight.Parent = part
+
+        local weld = Instance.new("WeldConstraint")
+        part.Parent = ContornoVermelhoFolder
+        
+        local posX = math.cos(angulo) * RaioKillAura
+        local posZ = math.sin(angulo) * RaioKillAura
+        part.CFrame = hrp.CFrame * CFrame.new(posX, -2.5, posZ) * CFrame.Angles(0, -angulo, 0)
+
+        weld.Part0 = hrp
+        weld.Part1 = part
+        weld.Parent = part
+    end
+end
+
+-- Loop de Combate (Kill Aura) e Atualização do Círculo
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+
+        if KillAuraAtivo and PlayerTemFaca() then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+            if hrp and hum and hum.Health > 0 then
+                for _, Alvo in ipairs(Players:GetPlayers()) do
+                    if not KillAuraAtivo then break end
+                    if Alvo ~= LocalPlayer and Alvo.Character then
+                        local alvoHrp = Alvo.Character:FindFirstChild("HumanoidRootPart")
+                        local alvoHum = Alvo.Character:FindFirstChildOfClass("Humanoid")
+                        
+                        if alvoHrp and alvoHum and alvoHum.Health > 0 then
+                            local distancia = (hrp.Position - alvoHrp.Position).Magnitude
+                            if distancia <= RaioKillAura then
+                                ExecutarAtaque(Alvo)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        AtualizarCirculoAura()
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    AtualizarCirculoAura()
+end)
 
 --==============================================================--
 -- 12. SISTEMA DE CARGOS COMPARTILHADO (MM2)
