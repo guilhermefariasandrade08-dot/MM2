@@ -116,6 +116,30 @@ local currentGrabStrokeRef = nil
 local tamanhoGrabBase = 150
 local modoGrabAtual = "Grab"
 
+-- ============================
+-- VARIÁVEIS: SHERIFF - FOV SYSTEM (COM RAINBOW)
+-- ============================
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local FovGui = nil
+local fovAtivo = false
+local fovEstiloAtual = "Simple" -- "Simple" ou "Modificado"
+local fovTamanhoRadius = 120
+local fovVelocidadeGiro = 2
+local fovRainbowAtivo = false -- Variável do Rainbow adicionada
+local circleFrame = nil
+local modOuterRing = nil
+local modInnerRing = nil
+local modOuterLinesHolder = nil
+local modInnerLinesHolder = nil
+
+local elementosVisualFov = {}
+
 -- ABA ESP 
 local ESPConfig = {
     Active = false,
@@ -1891,6 +1915,230 @@ local function StopAutoGrabLoop()
     AutoGrabConnection = nil
 end
 
+-- =========================================================================
+-- ⭕ SISTEMA COMPLETO: FOV CIRCLE INTELIGENTE COM RAINBOW
+-- =========================================================================
+
+local function AdicionarElementoCorFov(instancia, tipo)
+    table.insert(elementosVisualFov, {obj = instancia, tipo = tipo})
+end
+
+local function GetMurdererFov()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = p.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                local backpack = p:FindFirstChild("Backpack")
+                local hasKnife = p.Character:FindFirstChild("Knife") or (backpack and backpack:FindFirstChild("Knife"))
+                if hasKnife then return p end
+            end
+        end
+    end
+    return nil
+end
+
+local function AtualizarElementosFov()
+    if not FovGui then return end
+    for _, child in ipairs(FovGui:GetChildren()) do
+        child:Destroy()
+    end
+    elementosVisualFov = {}
+    local diametro = fovTamanhoRadius * 2
+    local corAtual = fovRainbowAtivo and Color3.fromHSV(tick() % 5 / 5, 1, 1) or Color3.fromRGB(255, 255, 255)
+    
+    if fovEstiloAtual == "Simple" then
+        local circle = Instance.new("Frame")
+        circle.Name = "SimpleCircle"
+        circle.AnchorPoint = Vector2.new(0.5, 0.5)
+        circle.Position = UDim2.new(0.5, 0, 0.5, -GuiService:GetGuiInset().Y / 2)
+        circle.Size = UDim2.new(0, diametro, 0, diametro)
+        circle.BackgroundTransparency = 1
+        circle.Parent = FovGui
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = circle
+        
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = corAtual
+        stroke.Thickness = 2
+        stroke.Transparency = 0.2
+        stroke.Parent = circle
+        AdicionarElementoCorFov(stroke, "Color")
+        circleFrame = circle
+        modOuterRing, modInnerRing, modOuterLinesHolder, modInnerLinesHolder = nil, nil, nil, nil
+        
+    elseif fovEstiloAtual == "Modificado" then
+        local container = Instance.new("Frame")
+        container.Name = "ModContainer"
+        container.AnchorPoint = Vector2.new(0.5, 0.5)
+        container.Position = UDim2.new(0.5, 0, 0.5, -GuiService:GetGuiInset().Y / 2)
+        container.Size = UDim2.new(0, diametro, 0, diametro)
+        container.BackgroundTransparency = 1
+        container.Parent = FovGui
+        circleFrame = container
+        
+        -- Anel Externo
+        local outer = Instance.new("Frame")
+        outer.Size = UDim2.new(1, 0, 1, 0)
+        outer.BackgroundTransparency = 1
+        outer.AnchorPoint = Vector2.new(0.5, 0.5)
+        outer.Position = UDim2.new(0.5, 0, 0.5, 0)
+        outer.Parent = container
+        
+        local outCorner = Instance.new("UICorner")
+        outCorner.CornerRadius = UDim.new(1, 0)
+        outCorner.Parent = outer
+        
+        local outStroke = Instance.new("UIStroke")
+        outStroke.Color = corAtual
+        outStroke.Thickness = 2.5
+        outStroke.Transparency = 0.1
+        outStroke.Parent = outer
+        AdicionarElementoCorFov(outStroke, "Color")
+        modOuterRing = outer
+        
+        -- Linhas do Externo
+        local outerLinesHolder = Instance.new("Frame")
+        outerLinesHolder.Size = UDim2.new(1, 0, 1, 0)
+        outerLinesHolder.BackgroundTransparency = 1
+        outerLinesHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+        outerLinesHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
+        outerLinesHolder.Parent = container
+        modOuterLinesHolder = outerLinesHolder
+        
+        for i = 1, 10 do
+            local angle = (i / 10) * (math.pi * 2)
+            local line = Instance.new("Frame")
+            line.Size = UDim2.new(0, 10, 0, 2)
+            line.AnchorPoint = Vector2.new(0.5, 0.5)
+            line.BackgroundColor3 = corAtual
+            line.BorderSizePixel = 0
+            line.Rotation = math.deg(angle)
+            local radiusOffset = fovTamanhoRadius
+            line.Position = UDim2.new(0.5, math.cos(angle) * radiusOffset, 0.5, math.sin(angle) * radiusOffset)
+            line.Parent = outerLinesHolder
+            AdicionarElementoCorFov(line, "BackgroundColor3")
+        end
+        
+        -- Anel Interno
+        local inner = Instance.new("Frame")
+        inner.Size = UDim2.new(0.75, 0, 0.75, 0)
+        inner.BackgroundTransparency = 1
+        inner.AnchorPoint = Vector2.new(0.5, 0.5)
+        inner.Position = UDim2.new(0.5, 0, 0.5, 0)
+        inner.Parent = container
+        
+        local inCorner = Instance.new("UICorner")
+        inCorner.CornerRadius = UDim.new(1, 0)
+        inCorner.Parent = inner
+        
+        local inStroke = Instance.new("UIStroke")
+        inStroke.Color = corAtual
+        inStroke.Thickness = 1.5
+        inStroke.Transparency = 0.3
+        inStroke.Parent = inner
+        AdicionarElementoCorFov(inStroke, "Color")
+        modInnerRing = inner
+        
+        -- Linhas do Interno
+        local innerLinesHolder = Instance.new("Frame")
+        innerLinesHolder.Size = UDim2.new(1, 0, 1, 0)
+        innerLinesHolder.BackgroundTransparency = 1
+        innerLinesHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+        innerLinesHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
+        innerLinesHolder.Parent = container
+        modInnerLinesHolder = innerLinesHolder
+        
+        for i = 1, 10 do
+            local angle = (i / 10) * (math.pi * 2)
+            local line = Instance.new("Frame")
+            line.Size = UDim2.new(0, 8, 0, 2)
+            line.AnchorPoint = Vector2.new(0.5, 0.5)
+            line.BackgroundColor3 = corAtual
+            line.BorderSizePixel = 0
+            line.Rotation = math.deg(angle)
+            local radiusOffset = fovTamanhoRadius * 0.75
+            line.Position = UDim2.new(0.5, math.cos(angle) * radiusOffset, 0.5, math.sin(angle) * radiusOffset)
+            line.Parent = innerLinesHolder
+            AdicionarElementoCorFov(line, "BackgroundColor3")
+        end
+    end
+end
+
+local function CriarFovGui()
+    if FovGui then return end
+    local ParentGui = CoreGui
+    pcall(function() if not CoreGui then ParentGui = LocalPlayer:WaitForChild("PlayerGui") end end)
+    FovGui = Instance.new("ScreenGui")
+    FovGui.Name = "Sheriff_FovCircleGui"
+    FovGui.ResetOnSpawn = false
+    FovGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    FovGui.DisplayOrder = 999998
+    FovGui.Parent = ParentGui
+    AtualizarElementosFov()
+end
+
+local function RemoverFovGui()
+    if FovGui then
+        FovGui:Destroy()
+        FovGui = nil
+        circleFrame = nil
+    end
+end
+
+local function PlayerTemArmaFov()
+    local Char = LocalPlayer.Character
+    if not Char then return false end
+    if Char:FindFirstChild("Gun") then return true end
+    if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Gun") then return true end
+    return false
+end
+
+-- Loop de Renderização, Cores Rainbow, Rotação e Mira do FOV
+local anguloAtualGiro = 0
+RunService.RenderStepped:Connect(function(dt)
+    if fovRainbowAtivo then
+        local corFrameAtual = Color3.fromHSV((tick() % 4) / 4, 1, 1)
+        for _, item in ipairs(elementosVisualFov) do
+            if item.obj and item.obj.Parent then
+                if item.tipo == "Color" then
+                    item.obj.Color = corFrameAtual
+                elseif item.tipo == "BackgroundColor3" then
+                    item.obj.BackgroundColor3 = corFrameAtual
+                end
+            end
+        end
+    end
+    
+    if fovAtivo and fovEstiloAtual == "Modificado" and circleFrame then
+        anguloAtualGiro = anguloAtualGiro + (fovVelocidadeGiro * dt * 40)
+        if modInnerRing then modInnerRing.Rotation = anguloAtualGiro end
+        if modInnerLinesHolder then modInnerLinesHolder.Rotation = anguloAtualGiro end
+        if modOuterRing then modOuterRing.Rotation = -anguloAtualGiro end
+        if modOuterLinesHolder then modOuterLinesHolder.Rotation = -anguloAtualGiro end
+    end
+    
+    if not fovAtivo then return end
+    if not PlayerTemArmaFov() then return end
+    
+    local Murderer = GetMurdererFov()
+    if not Murderer or not Murderer.Character then return end
+    local targetPart = Murderer.Character:FindFirstChild("HumanoidRootPart") or Murderer.Character:FindFirstChild("UpperTorso")
+    if not targetPart then return end
+    
+    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+    if not onScreen then return end
+    
+    local centerScreen = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local targetPos2D = Vector2.new(screenPos.X, screenPos.Y)
+    local distanciaDoCentro = (targetPos2D - centerScreen).Magnitude
+    
+    if distanciaDoCentro <= fovTamanhoRadius then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+    end
+end)
+
 -- ============================
 -- SEÇÃO: SHERIFF - GUI CALLERS
 -- ============================
@@ -1915,7 +2163,7 @@ CreateToggle("Sheriff", "Auto Grab Gun (Loop)", false, function(state)
 end)
 
 -- Lista (Dropdown) que alterna o modo entre Grab e Teleport em tempo real
-CreateDropdown("Sheriff", "Modo da Gun", {"Grab", "Teleport"}, "Grab", function(selected)
+CreateDropdown("Sheriff", "estyle Grab", {"Grab", "Teleport"}, "Grab", function(selected)
     modoGrabAtual = selected
     if currentGrabBtnRef and currentGrabBtnRef:FindFirstChild("GrabText") then
         local txt = currentGrabBtnRef.GrabText
@@ -1930,7 +2178,7 @@ CreateDropdown("Sheriff", "Modo da Gun", {"Grab", "Teleport"}, "Grab", function(
 end)
 
 -- Toggle que faz o botão flutuante aparecer e sumir
-CreateToggle("Sheriff", "Botão Flutuante Gun", false, function(state)
+CreateToggle("Sheriff", "Button grab & teleport Gun", false, function(state)
     if state then
         CreateGrabButton()
     else
@@ -1938,6 +2186,50 @@ CreateToggle("Sheriff", "Botão Flutuante Gun", false, function(state)
     end
 end)
 
+-- 1. Lista para escolher o estilo (Simple / Modified)
+CreateDropdown("Sheriff", "FOV Style", {"Simple", "Modified"}, "Simple", function(selected)
+    if selected == "Simple" then
+        fovEstiloAtual = "Simple"
+    else
+        fovEstiloAtual = "Modificado"
+    end
+    if fovAtivo then
+        AtualizarElementosFov()
+    end
+end)
+
+-- 2. Toggle para ligar e desligar o FOV
+CreateToggle("Sheriff", "FOV cicle", false, function(state)
+    fovAtivo = state
+    if state then
+        CriarFovGui()
+    else
+        RemoverFovGui()
+    end
+end)
+
+-- 3. Toggle para fazer o círculo aparecer e desaparecer
+CreateToggle("Sheriff", "Mostrar Círculo FOV", false, function(state)
+    if FovGui then
+        FovGui.Enabled = state
+    end
+end)
+
+-- 4. Toggle para ativar o modo Rainbow no FOV
+CreateToggle("Sheriff", "FOV Rainbow", false, function(state)
+    fovRainbowAtivo = state
+    if not state and FovGui then
+        AtualizarElementosFov() -- Reseta para branco se desligar
+    end
+end)
+
+-- 5. Slider para o tamanho do raio do FOV
+CreateSlider("Sheriff", "FOV Size", 50, 400, 120, function(value)
+    fovTamanhoRadius = value
+    if fovAtivo then
+        AtualizarElementosFov()
+    end
+end)
 
 --==============================================================--
 -- 12. SISTEMA DE CARGOS COMPARTILHADO (MM2)
