@@ -1274,49 +1274,46 @@ function CreateInvisivelButton()
         Font = Enum.Font.GothamBold,
         AutoButtonColor = false,
         Active = true,
+        Modal = false,
         ZIndex = 10
     }, InvisivelButtonGui)
 
     Round(InvisivelFloatBtn, 8)
     InvisivelStroke = Outline(InvisivelFloatBtn, Color3.fromRGB(39, 40, 48), 1.5)
 
-    -- Sistema unificado e blindado para arrastar E clicar sem conflito
-    local activeInput = nil
+    -- Variáveis de controle de arrasto e clique fluido
+    local dragging = false
+    local dragInput = nil
     local dragStart = nil
     local startPos = nil
-    local moved = false
+    local clickThreshold = 0
 
     InvisivelFloatBtn.InputBegan:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not activeInput then
-            activeInput = input
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
             dragStart = input.Position
             startPos = InvisivelFloatBtn.Position
-            moved = false
-            
-            local connection
-            connection = input.Changed:Connect(function()
+            clickThreshold = 0
+
+            input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
-                    -- Se não arrastou quase nada, considera como um CLIQUE
-                    if not moved then
+                    dragging = false
+                    -- Se moveu muito pouco, conta como um CLIQUE puro
+                    if clickThreshold < 6 then
                         InvisivelAtivo = not InvisivelAtivo
                         AtualizarVisualBotaoFlutuante()
                     end
-                    activeInput = nil
-                    connection:Disconnect()
                 end
             end)
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
-        if input == activeInput then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
-            -- Se moveu mais do que 5 pixels, marca que foi um arrasto e não um clique
-            if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
-                moved = true
-            end
+            clickThreshold = math.abs(delta.X) + math.abs(delta.Y)
             
-            if moved then
+            if clickThreshold > 5 then
                 InvisivelFloatBtn.Position = UDim2.new(
                     startPos.X.Scale, startPos.X.Offset + delta.X,
                     startPos.Y.Scale, startPos.Y.Offset + delta.Y
