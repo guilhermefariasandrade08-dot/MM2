@@ -56,12 +56,6 @@ local tamanhoKillAllBase = 150
 local formatoKillAllAtual = "Retangulo"
 local ContornoVermelhoFolder = nil
 
-local KillAuraAtivo = false
-local RaioKillAura = 15
-local MostrarCirculoAura = false
-
-local ContornoVermelhoFolder = nil
-
 
 -- ABA ESP 
 local ESPConfig = {
