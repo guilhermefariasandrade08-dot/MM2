@@ -86,16 +86,7 @@ local formatoKillAllAtual = "Retangulo"
 -- ============================
 -- VARIÁVEIS: (GRAB & TELEPORT GUN)
 -- ============================
-local GrabButtonGui = nil
-local isDraggingGrab = false
-local GrabPressed = false
 
-local currentGrabBtnRef = nil
-local currentGrabCornerRef = nil
-local currentGrabStrokeRef = nil
-local tamanhoGrabBase = 150
-local formatoGrabAtual = "Retangulo"
-local modoGrabAtual = "Grab"
 
 -- ABA ESP 
 local ESPConfig = {
