@@ -51,6 +51,11 @@ local MostrarCirculoAura = false
 local ContornoVermelhoFolder = nil
 
 -- ============================
+-- VARIÁVEIS: KILL ALL LOOP
+-- ============================
+local killAllLoopAtivo = false
+
+-- ============================
 -- VARIÁVEIS: THROW KNIFE FLUTUANTE
 -- ============================
 local ThrowButtonGui = nil
@@ -1220,6 +1225,10 @@ end)
 
 CreateSection("Murderer", "-- // ===== Kill Aura ===== \\ --")
 
+CreateToggle("Murderer", "Auto Kill All (Loop)", false, function(state)
+    killAllLoopAtivo = state
+end)
+
 CreateToggle("Murderer", "Ligar Kill Aura", false, function(state)
     KillAuraAtivo = state
 end)
@@ -1234,6 +1243,46 @@ end)
 
 CreateSlider("Murderer", "Distância do Kill Aura", 5, 50, 15, function(value)
     RaioKillAura = value
+end)
+
+-- =========================================================================
+-- 🗡️ SISTEMA DO KILL ALL LOOP AUTOMÁTICO
+-- =========================================================================
+
+task.spawn(function()
+    while true do
+        if killAllLoopAtivo then
+            local Char = LocalPlayer and LocalPlayer.Character
+            
+            -- Checa se o jogador é realmente o Murderer (tem a faca)
+            local knife = Char and (Char:FindFirstChild("Knife") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Knife")))
+            
+            if knife then
+                -- Garante que a faca está equipada na mão para o ataque funcionar
+                if knife.Parent ~= Char then
+                    knife.Parent = Char
+                    task.wait(0.02)
+                end
+                
+                local eventos = knife:FindFirstChild("Events")
+                if eventos and eventos:FindFirstChild("KnifeStabbed") and eventos:FindFirstChild("HandleTouched") then
+                    -- Executa o ataque em loop para todos os alvos válidos na sessão
+                    for _, target in ipairs(Players:GetPlayers()) do
+                        if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("Head") and target.Character:FindFirstChild("Humanoid") then
+                            if target.Character.Humanoid.Health > 0 then
+                                pcall(function()
+                                    eventos.KnifeStabbed:FireServer()
+                                    eventos.HandleTouched:FireServer(target.Character.Head)
+                                end)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        -- Intervalo de segurança do loop (ajustado para otimizar o desempenho no mobile)
+        task.wait(0.3)
+    end
 end)
 
 -- =========================================================================
