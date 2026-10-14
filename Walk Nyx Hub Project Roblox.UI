@@ -51,6 +51,17 @@ local MostrarCirculoAura = false
 local ContornoVermelhoFolder = nil
 
 -- ============================
+-- VARIÁVEIS: THROW KNIFE FLUTUANTE
+-- ============================
+local ThrowButtonGui = nil
+local isDraggingThrow = false
+local currentThrowBtnRef = nil
+local currentThrowCornerRef = nil
+local currentThrowStrokeRef = nil
+local tamanhoThrowBase = 150
+local formatoThrowAtual = "Retangulo"
+
+-- ============================
 -- VARIÁVEIS: BOTÃO FLUTUANTE KILL ALL
 -- ============================
 local Players = game:GetService("Players")
@@ -838,6 +849,181 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
 end
 
 -- =========================================================================
+-- 🔪 SISTEMA COMPLETO: THROW KNIFE FLUTUANTE & LANÇAMENTO REAL
+-- =========================================================================
+
+-- Função para achar o alvo mais próximo na frente para o arremesso
+local function GetClosestPlayerFrontCFrame()
+    local closestCharacter = nil
+    local shortestDistance = math.huge
+    local myChar = LocalPlayer.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil, nil end
+    local myHRP = myChar.HumanoidRootPart
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+            if p.Character.Humanoid.Health > 0 then
+                local targetHRP = p.Character.HumanoidRootPart
+                local distance = (myHRP.Position - targetHRP.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestCharacter = p.Character
+                end
+            end
+        end
+    end
+    
+    if closestCharacter then
+        local hrp = closestCharacter.HumanoidRootPart
+        return hrp.CFrame + Vector3.new(0, 0.5, 0), hrp.CFrame
+    end
+    return nil, nil
+end
+
+-- Função de Lançar Faca (Com aviso vermelho se não for murderer)
+local function ExecuteThrowKnife(TextoLabel)
+    if not PlayerTemFaca() then
+        if TextoLabel and currentThrowBtnRef then
+            TextoLabel.Text = "Not Murderer"
+            currentThrowBtnRef.BackgroundColor3 = Color3.fromRGB(200, 40, 40) -- Vermelho semi-transparente
+            if currentThrowStrokeRef then
+                currentThrowStrokeRef.Color = Color3.fromRGB(255, 60, 60) -- Linha vermelha
+            end
+            
+            task.delay(1, function()
+                if TextoLabel and TextoLabel.Parent and currentThrowBtnRef and currentThrowStrokeRef then
+                    TextoLabel.Text = "Throw Knife"
+                    currentThrowBtnRef.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Volta ao preto
+                    currentThrowStrokeRef.Color = Color3.fromRGB(39, 40, 48) -- Volta à borda preta padrão
+                end
+            end)
+        end
+        return
+    end
+
+    local Char = LocalPlayer.Character
+    local knife = Char and Char:FindFirstChild("Knife") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Knife"))
+    
+    if knife and knife:FindFirstChild("Events") and knife.Events:FindFirstChild("KnifeThrown") then
+        if knife.Parent ~= Char then
+            knife.Parent = Char
+            task.wait(0.02)
+        end
+
+        local frontTarget, exactTarget = GetClosestPlayerFrontCFrame()
+        if frontTarget and exactTarget then
+            local args = {frontTarget, exactTarget}
+            pcall(function()
+                knife.Events.KnifeThrown:FireServer(unpack(args))
+            end)
+        end
+    end
+end
+
+-- Aplicar Formato do Botão Flutuante
+local function AplicarFormatoThrow()
+    if not currentThrowBtnRef or not currentThrowCornerRef then return end
+    local val = tamanhoThrowBase
+    if formatoThrowAtual == "Retangulo" then
+        currentThrowBtnRef.Size = UDim2.new(0, val, 0, val / 2.5)
+        currentThrowCornerRef.CornerRadius = UDim.new(0, 8)
+    end
+end
+
+-- Criar o Botão Flutuante Throw Knife
+function CreateThrowButton()
+    if ThrowButtonGui then return end
+    
+    local ParentGui = CoreGui
+    pcall(function() if not CoreGui then ParentGui = LocalPlayer:WaitForChild("PlayerGui") end end)
+    
+    local GuiBtn = Instance.new("ScreenGui")
+    GuiBtn.Name = "Murderer_ThrowKnifeGui"
+    GuiBtn.ResetOnSpawn = false
+    GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    GuiBtn.Parent = ParentGui
+    
+    local Btn = Instance.new("ImageButton")
+    Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    Btn.Position = UDim2.new(0.5, 0, 0.5, 0)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.BackgroundTransparency = 0.4
+    Btn.AutoButtonColor = false
+    Btn.BorderSizePixel = 0
+    Btn.Parent = GuiBtn
+    
+    currentThrowBtnRef = Btn
+    
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = Btn
+    currentThrowCornerRef = Corner
+    
+    local Borda = Instance.new("UIStroke")
+    Borda.Color = Color3.fromRGB(39, 40, 48) -- Linha preta padrão
+    Borda.Thickness = 1.5
+    Borda.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Borda.Parent = Btn
+    currentThrowStrokeRef = Borda
+    
+    local Texto = Instance.new("TextLabel")
+    Texto.Name = "ThrowText"
+    Texto.Size = UDim2.new(1, 0, 1, 0)
+    Texto.BackgroundTransparency = 1
+    Texto.Text = "Throw Knife"
+    Texto.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Texto.Font = Enum.Font.GothamBold
+    Texto.Parent = Btn
+    
+    AplicarFormatoThrow()
+    Texto.TextSize = 13
+    
+    -- Loop para deixar a bordinha verde se tiver faca (e não estiver no aviso vermelho)
+    task.spawn(function()
+        while ThrowButtonGui and Btn and Texto and currentThrowStrokeRef do
+            if Texto.Text ~= "Not Murderer" then
+                if PlayerTemFaca() then
+                    currentThrowStrokeRef.Color = Color3.fromRGB(60, 220, 100)
+                else
+                    currentThrowStrokeRef.Color = Color3.fromRGB(39, 40, 48)
+                end
+            end
+            task.wait(0.4)
+        end
+    end)
+    
+    local dragStart, startPos
+    Btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDraggingThrow = false
+            dragStart = input.Position
+            startPos = Btn.AbsolutePosition
+        end
+    end)
+    
+    Btn.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and dragStart then
+            local delta = input.Position - dragStart
+            if delta.Magnitude > 10 then
+                isDraggingThrow = true
+                Btn.Position = UDim2.new(0, startPos.X + delta.X + (Btn.AbsoluteSize.X / 2), 0, startPos.Y + delta.Y + (Btn.AbsoluteSize.Y / 2))
+            end
+        end
+    end)
+    
+    Btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not isDraggingThrow then
+                ExecuteThrowKnife(Texto)
+            end
+            dragStart = nil
+            isDraggingThrow = false
+        end
+    end)
+    
+    ThrowButtonGui = GuiBtn
+end
+
+-- =========================================================================
 -- 🗡️ SISTEMA COMPLETO DO BOTÃO FLUTUANTE KILL ALL
 -- =========================================================================
 
@@ -1020,6 +1206,21 @@ CreateToggle("Murderer", "Botão Flutuante Kill All", false, function(state)
     end
 end)
 
+-- ============================
+-- SEÇÃO: THROW KNIFE FLUTUANTE
+-- ============================
+CreateToggle("Murderer", "Botão Flutuante Throw Knife", false, function(state)
+    if state then
+        CreateThrowButton()
+        if ThrowButtonGui then
+            ThrowButtonGui.Enabled = true
+        end
+    else
+        if ThrowButtonGui then
+            ThrowButtonGui.Enabled = false
+        end
+    end
+end)
 
 -- ============================
 -- SEÇÃO: KILL AURA
