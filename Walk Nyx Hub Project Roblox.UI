@@ -1444,8 +1444,6 @@ end)
 
 
 
-
-
 -- =========================================================================
 -- 🎯 SISTEMA COMPLETO E DEFINITIVO: SILENT AIM FLUTUANTE
 -- =========================================================================
@@ -1567,7 +1565,7 @@ function CreateSilentButton()
     GuiBtn.Name = "Sheriff_SilentAimGui"
     GuiBtn.ResetOnSpawn = false
     GuiBtn.IgnoreGuiInset = true
-    GuiBtn.DisplayOrder = 999999 -- Fica por cima de absolutamente tudo
+    GuiBtn.DisplayOrder = 999999 -- Fica por cima de tudo
     GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     GuiBtn.Parent = PlayerGui
     
@@ -1605,7 +1603,6 @@ function CreateSilentButton()
     Texto.TextSize = 14
     Texto.Parent = Btn
     
-    -- Loop para deixar a bordinha verde caso tenha a arma
     task.spawn(function()
         while SilentButtonGui and SilentButtonGui.Enabled and Btn and Texto and currentSilentStrokeRef do
             if Texto.Text ~= "Not Gun" and Texto.Text ~= "Fired!" then
@@ -1621,18 +1618,19 @@ function CreateSilentButton()
         end
     end)
     
-    -- Lógica de Arrastar Corrigida (Suave e sem subir)
-    local dragStart, startPos, dragInputConn, dragEndedConn
+    -- Lógica de Arrastar com Bloqueio de Multitoque e Proteção Contra Saltos
+    local dragStart, startPos, dragInputConn, dragEndedConn, activeInput = nil, nil, nil, nil, nil
     
     Btn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) and not activeInput then
+            activeInput = input
             isDraggingSilent = false
             dragStart = input.Position
             startPos = Btn.Position
             
             if dragInputConn then dragInputConn:Disconnect() end
             dragInputConn = game:GetService("UserInputService").InputChanged:Connect(function(moveInput)
-                if moveInput.UserInputType == Enum.UserInputType.Touch or moveInput.UserInputType == Enum.UserInputType.MouseMovement then
+                if moveInput == activeInput or (activeInput.UserInputType == Enum.UserInputType.MouseButton1 and moveInput.UserInputType == Enum.UserInputType.MouseMovement) then
                     local delta = moveInput.Position - dragStart
                     if delta.Magnitude > 5 then
                         isDraggingSilent = true
@@ -1647,14 +1645,15 @@ function CreateSilentButton()
             end)
             
             if dragEndedConn then dragEndedConn:Disconnect() end
-            dragEndedConn = input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
+            dragEndedConn = game:GetService("UserInputService").InputEnded:Connect(function(endInput)
+                if endInput == activeInput or (activeInput.UserInputType == Enum.UserInputType.MouseButton1 and endInput.UserInputType == Enum.UserInputType.MouseButton1) then
                     if not isDraggingSilent then
                         ShootMurderer(Texto)
                     end
                     if dragInputConn then dragInputConn:Disconnect() dragInputConn = nil end
                     if dragEndedConn then dragEndedConn:Disconnect() dragEndedConn = nil end
                     isDraggingSilent = false
+                    activeInput = nil
                 end
             end)
         end
