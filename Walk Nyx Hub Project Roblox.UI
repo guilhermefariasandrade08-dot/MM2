@@ -84,6 +84,12 @@ local formatoKillAllAtual = "Retangulo"
 -- ABA SHERIFF
 
 -- ============================
+-- VARIÁVEIS: SHERIFF - AUTO GRAB GUN
+-- ============================
+local AutoGrabEnabled = false
+local AutoGrabConnection = nil
+
+-- ============================
 -- VARIÁVEIS: SHERIFF - SILENT AIM
 -- ============================
 local SilentButtonGui = nil
@@ -1847,6 +1853,44 @@ local function RemoveGrabButton()
     end
 end
 
+-- =========================================================================
+-- 🔄 SISTEMA: AUTO GRAB GUN LOOP INTELIGENTE
+-- =========================================================================
+
+local function StartAutoGrabLoop()
+    if AutoGrabConnection then return end
+    
+    AutoGrabConnection = task.spawn(function()
+        while AutoGrabEnabled do
+            local Char = Player.Character
+            local Backpack = Player:FindFirstChild("Backpack")
+            
+            -- Verifica se o jogador já tem a arma (equipada ou na mochila)
+            local temArma = (Char and Char:FindFirstChild("Gun")) or (Backpack and Backpack:FindFirstChild("Gun"))
+            
+            -- Se NÃO tem a arma, tenta puxar automaticamente
+            if not temArma then
+                local gunDrop = GetGunDrop() -- Usa a mesma função de achar o GunDrop que já temos
+                if gunDrop and Char and Char:FindFirstChild("HumanoidRootPart") then
+                    -- Puxa a arma para a posição do jogador instantaneamente
+                    gunDrop.CFrame = Char.HumanoidRootPart.CFrame
+                end
+            end
+            
+            task.wait(0.3) -- Intervalo de checagem para não pesar o jogo
+        end
+        
+        if AutoGrabConnection then
+            AutoGrabConnection = nil
+        end
+    end)
+end
+
+local function StopAutoGrabLoop()
+    AutoGrabEnabled = false
+    AutoGrabConnection = nil
+end
+
 -- ============================
 -- SEÇÃO: SHERIFF - GUI CALLERS
 -- ============================
@@ -1858,6 +1902,15 @@ CreateToggle("Sheriff", "Botão Flutuante Silent AIM", false, function(state)
         CreateSilentButton()
     else
         RemoveSilentButton()
+    end
+end)
+
+CreateToggle("Sheriff", "Auto Grab Gun (Loop)", false, function(state)
+    AutoGrabEnabled = state
+    if state then
+        StartAutoGrabLoop()
+    else
+        StopAutoGrabLoop()
     end
 end)
 
