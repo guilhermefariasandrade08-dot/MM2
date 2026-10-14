@@ -1239,14 +1239,18 @@ end)
 -- SISTEMA DE LÓGICA DO INVISÍVEL E BOTÃO FLUTUANTE
 -- ==============================================================--
 
-function AtualizarVisualBotaoFlutuante()
+local function AtualizarVisualBotaoFlutuante()
     if not InvisivelFloatBtn then return end
     
     local targetBg = InvisivelAtivo and Color3.fromRGB(40, 200, 80) or Color3.fromRGB(11, 12, 16)
     local targetStroke = InvisivelAtivo and Color3.fromRGB(60, 220, 100) or Color3.fromRGB(39, 40, 48)
 
+    -- Atualiza o fundo e força a atualização imediata da bordinha (UIStroke)
     Tween(InvisivelFloatBtn, { BackgroundColor3 = targetBg }, 0.2)
-    Outline(InvisivelFloatBtn, targetStroke, 1.5)
+    
+    if InvisivelStroke then
+        Tween(InvisivelStroke, { Color = targetStroke }, 0.2)
+    end
 end
 
 function CreateInvisivelButton()
@@ -1274,34 +1278,36 @@ function CreateInvisivelButton()
         Font = Enum.Font.GothamBold,
         AutoButtonColor = false,
         Active = true,
-        Modal = false,
         ZIndex = 10
     }, InvisivelButtonGui)
 
     Round(InvisivelFloatBtn, 8)
     InvisivelStroke = Outline(InvisivelFloatBtn, Color3.fromRGB(39, 40, 48), 1.5)
 
-    -- Variáveis de controle de arrasto e clique fluido
-    local dragging = false
-    local dragInput = nil
+    -- Sistema de arrastar seguro (Bloqueia multitoque para não pular pro dedo do joystick)
+    local activeInput = nil
     local dragStart = nil
     local startPos = nil
-    local clickThreshold = 0
+    local totalMoved = 0
 
     InvisivelFloatBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not activeInput then
+            activeInput = input
             dragStart = input.Position
             startPos = InvisivelFloatBtn.Position
-            clickThreshold = 0
-
-            input.Changed:Connect(function()
+            totalMoved = 0
+            
+            local connection
+            connection = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                    -- Se moveu muito pouco, conta como um CLIQUE puro
-                    if clickThreshold < 6 then
-                        InvisivelAtivo = not InvisivelAtivo
-                        AtualizarVisualBotaoFlutuante()
+                    if input == activeInput then
+                        -- Se mexeu pouco, é considerado um clique limpo para ligar/desligar
+                        if totalMoved < 8 then
+                            InvisivelAtivo = not InvisivelAtivo
+                            AtualizarVisualBotaoFlutuante()
+                        end
+                        activeInput = nil
+                        connection:Disconnect()
                     end
                 end
             end)
@@ -1309,11 +1315,11 @@ function CreateInvisivelButton()
     end)
 
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        if input == activeInput then
             local delta = input.Position - dragStart
-            clickThreshold = math.abs(delta.X) + math.abs(delta.Y)
+            totalMoved = math.abs(delta.X) + math.abs(delta.Y)
             
-            if clickThreshold > 5 then
+            if totalMoved > 5 then
                 InvisivelFloatBtn.Position = UDim2.new(
                     startPos.X.Scale, startPos.X.Offset + delta.X,
                     startPos.Y.Scale, startPos.Y.Offset + delta.Y
