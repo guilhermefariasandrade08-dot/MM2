@@ -94,6 +94,38 @@ local MAP_SAFE_POSITIONS = {
     ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
 }
 
+
+
+
+local function CopiarPosicaoAtualParaClipboard()
+    local char = Player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if not hrp then
+        -- Tenta notificar ou avisar que o personagem não foi encontrado
+        return
+    end
+
+    -- Descobre o nome do mapa atual através do CoinContainer
+    local mapName = "Desconhecido"
+    local coinContainer = workspace:FindFirstChild("CoinContainer", true)
+    if coinContainer and coinContainer.Parent then
+        mapName = coinContainer.Parent.Name
+    end
+
+    local pos = hrp.Position
+    -- Formata exatamente no padrão da tabela MAP_SAFE_POSITIONS
+    local resultadoFormatado = string.format('["%s"] = Vector3.new(%.2f, %.2f, %.2f),', mapName, pos.X, pos.Y, pos.Z)
+
+    -- Envia para a área de transferência do executor
+    if setclipboard then
+        setclipboard(resultadoFormatado)
+        print("[NyxHub] Posição copiada para o clipboard: " .. resultadoFormatado)
+    else
+        warn("[NyxHub] O teu executor não suporta setclipboard().")
+    end
+end
+
 -- ABA JOGADOR
 
 local PlayerConfig = {
@@ -1216,6 +1248,10 @@ end)
 
 CreateSlider("Farm coin", "Velocidade do Farm", 16, 25, 16, function(value)
     CONFIG_FARM.Speed = value
+end)
+
+CreateButton("Farm coin", "Copiar Posição do Mapa (Vector3)", function()
+    CopiarPosicaoAtualParaClipboard()
 end)
 
 -- ==============================================================--
