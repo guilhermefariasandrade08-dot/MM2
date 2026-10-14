@@ -1263,7 +1263,7 @@ function CreateInvisivelButton()
         Name = "WalkNyx_InvisivelGui",
         ResetOnSpawn = false,
         IgnoreGuiInset = true,
-        DisplayOrder = 999998,
+        DisplayOrder = 999999, -- Prioridade máxima de toque na tela
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         Enabled = ExibirBotaoInvisivel
     }, PlayerGui)
@@ -1280,8 +1280,9 @@ function CreateInvisivelButton()
         TextSize = 13,
         Font = Enum.Font.GothamBold,
         AutoButtonColor = false,
-        Active = true,
-        Draggable = true
+        Active = true, -- Força o botão a receber o toque no mobile
+        Draggable = true,
+        ZIndex = 10
     }, InvisivelButtonGui)
 
     Round(InvisivelFloatBtn, 8)
@@ -1294,7 +1295,7 @@ function CreateInvisivelButton()
         end
     end)
 
-    -- Clicar no botão flutuante liga/desliga a invisibilidade de verdade
+    -- Clicar no botão flutuante fica verde e ativa/desativa a invisibilidade de verdade
     InvisivelFloatBtn.Activated:Connect(function()
         InvisivelAtivo = not InvisivelAtivo
         AtualizarVisualBotaoFlutuante()
@@ -1369,7 +1370,6 @@ end)
 if Player.Character then
     ConfigurarPersonagem()
 end
-
 
 -- ==============================================================--
 -- SISTEMAS DE LÓGICA (INFINITE JUMP E NOCLIP)
