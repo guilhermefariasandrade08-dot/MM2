@@ -880,31 +880,39 @@ local function GetClosestPlayerFrontCFrame()
     return nil, nil
 end
 
--- Função de Lançar Faca (Com aviso vermelho se não for murderer)
+-- =========================================================================
+-- 🔪 FUNÇÃO DE ARREMESSO CORRIGIDA (SEM ERRO DE NIL)
+-- =========================================================================
+
 local function ExecuteThrowKnife(TextoLabel)
-    if not PlayerTemFaca() then
+    local Char = LocalPlayer and LocalPlayer.Character
+    if not Char then return end
+
+    -- Verificação direta e segura da faca no personagem ou na mochila
+    local knife = Char:FindFirstChild("Knife") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Knife"))
+    
+    if not knife then
+        -- Se não tiver a faca (não for o Murderer): aviso em vermelho por 1 segundo
         if TextoLabel and currentThrowBtnRef then
             TextoLabel.Text = "Not Murderer"
-            currentThrowBtnRef.BackgroundColor3 = Color3.fromRGB(200, 40, 40) -- Vermelho semi-transparente
+            currentThrowBtnRef.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
             if currentThrowStrokeRef then
-                currentThrowStrokeRef.Color = Color3.fromRGB(255, 60, 60) -- Linha vermelha
+                currentThrowStrokeRef.Color = Color3.fromRGB(255, 60, 60)
             end
             
             task.delay(1, function()
                 if TextoLabel and TextoLabel.Parent and currentThrowBtnRef and currentThrowStrokeRef then
                     TextoLabel.Text = "Throw Knife"
-                    currentThrowBtnRef.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Volta ao preto
-                    currentThrowStrokeRef.Color = Color3.fromRGB(39, 40, 48) -- Volta à borda preta padrão
+                    currentThrowBtnRef.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                    currentThrowStrokeRef.Color = Color3.fromRGB(39, 40, 48)
                 end
             end)
         end
         return
     end
 
-    local Char = LocalPlayer.Character
-    local knife = Char and Char:FindFirstChild("Knife") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Knife"))
-    
-    if knife and knife:FindFirstChild("Events") and knife.Events:FindFirstChild("KnifeThrown") then
+    -- Se tiver a faca e o evento de arremesso existir
+    if knife:FindFirstChild("Events") and knife.Events:FindFirstChild("KnifeThrown") then
         if knife.Parent ~= Char then
             knife.Parent = Char
             task.wait(0.02)
@@ -912,21 +920,10 @@ local function ExecuteThrowKnife(TextoLabel)
 
         local frontTarget, exactTarget = GetClosestPlayerFrontCFrame()
         if frontTarget and exactTarget then
-            local args = {frontTarget, exactTarget}
             pcall(function()
-                knife.Events.KnifeThrown:FireServer(unpack(args))
+                knife.Events.KnifeThrown:FireServer(frontTarget, exactTarget)
             end)
         end
-    end
-end
-
--- Aplicar Formato do Botão Flutuante
-local function AplicarFormatoThrow()
-    if not currentThrowBtnRef or not currentThrowCornerRef then return end
-    local val = tamanhoThrowBase
-    if formatoThrowAtual == "Retangulo" then
-        currentThrowBtnRef.Size = UDim2.new(0, val, 0, val / 2.5)
-        currentThrowCornerRef.CornerRadius = UDim.new(0, 8)
     end
 end
 
@@ -945,7 +942,7 @@ function CreateThrowButton()
     
     local Btn = Instance.new("ImageButton")
     Btn.AnchorPoint = Vector2.new(0.5, 0.5)
-    Btn.Position = UDim2.new(0.5, 0, 0.5, 0)
+    Btn.Position = UDim2.new(0.5, 0, 0.35, 0)
     Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     Btn.BackgroundTransparency = 0.4
     Btn.AutoButtonColor = false
@@ -955,6 +952,7 @@ function CreateThrowButton()
     currentThrowBtnRef = Btn
     
     local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
     Corner.Parent = Btn
     currentThrowCornerRef = Corner
     
@@ -972,16 +970,18 @@ function CreateThrowButton()
     Texto.Text = "Throw Knife"
     Texto.TextColor3 = Color3.fromRGB(245, 245, 245)
     Texto.Font = Enum.Font.GothamBold
+    Texto.TextSize = 13
     Texto.Parent = Btn
     
     AplicarFormatoThrow()
-    Texto.TextSize = 13
     
-    -- Loop para deixar a bordinha verde se tiver faca (e não estiver no aviso vermelho)
+    -- Loop para ajustar a bordinha verde caso tenha a faca equipada
     task.spawn(function()
         while ThrowButtonGui and Btn and Texto and currentThrowStrokeRef do
             if Texto.Text ~= "Not Murderer" then
-                if PlayerTemFaca() then
+                local Char = LocalPlayer and LocalPlayer.Character
+                local temFaca = Char and (Char:FindFirstChild("Knife") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Knife")))
+                if temFaca then
                     currentThrowStrokeRef.Color = Color3.fromRGB(60, 220, 100)
                 else
                     currentThrowStrokeRef.Color = Color3.fromRGB(39, 40, 48)
