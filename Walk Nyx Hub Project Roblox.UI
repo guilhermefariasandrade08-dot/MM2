@@ -1250,18 +1250,15 @@ function AtualizarVisualBotaoFlutuante()
 end
 
 function CreateInvisivelButton()
-    if InvisivelButtonGui then 
-        InvisivelButtonGui.Enabled = ExibirBotaoInvisivel
-        return 
-    end
+    if InvisivelButtonGui then return end
 
     InvisivelButtonGui = Create("ScreenGui", {
         Name = "WalkNyx_InvisivelGui",
         ResetOnSpawn = false,
         IgnoreGuiInset = true,
-        DisplayOrder = 999998,
+        DisplayOrder = 999999,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        Enabled = ExibirBotaoInvisivel
+        Enabled = false
     }, PlayerGui)
 
     InvisivelFloatBtn = Create("TextButton", {
@@ -1277,23 +1274,56 @@ function CreateInvisivelButton()
         Font = Enum.Font.GothamBold,
         AutoButtonColor = false,
         Active = true,
-        Draggable = true
+        ZIndex = 10
     }, InvisivelButtonGui)
 
     Round(InvisivelFloatBtn, 8)
-    Outline(InvisivelFloatBtn, Color3.fromRGB(39, 40, 48), 1.5)
+    InvisivelStroke = Outline(InvisivelFloatBtn, Color3.fromRGB(39, 40, 48), 1.5)
 
-    -- Salva a posição sempre que arrastar o botão pela tela
-    InvisivelFloatBtn.Changed:Connect(function(property)
-        if property == "Position" then
-            UltimaPosicaoBotao = InvisivelFloatBtn.Position
+    -- Sistema unificado e blindado para arrastar E clicar sem conflito
+    local activeInput = nil
+    local dragStart = nil
+    local startPos = nil
+    local moved = false
+
+    InvisivelFloatBtn.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not activeInput then
+            activeInput = input
+            dragStart = input.Position
+            startPos = InvisivelFloatBtn.Position
+            moved = false
+            
+            local connection
+            connection = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    -- Se não arrastou quase nada, considera como um CLIQUE
+                    if not moved then
+                        InvisivelAtivo = not InvisivelAtivo
+                        AtualizarVisualBotaoFlutuante()
+                    end
+                    activeInput = nil
+                    connection:Disconnect()
+                end
+            end)
         end
     end)
 
-    -- Clicar no botão flutuante liga/desliga a invisibilidade de verdade
-    InvisivelFloatBtn.Activated:Connect(function()
-        InvisivelAtivo = not InvisivelAtivo
-        AtualizarVisualBotaoFlutuante()
+    UserInputService.InputChanged:Connect(function(input)
+        if input == activeInput then
+            local delta = input.Position - dragStart
+            -- Se moveu mais do que 5 pixels, marca que foi um arrasto e não um clique
+            if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+                moved = true
+            end
+            
+            if moved then
+                InvisivelFloatBtn.Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, startPos.Y.Offset + delta.Y
+                )
+                UltimaPosicaoBotao = InvisivelFloatBtn.Position
+            end
+        end
     end)
 
     AtualizarVisualBotaoFlutuante()
