@@ -83,6 +83,18 @@ local formatoKillAllAtual = "Retangulo"
 
 -- ABA SHERIFF
 
+-- ============================
+-- VARIÁVEIS: SHERIFF (GRAB & TELEPORT GUN)
+-- ============================
+local GrabButtonGui = nil
+local isDraggingGrab = false
+local GrabPressed = false
+
+local currentGrabBtnRef = nil
+local currentGrabCornerRef = nil
+local currentGrabStrokeRef = nil
+local tamanhoGrabBase = 150
+local modoGrabAtual = "Grab"
 
 -- ABA ESP 
 local ESPConfig = {
@@ -1423,6 +1435,217 @@ LocalPlayer.CharacterAdded:Connect(function()
 end)
 
 
+
+
+
+
+
+-- =========================================================================
+-- 🔫 SISTEMA COMPLETO: GRAB & TELEPORT GUN FLUTUANTE
+-- =========================================================================
+
+local function GetGunDrop()
+    local MapContainer = workspace:FindFirstChild("CoinContainer", true) and workspace:FindFirstChild("CoinContainer", true).Parent
+    local mapToSearch = MapContainer or workspace
+    local gunDrop = mapToSearch:FindFirstChild("GunDrop", true) or workspace:FindFirstChild("GunDrop", true)
+    if gunDrop and gunDrop:IsA("BasePart") then
+        return gunDrop
+    end
+    return nil
+end
+
+local function TriggerGrabGun(TextoLabel)
+    if GrabPressed then return end
+    
+    local Char = Player.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+    
+    local gunDrop = GetGunDrop()
+    
+    -- Se a arma não estiver caída no mapa: muda para vermelho e mostra "Not Gun" por 1 segundo
+    if not gunDrop then
+        if TextoLabel and currentGrabBtnRef and currentGrabStrokeRef then
+            TextoLabel.Text = "Not Gun"
+            currentGrabBtnRef.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+            currentGrabStrokeRef.Color = Color3.fromRGB(255, 60, 60)
+            
+            task.delay(1, function()
+                if TextoLabel and TextoLabel.Parent and currentGrabBtnRef and currentGrabStrokeRef then
+                    if modoGrabAtual == "Grab" then
+                        TextoLabel.Text = "Grab Gun"
+                    else
+                        TextoLabel.Text = "Teleport Gun"
+                    end
+                    currentGrabBtnRef.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                    currentGrabStrokeRef.Color = Color3.fromRGB(39, 40, 48)
+                end
+            end)
+        end
+        return
+    end
+    
+    GrabPressed = true
+    
+    if modoGrabAtual == "Grab" then
+        gunDrop.CFrame = Char.HumanoidRootPart.CFrame
+        if TextoLabel then TextoLabel.Text = "Grabbed!" end
+        task.delay(1, function()
+            if TextoLabel and TextoLabel.Parent then
+                TextoLabel.Text = "Grab Gun"
+            end
+            GrabPressed = false
+        end)
+        
+    elseif modoGrabAtual == "Teleport" then
+        -- Teleporta até a arma, aguarda um instante mínimo e retorna voando para a posição original
+        local posOriginal = Char.HumanoidRootPart.CFrame
+        Char.HumanoidRootPart.CFrame = gunDrop.CFrame
+        task.wait(0.08)
+        
+        if Char and Char:FindFirstChild("HumanoidRootPart") then
+            Char.HumanoidRootPart.CFrame = posOriginal
+        end
+        
+        if TextoLabel then TextoLabel.Text = "Teleported!" end
+        task.delay(1, function()
+            if TextoLabel and TextoLabel.Parent then
+                TextoLabel.Text = "Teleport Gun"
+            end
+            GrabPressed = false
+        end)
+    end
+end
+
+function CreateGrabButton()
+    if GrabButtonGui then 
+        GrabButtonGui.Enabled = true
+        return 
+    end
+    
+    local GuiBtn = Instance.new("ScreenGui")
+    GuiBtn.Name = "Sheriff_GrabGunGui"
+    GuiBtn.ResetOnSpawn = false
+    GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    GuiBtn.Parent = PlayerGui
+    
+    local Btn = Instance.new("ImageButton")
+    Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    Btn.Position = UDim2.new(0.5, 0, 0.45, 0)
+    Btn.Size = UDim2.new(0, tamanhoGrabBase, 0, tamanhoGrabBase / 2.5)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.BackgroundTransparency = 0.4
+    Btn.AutoButtonColor = false
+    Btn.BorderSizePixel = 0
+    Btn.Parent = GuiBtn
+    
+    currentGrabBtnRef = Btn
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Btn
+    currentGrabCornerRef = Corner
+    
+    local Borda = Instance.new("UIStroke")
+    Borda.Color = Color3.fromRGB(39, 40, 48)
+    Borda.Thickness = 1.5
+    Borda.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Borda.Parent = Btn
+    currentGrabStrokeRef = Borda
+    
+    local Texto = Instance.new("TextLabel")
+    Texto.Name = "GrabText"
+    Texto.Size = UDim2.new(1, 0, 1, 0)
+    Texto.BackgroundTransparency = 1
+    if modoGrabAtual == "Grab" then
+        Texto.Text = "Grab Gun"
+    else
+        Texto.Text = "Teleport Gun"
+    end
+    Texto.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Texto.Font = Enum.Font.GothamBold
+    Texto.TextSize = 13
+    Texto.Parent = Btn
+    
+    -- Loop para verificar em tempo real se a arma caiu e deixar a borda verde
+    task.spawn(function()
+        while GrabButtonGui and GrabButtonGui.Enabled and Btn and Texto and currentGrabStrokeRef do
+            if Texto.Text ~= "Not Gun" and Texto.Text ~= "Grabbed!" and Texto.Text ~= "Teleported!" then
+                local gunDrop = GetGunDrop()
+                if gunDrop then
+                    currentGrabStrokeRef.Color = Color3.fromRGB(60, 220, 100)
+                else
+                    currentGrabStrokeRef.Color = Color3.fromRGB(39, 40, 48)
+                end
+            end
+            task.wait(0.4)
+        end
+    end)
+    
+    local dragStart, startPos
+    Btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDraggingGrab = false
+            dragStart = input.Position
+            startPos = Btn.AbsolutePosition
+        end
+    end)
+    
+    Btn.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and dragStart then
+            local delta = input.Position - dragStart
+            if delta.Magnitude > 10 then
+                isDraggingGrab = true
+                Btn.Position = UDim2.new(0, startPos.X + delta.X + (Btn.AbsoluteSize.X / 2), 0, startPos.Y + delta.Y + (Btn.AbsoluteSize.Y / 2))
+            end
+        end
+    end)
+    
+    Btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not isDraggingGrab then
+                TriggerGrabGun(Texto)
+            end
+            dragStart = nil
+            isDraggingGrab = false
+        end
+    end)
+    
+    GrabButtonGui = GuiBtn
+end
+
+local function RemoveGrabButton()
+    if GrabButtonGui then
+        GrabButtonGui.Enabled = false
+    end
+end
+
+-- ============================
+-- SEÇÃO: SHERIFF - GUI CALLERS
+-- ============================
+
+-- Lista (Dropdown) que alterna o modo entre Grab e Teleport em tempo real
+CreateDropdown("Sheriff", "Modo da Gun", {"Grab", "Teleport"}, "Grab", function(selected)
+    modoGrabAtual = selected
+    if currentGrabBtnRef and currentGrabBtnRef:FindFirstChild("GrabText") then
+        local txt = currentGrabBtnRef.GrabText
+        if txt.Text ~= "Not Gun" and txt.Text ~= "Grabbed!" and txt.Text ~= "Teleported!" then
+            if modoGrabAtual == "Grab" then
+                txt.Text = "Grab Gun"
+            else
+                txt.Text = "Teleport Gun"
+            end
+        end
+    end
+end)
+
+-- Toggle que faz o botão flutuante aparecer e sumir
+CreateToggle("Sheriff", "Botão Flutuante Gun", false, function(state)
+    if state then
+        CreateGrabButton()
+    else
+        RemoveGrabButton()
+    end
+end)
 
 
 
