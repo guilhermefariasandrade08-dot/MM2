@@ -1446,9 +1446,8 @@ end)
 
 
 
-
 -- =========================================================================
--- 🎯 SISTEMA COMPLETO: SILENT AIM FLUTUANTE
+-- 🎯 SISTEMA COMPLETO E DEFINITIVO: SILENT AIM FLUTUANTE
 -- =========================================================================
 
 local function GetPing()
@@ -1568,7 +1567,7 @@ function CreateSilentButton()
     GuiBtn.Name = "Sheriff_SilentAimGui"
     GuiBtn.ResetOnSpawn = false
     GuiBtn.IgnoreGuiInset = true
-    GuiBtn.DisplayOrder = 999999 -- Fica por cima de tudo
+    GuiBtn.DisplayOrder = 999999 -- Fica por cima de absolutamente tudo
     GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     GuiBtn.Parent = PlayerGui
     
@@ -1606,6 +1605,7 @@ function CreateSilentButton()
     Texto.TextSize = 14
     Texto.Parent = Btn
     
+    -- Loop para deixar a bordinha verde caso tenha a arma
     task.spawn(function()
         while SilentButtonGui and SilentButtonGui.Enabled and Btn and Texto and currentSilentStrokeRef do
             if Texto.Text ~= "Not Gun" and Texto.Text ~= "Fired!" then
@@ -1621,32 +1621,42 @@ function CreateSilentButton()
         end
     end)
     
-    local dragStart, startPos
+    -- Lógica de Arrastar Corrigida (Suave e sem subir)
+    local dragStart, startPos, dragInputConn, dragEndedConn
+    
     Btn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             isDraggingSilent = false
             dragStart = input.Position
-            startPos = Btn.AbsolutePosition
-        end
-    end)
-    
-    Btn.InputChanged:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and dragStart then
-            local delta = input.Position - dragStart
-            if delta.Magnitude > 10 then
-                isDraggingSilent = true
-                Btn.Position = UDim2.new(0, startPos.X + delta.X + (Btn.AbsoluteSize.X / 2), 0, startPos.Y + delta.Y + (Btn.AbsoluteSize.Y / 2))
-            end
-        end
-    end)
-    
-    Btn.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if not isDraggingSilent then
-                ShootMurderer(Texto)
-            end
-            dragStart = nil
-            isDraggingSilent = false
+            startPos = Btn.Position
+            
+            if dragInputConn then dragInputConn:Disconnect() end
+            dragInputConn = game:GetService("UserInputService").InputChanged:Connect(function(moveInput)
+                if moveInput.UserInputType == Enum.UserInputType.Touch or moveInput.UserInputType == Enum.UserInputType.MouseMovement then
+                    local delta = moveInput.Position - dragStart
+                    if delta.Magnitude > 5 then
+                        isDraggingSilent = true
+                        Btn.Position = UDim2.new(
+                            startPos.X.Scale, 
+                            startPos.X.Offset + delta.X, 
+                            startPos.Y.Scale, 
+                            startPos.Y.Offset + delta.Y
+                        )
+                    end
+                end
+            end)
+            
+            if dragEndedConn then dragEndedConn:Disconnect() end
+            dragEndedConn = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    if not isDraggingSilent then
+                        ShootMurderer(Texto)
+                    end
+                    if dragInputConn then dragInputConn:Disconnect() dragInputConn = nil end
+                    if dragEndedConn then dragEndedConn:Disconnect() dragEndedConn = nil end
+                    isDraggingSilent = false
+                end
+            end)
         end
     end)
     
