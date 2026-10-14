@@ -849,85 +849,10 @@ local function CreateDropdown(pageName, text, options, defaultValue, callback)
 end
 
 -- =========================================================================
--- 🔪 SISTEMA COMPLETO: THROW KNIFE FLUTUANTE & LANÇAMENTO REAL
+-- 🔪 SISTEMA BLINDADO: THROW KNIFE (INDEPENDENTE)
 -- =========================================================================
 
--- Função para achar o alvo mais próximo na frente para o arremesso
-local function GetClosestPlayerFrontCFrame()
-    local closestCharacter = nil
-    local shortestDistance = math.huge
-    local myChar = LocalPlayer.Character
-    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil, nil end
-    local myHRP = myChar.HumanoidRootPart
-    
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
-            if p.Character.Humanoid.Health > 0 then
-                local targetHRP = p.Character.HumanoidRootPart
-                local distance = (myHRP.Position - targetHRP.Position).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    closestCharacter = p.Character
-                end
-            end
-        end
-    end
-    
-    if closestCharacter then
-        local hrp = closestCharacter.HumanoidRootPart
-        return hrp.CFrame + Vector3.new(0, 0.5, 0), hrp.CFrame
-    end
-    return nil, nil
-end
-
--- =========================================================================
--- 🔪 FUNÇÃO DE ARREMESSO CORRIGIDA (SEM ERRO DE NIL)
--- =========================================================================
-
-local function ExecuteThrowKnife(TextoLabel)
-    local Char = LocalPlayer and LocalPlayer.Character
-    if not Char then return end
-
-    -- Verificação direta e segura da faca no personagem ou na mochila
-    local knife = Char:FindFirstChild("Knife") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Knife"))
-    
-    if not knife then
-        -- Se não tiver a faca (não for o Murderer): aviso em vermelho por 1 segundo
-        if TextoLabel and currentThrowBtnRef then
-            TextoLabel.Text = "Not Murderer"
-            currentThrowBtnRef.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-            if currentThrowStrokeRef then
-                currentThrowStrokeRef.Color = Color3.fromRGB(255, 60, 60)
-            end
-            
-            task.delay(1, function()
-                if TextoLabel and TextoLabel.Parent and currentThrowBtnRef and currentThrowStrokeRef then
-                    TextoLabel.Text = "Throw Knife"
-                    currentThrowBtnRef.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                    currentThrowStrokeRef.Color = Color3.fromRGB(39, 40, 48)
-                end
-            end)
-        end
-        return
-    end
-
-    -- Se tiver a faca e o evento de arremesso existir
-    if knife:FindFirstChild("Events") and knife.Events:FindFirstChild("KnifeThrown") then
-        if knife.Parent ~= Char then
-            knife.Parent = Char
-            task.wait(0.02)
-        end
-
-        local frontTarget, exactTarget = GetClosestPlayerFrontCFrame()
-        if frontTarget and exactTarget then
-            pcall(function()
-                knife.Events.KnifeThrown:FireServer(frontTarget, exactTarget)
-            end)
-        end
-    end
-end
-
--- Criar o Botão Flutuante Throw Knife
+-- Função para Criar e Executar o Throw Knife
 function CreateThrowButton()
     if ThrowButtonGui then return end
     
@@ -973,24 +898,91 @@ function CreateThrowButton()
     Texto.TextSize = 13
     Texto.Parent = Btn
     
-    AplicarFormatoThrow()
+    -- Aplicar tamanho retangular
+    Btn.Size = UDim2.new(0, tamanhoThrowBase or 150, 0, (tamanhoThrowBase or 150) / 2.5)
     
-    -- Loop para ajustar a bordinha verde caso tenha a faca equipada
+    -- Função interna para achar jogador mais próximo
+    local function ObterAlvoProximo()
+        local myChar = LocalPlayer and LocalPlayer.Character
+        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil, nil end
+        local myHRP = myChar.HumanoidRootPart
+        
+        local menorDistancia = math.huge
+        local melhorAlvo = nil
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+                if p.Character.Humanoid.Health > 0 then
+                    local targetHRP = p.Character.HumanoidRootPart
+                    local dist = (myHRP.Position - targetHRP.Position).Magnitude
+                    if dist < menorDistancia then
+                        menorDistancia = dist
+                        melhorAlvo = targetHRP
+                    end
+                end
+            end
+        end
+        
+        if melhorAlvo then
+            return melhorAlvo.CFrame + Vector3.new(0, 0.5, 0), melhorAlvo.CFrame
+        end
+        return nil, nil
+    end
+
+    -- Função interna para executar o arremesso ao clicar
+    local function LancarFaca()
+        local Char = LocalPlayer and LocalPlayer.Character
+        local knife = Char and (Char:FindFirstChild("Knife") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Knife")))
+        
+        -- Se NÃO tiver a faca equipada/mochila: Aviso em vermelho por 1s
+        if not knife then
+            Texto.Text = "Not Murderer"
+            Btn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+            Borda.Color = Color3.fromRGB(255, 60, 60)
+            
+            task.delay(1, function()
+                if Texto and Texto.Parent and Btn and Borda then
+                    Texto.Text = "Throw Knife"
+                    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                    Borda.Color = Color3.fromRGB(39, 40, 48)
+                end
+            end)
+            return
+        end
+
+        -- Se TIVER a faca: faz o equip e executa o evento
+        if knife:FindFirstChild("Events") and knife.Events:FindFirstChild("KnifeThrown") then
+            if knife.Parent ~= Char then
+                knife.Parent = Char
+                task.wait(0.02)
+            end
+
+            local posDirecao, posExata = ObterAlvoProximo()
+            if posDirecao and posExata then
+                pcall(function()
+                    knife.Events.KnifeThrown:FireServer(posDirecao, posExata)
+                end)
+            end
+        end
+    end
+
+    -- Loop de verificação de cor da borda (Verde se for Murderer)
     task.spawn(function()
-        while ThrowButtonGui and Btn and Texto and currentThrowStrokeRef do
+        while ThrowButtonGui and Btn and Texto and Borda do
             if Texto.Text ~= "Not Murderer" then
                 local Char = LocalPlayer and LocalPlayer.Character
                 local temFaca = Char and (Char:FindFirstChild("Knife") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Knife")))
                 if temFaca then
-                    currentThrowStrokeRef.Color = Color3.fromRGB(60, 220, 100)
+                    Borda.Color = Color3.fromRGB(60, 220, 100)
                 else
-                    currentThrowStrokeRef.Color = Color3.fromRGB(39, 40, 48)
+                    Borda.Color = Color3.fromRGB(39, 40, 48)
                 end
             end
             task.wait(0.4)
         end
     end)
     
+    -- Arrastar e clicar no botão
     local dragStart, startPos
     Btn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -1013,7 +1005,7 @@ function CreateThrowButton()
     Btn.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             if not isDraggingThrow then
-                ExecuteThrowKnife(Texto)
+                LancarFaca()
             end
             dragStart = nil
             isDraggingThrow = false
