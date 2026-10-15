@@ -193,6 +193,7 @@ local MAP_SAFE_POSITIONS = {
     ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95),
     ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
     ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
+    ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
 }
 
 local function CopiarPosicaoAtualParaClipboard()
