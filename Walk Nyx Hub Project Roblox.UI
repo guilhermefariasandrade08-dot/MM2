@@ -3879,7 +3879,7 @@ end)
 -- SEÇÃO: TELEPORT - MAP TELEPORT BUTTON
 -- ============================
 
-CreateButton("Teleport", "Teleportar para o Mapa Atual", function()
+CreateButton("Teleporte", "Teleportar para o Mapa Atual", function()
     TeleportarParaSpawnDoMapa()
 end)
 
