@@ -282,6 +282,25 @@ local playerSelecionadoTeleport = nil
 local tpPerseguicaoAtivo = false
 local tpPerseguicaoConnection = nil
 
+-- ============================
+-- VARIÁVEIS: TELEPORT - MAP SAFE POSITIONS
+-- ============================
+local MAP_SAFE_POSITIONS = {
+    ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
+    ["Hotel2014"]        = Vector3.new(414.55, 7.59, 722.01),
+    ["Factory"]          = Vector3.new(-62.90, 291.94, 8961.11),
+    ["House2"]           = Vector3.new(40.27, 264.20, 9057.93),
+    ["MilBase"]          = Vector3.new(-22.30, 242.23, 9109.38),
+    ["BioLab"]           = Vector3.new(552.83, 283.26, 9677.74),
+    ["Hospital2014"]     = Vector3.new(458.15, 7.59, 436.82),
+    ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
+    ["ResearchFacility"] = Vector3.new(-50.81, 301.80, 9152.87),
+    ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95),
+    ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
+    ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
+    ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
+}
+
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
@@ -3773,6 +3792,47 @@ local function PararPerseguicao()
     end
 end
 
+-- =========================================================================
+-- 🗺️ SISTEMA: DETETAR MAPA ATUAL E TELEPORTAR
+-- =========================================================================
+
+local function ObterMapaAtual()
+    -- Procura no workspace por qualquer um dos mapas da tabela que esteja carregado
+    for mapName, _ in pairs(MAP_SAFE_POSITIONS) do
+        if workspace:FindFirstChild(mapName, true) then
+            return mapName
+        end
+    end
+    
+    -- Método alternativo caso o mapa esteja dentro de uma pasta específica de ronda
+    local CoinContainer = workspace:FindFirstChild("CoinContainer", true)
+    if CoinContainer then
+        local parentFolder = CoinContainer.Parent
+        if parentFolder and parentFolder ~= workspace then
+            if MAP_SAFE_POSITIONS[parentFolder.Name] then
+                return parentFolder.Name
+            end
+        end
+    end
+    
+    return nil
+end
+
+local function TeleportarParaSpawnDoMapa()
+    local mapaAtual = ObterMapaAtual()
+    if not mapaAtual then
+        warn("[Teleport] Nenhum mapa conhecido foi detetado no momento!")
+        return
+    end
+    
+    local posVector = MAP_SAFE_POSITIONS[mapaAtual]
+    local char = LocalPlayer.Character
+    if posVector and char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(posVector)
+        print("[Teleport] Teleportado com sucesso para o mapa: " .. mapaAtual)
+    end
+end
+
 -- ============================
 -- SEÇÃO: TELEPORT - PLAYER TAB CALLERS
 -- ============================
@@ -3813,6 +3873,14 @@ CreateToggle("Teleporte", "Perseguir Jogador (Loop)", false, function(state)
     else
         PararPerseguicao()
     end
+end)
+
+-- ============================
+-- SEÇÃO: TELEPORT - MAP TELEPORT BUTTON
+-- ============================
+
+CreateButton("Teleport", "Teleportar para o Mapa Atual", function()
+    TeleportarParaSpawnDoMapa()
 end)
 
 --==============================================================--
