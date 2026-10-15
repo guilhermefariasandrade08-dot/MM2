@@ -206,6 +206,7 @@ local MAP_SAFE_POSITIONS = {
     ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
     ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
     ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
+    ["Hospital3"]        = Vector3.new(15.84, 284.26, 9013.94),
 }
 
 local function CopiarPosicaoAtualParaClipboard()
@@ -299,6 +300,7 @@ local MAP_SAFE_POSITIONS = {
     ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
     ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
     ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
+    ["Hospital3"]        = Vector3.new(15.84, 284.26, 9013.94),
 }
 
 --==============================================================--
