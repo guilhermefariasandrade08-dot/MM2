@@ -104,6 +104,18 @@ local tamanhoSilentBase = 250
 local formatoSilentAtual = "Retangulo"
 
 -- ============================
+-- VARIÁVEIS: SHERIFF - RAGE SHOOT
+-- ============================
+local RageButtonGui = nil
+local isDraggingRage = false
+local RagePressed = false
+
+local currentRageBtnRef = nil
+local currentRageCornerRef = nil
+local currentRageStrokeRef = nil
+local tamanhoRageBase = 250
+
+-- ============================
 -- VARIÁVEIS: SHERIFF (GRAB & TELEPORT GUN)
 -- ============================
 local GrabButtonGui = nil
@@ -2144,6 +2156,224 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
+-- =========================================================================
+-- ⚡ SISTEMA COMPLETO: RAGE SHOOT FLUTUANTE
+-- =========================================================================
+
+local function TriggerRageShoot(TextoLabel)
+    if RagePressed then return end
+
+    local Char = Player.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+
+    local Gun = Char:FindFirstChild("Gun") or (Player:FindFirstChild("Backpack") and Player.Backpack:FindFirstChild("Gun"))
+    
+    -- Se não tiver a arma, avisa "Not Gun" em vermelho por 1 segundo
+    if not Gun then
+        if TextoLabel and currentRageBtnRef and currentRageStrokeRef then
+            TextoLabel.Text = "Not Gun"
+            currentRageBtnRef.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+            currentRageStrokeRef.Color = Color3.fromRGB(255, 60, 60)
+            
+            task.delay(1, function()
+                if TextoLabel and TextoLabel.Parent and currentRageBtnRef and currentRageStrokeRef then
+                    TextoLabel.Text = "Rage Shoot"
+                    currentRageBtnRef.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                    currentRageStrokeRef.Color = Color3.fromRGB(39, 40, 48)
+                end
+            end)
+        end
+        return 
+    end
+
+    RagePressed = true
+
+    -- Garante que a arma está equipada nas mãos
+    if Gun.Parent ~= Char then
+        Gun.Parent = Char
+        task.wait(0.05)
+    end
+
+    local Murderer = GetMurderer() -- Usa a mesma função global que já criamos para achar o assassino
+    if not Murderer or not Murderer.Character then 
+        RagePressed = false 
+        return 
+    end
+
+    local TargetHRP = Murderer.Character:FindFirstChild("HumanoidRootPart")
+    local TargetTorso = Murderer.Character:FindFirstChild("Torso") or Murderer.Character:FindFirstChild("UpperTorso")
+    if not TargetHRP or not TargetTorso then 
+        RagePressed = false 
+        return 
+    end
+
+    -- Salva a posição original de onde o jogador estava antes de teleportar
+    local PosicaoOriginal = Char.HumanoidRootPart.CFrame
+
+    -- Calcula a posição exata atrás do assassino (cerca de 5 a 6 blocos de distância nas costas)
+    local CFrameMurderer = TargetHRP.CFrame
+    local PosicaoAtras = CFrameMurderer * CFrame.new(0, 0, 6) -- 6 studs atrás
+    
+    -- Teleporta o jogador para trás do assassino
+    Char.HumanoidRootPart.CFrame = CFrame.new(PosicaoAtras.Position, TargetHRP.Position)
+    task.wait(0.05) -- Pequeno respiro para o servidor registrar a posição
+
+    -- Realiza o cálculo de predição do tiro igual ao Silent AIM
+    local Ping = GetPing()
+    local PredictionTime = (Ping / 1000) * (ShootPredictMultiplier or 1)
+    local Velocity = TargetHRP.Velocity
+    local PredictedPos = Velocity.Magnitude < 1 and TargetTorso.Position or TargetTorso.Position + (Velocity * PredictionTime)
+    
+    local MyPos = Char.HumanoidRootPart.Position
+    local RayDirection = (PredictedPos - MyPos)
+    
+    local RayParams = RaycastParams.new()
+    RayParams.FilterType = Enum.RaycastFilterType.Exclude
+    RayParams.FilterDescendantsInstances = {Char, Murderer.Character}
+    RayParams.IgnoreWater = true
+
+    local RayResult = workspace:Raycast(MyPos, RayDirection, RayParams)
+    local OriginCFrame = RayResult and CFrame.new(RayResult.Position + (RayDirection.Unit * 1.5), PredictedPos) or CFrame.new(MyPos, PredictedPos)
+
+    -- Dispara o evento da arma
+    local ShootEvent = Gun:FindFirstChild("ShootEvent", true) or Gun:FindFirstChild("Shoot", true) or ReplicatedStorage:FindFirstChild("Shoot", true)
+    if ShootEvent then
+        if ShootEvent:IsA("RemoteEvent") then
+            ShootEvent:FireServer(OriginCFrame, CFrame.new(PredictedPos))
+        elseif ShootEvent:IsA("RemoteFunction") then
+            ShootEvent:InvokeServer(OriginCFrame, CFrame.new(PredictedPos))
+        end
+    end
+
+    if TextoLabel then TextoLabel.Text = "Raged!" end
+
+    -- Retorna instantaneamente para a posição original onde estava
+    task.wait(0.06)
+    if Char and Char:FindFirstChild("HumanoidRootPart") then
+        Char.HumanoidRootPart.CFrame = PosicaoOriginal
+    end
+
+    task.delay(1, function()
+        if TextoLabel and TextoLabel.Parent then
+            TextoLabel.Text = "Rage Shoot"
+        end
+        RagePressed = false
+    end)
+end
+
+function CreateRageButton()
+    if RageButtonGui then 
+        RageButtonGui.Enabled = true
+        return 
+    end
+    
+    local GuiBtn = Instance.new("ScreenGui")
+    GuiBtn.Name = "Sheriff_RageShootGui"
+    GuiBtn.ResetOnSpawn = false
+    GuiBtn.IgnoreGuiInset = true
+    GuiBtn.DisplayOrder = 999999 -- Fica por cima de absolutamente tudo na tela
+    GuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    GuiBtn.Parent = PlayerGui
+    
+    local Btn = Instance.new("ImageButton")
+    Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    Btn.Position = UDim2.new(0.5, 0, 0.65, 0) -- Posição abaixo do Silent AIM para não sobrepor
+    Btn.Size = UDim2.new(0, tamanhoRageBase, 0, tamanhoRageBase / 2.5)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.BackgroundTransparency = 0.4
+    Btn.AutoButtonColor = false
+    Btn.BorderSizePixel = 0
+    Btn.Parent = GuiBtn
+    
+    currentRageBtnRef = Btn
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Btn
+    currentRageCornerRef = Corner
+    
+    local Borda = Instance.new("UIStroke")
+    Borda.Color = Color3.fromRGB(39, 40, 48) -- Borda preta padrão
+    Borda.Thickness = 1.5
+    Borda.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Borda.Parent = Btn
+    currentRageStrokeRef = Borda
+    
+    local Texto = Instance.new("TextLabel")
+    Texto.Name = "RageText"
+    Texto.Size = UDim2.new(1, 0, 1, 0)
+    Texto.BackgroundTransparency = 1
+    Texto.Text = "Rage Shoot"
+    Texto.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Texto.Font = Enum.Font.GothamBold
+    Texto.TextSize = 14
+    Texto.Parent = Btn
+    
+    -- Loop para deixar a bordinha verde caso tenha a arma equipada ou na mochila
+    task.spawn(function()
+        while RageButtonGui and RageButtonGui.Enabled and Btn and Texto and currentRageStrokeRef do
+            if Texto.Text ~= "Not Gun" and Texto.Text ~= "Raged!" then
+                local Char = Player.Character
+                local temArma = Char and (Char:FindFirstChild("Gun") or (Player:FindFirstChild("Backpack") and Player.Backpack:FindFirstChild("Gun")))
+                if temArma then
+                    currentRageStrokeRef.Color = Color3.fromRGB(60, 220, 100) -- Verde se tiver arma
+                else
+                    currentRageStrokeRef.Color = Color3.fromRGB(39, 40, 48) -- Preto padrão se não tiver
+                end
+            end
+            task.wait(0.4)
+        end
+    end)
+    
+    -- Lógica de Arrastar com Bloqueio de Multitoque (Evita saltos para outros dedos na tela)
+    local dragStart, startPos, dragInputConn, dragEndedConn, activeInput = nil, nil, nil, nil, nil
+    
+    Btn.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) and not activeInput then
+            activeInput = input
+            isDraggingRage = false
+            dragStart = input.Position
+            startPos = Btn.Position
+            
+            if dragInputConn then dragInputConn:Disconnect() end
+            dragInputConn = game:GetService("UserInputService").InputChanged:Connect(function(moveInput)
+                if moveInput == activeInput or (activeInput.UserInputType == Enum.UserInputType.MouseButton1 and moveInput.UserInputType == Enum.UserInputType.MouseMovement) then
+                    local delta = moveInput.Position - dragStart
+                    if delta.Magnitude > 5 then
+                        isDraggingRage = true
+                        Btn.Position = UDim2.new(
+                            startPos.X.Scale, 
+                            startPos.X.Offset + delta.X, 
+                            startPos.Y.Scale, 
+                            startPos.Y.Offset + delta.Y
+                        )
+                    end
+                end
+            end)
+            
+            if dragEndedConn then dragEndedConn:Disconnect() end
+            dragEndedConn = game:GetService("UserInputService").InputEnded:Connect(function(endInput)
+                if endInput == activeInput or (activeInput.UserInputType == Enum.UserInputType.MouseButton1 and endInput.UserInputType == Enum.UserInputType.MouseButton1) then
+                    if not isDraggingRage then
+                        TriggerRageShoot(Texto)
+                    end
+                    if dragInputConn then dragInputConn:Disconnect() dragInputConn = nil end
+                    if dragEndedConn then dragEndedConn:Disconnect() dragEndedConn = nil end
+                    isDraggingRage = false
+                    activeInput = nil
+                end
+            end)
+        end
+    end)
+    
+    RageButtonGui = GuiBtn
+end
+
+local function RemoveRageButton()
+    if RageButtonGui then
+        RageButtonGui.Enabled = false
+    end
+end
 
 
 
@@ -2153,13 +2383,21 @@ end)
 -- SEÇÃO: SHERIFF - GUI CALLERS
 -- ============================
 
-CreateSection("Sheriff", "-- // ===== Silent AIM ===== \\ --")
+CreateSection("Sheriff", "-- // ===== Silent AIM & Rage shoot ===== \\ --")
 
-CreateToggle("Sheriff", "Botão Flutuante Silent AIM", false, function(state)
+CreateToggle("Sheriff", "Button Silent AII", false, function(state)
     if state then
         CreateSilentButton()
     else
         RemoveSilentButton()
+    end
+end)
+
+CreateToggle("Sheriff", "Button Rage shoot", false, function(state)
+    if state then
+        CreateRageButton()
+    else
+        RemoveRageButton()
     end
 end)
 
