@@ -3778,7 +3778,7 @@ end
 -- ============================
 
 -- 1. Dropdown Dinâmico com a lista de jogadores atualizada (Murderer em 1º, Sheriff em 2º)
-local dropdownRef = CreateDropdown("Teleport", "Selecionar Jogador", ObterListaJogadoresOrdenada(), "", function(selected)
+local dropdownRef = CreateDropdown("Teleporte", "Selecionar Jogador", ObterListaJogadoresOrdenada(), "", function(selected)
     playerSelecionadoTeleport = selected
 end)
 
@@ -3795,14 +3795,14 @@ task.spawn(function()
 end)
 
 -- 2. Botão de Clique para Teleportar Instantaneamente
-CreateButton("Teleport", "Teleportar para Jogador", function()
+CreateButton("Teleporte", "Teleportar para Jogador", function()
     if playerSelecionadoTeleport then
         TeleportarParaPlayer(playerSelecionadoTeleport)
     end
 end)
 
 -- 3. Toggle de Perseguição Contínua (Teleporta e fica seguindo via CFrame)
-CreateToggle("Teleport", "Perseguir Jogador (Loop)", false, function(state)
+CreateToggle("Teleporte", "Perseguir Jogador (Loop)", false, function(state)
     tpPerseguicaoAtivo = state
     if state then
         if playerSelecionadoTeleport then
