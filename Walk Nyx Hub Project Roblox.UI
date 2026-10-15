@@ -273,6 +273,15 @@ local Humanoid = nil
 local Raiz = nil
 local PartesCorpo = {}
 
+-- ABA TELEPORT
+
+-- ============================
+-- VARIÁVEIS: TELEPORT - PLAYER TARGET
+-- ============================
+local playerSelecionadoTeleport = nil
+local tpPerseguicaoAtivo = false
+local tpPerseguicaoConnection = nil
+
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
@@ -3670,6 +3679,139 @@ RunService.RenderStepped:Connect(function()
     -- Lógica do Jump Power
     if PlayerConfig.JumpActive then
         hum.JumpPower = PlayerConfig.JumpValue
+    end
+end)
+
+-- =========================================================================
+-- 👤 SISTEMA: LISTA DINÂMICA E TELEPORTE/PERSEGUIÇÃO DE JOGADORES
+-- =========================================================================
+
+-- Função para obter e ordenar os jogadores (Murderer em 1º, Sheriff em 2º, Resto depois)
+local function ObterListaJogadoresOrdenada()
+    local listaNomes = {}
+    local dadosRoles = {}
+    
+    -- Tenta puxar os dados de roles do jogo (mesma lógica usada no Silent AIM)
+    local DataRemote = ReplicatedStorage:FindFirstChild("GetPlayerData", true)
+    local ok, Data = pcall(function() return DataRemote and DataRemote:InvokeServer() or nil end)
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local role = "Inocente"
+            if ok and Data and Data[p.Name] then
+                local info = Data[p.Name]
+                if info.Role then
+                    role = tostring(info.Role)
+                end
+            end
+            
+            -- Atribui pontuação de prioridade para a ordenação
+            local prioridade = 3
+            local lowerRole = string.lower(role)
+            if string.find(lowerRole, "murderer") then
+                prioridade = 1
+            elseif string.find(lowerRole, "sheriff") then
+                prioridade = 2
+            end
+            
+            table.insert(dadosRoles, {player = p, name = p.Name, priority = prioridade})
+        end
+    end
+    
+    -- Ordena: Murderer (1) primeiro, Sheriff (2) segundo, e os demais por ordem alfabética ou de entrada
+    table.sort(dadosRoles, function(a, b)
+        if a.priority ~= b.priority then
+            return a.priority < b.priority
+        end
+        return a.name < b.name
+    end)
+    
+    for _, item in ipairs(dadosRoles) do
+        table.insert(listaNomes, item.name)
+    end
+    
+    return listaNomes
+end
+
+-- Função de Teleporte Direto
+local function TeleportarParaPlayer(nomePlayer)
+    local targetPlayer = Players:FindFirstChild(nomePlayer)
+    if not targetPlayer or not targetPlayer.Character then return end
+    
+    local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local myChar = LocalPlayer.Character
+    if not targetHRP or not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
+    
+    -- Teleporta levemente atrás/perto do alvo
+    myChar.HumanoidRootPart.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
+end
+
+-- Função de Perseguição Contínua (Toggle)
+local function IniciarPerseguicao()
+    if tpPerseguicaoConnection then return end
+    
+    tpPerseguicaoConnection = RunService.RenderStepped:Connect(function()
+        if not tpPerseguicaoAtivo or not playerSelecionadoTeleport then return end
+        
+        local targetPlayer = Players:FindFirstChild(playerSelecionadoTeleport)
+        if not targetPlayer or not targetPlayer.Character then return end
+        
+        local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local myChar = LocalPlayer.Character
+        if not targetHRP or not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
+        
+        -- Mantém o personagem colado/perseguindo o alvo suavemente via CFrame
+        myChar.HumanoidRootPart.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
+    end)
+end
+
+local function PararPerseguicao()
+    tpPerseguicaoAtivo = false
+    if tpPerseguicaoConnection then
+        tpPerseguicaoConnection:Disconnect()
+        tpPerseguicaoConnection = nil
+    end
+end
+
+-- ============================
+-- SEÇÃO: TELEPORT - PLAYER TAB CALLERS
+-- ============================
+
+-- 1. Dropdown Dinâmico com a lista de jogadores atualizada (Murderer em 1º, Sheriff em 2º)
+local dropdownRef = CreateDropdown("Teleport", "Selecionar Jogador", ObterListaJogadoresOrdenada(), "", function(selected)
+    playerSelecionadoTeleport = selected
+end)
+
+-- Atualiza a lista automaticamente a cada 2 segundos para remover quem saiu e adicionar quem entrou
+task.spawn(function()
+    while true do
+        task.wait(2)
+        pcall(function()
+            if dropdownRef and typeof(dropdownRef.Refresh) == "function" then
+                dropdownRef:Refresh(ObterListaJogadoresOrdenada())
+            end
+        end)
+    end
+end)
+
+-- 2. Botão de Clique para Teleportar Instantaneamente
+CreateButton("Teleport", "Teleportar para Jogador", function()
+    if playerSelecionadoTeleport then
+        TeleportarParaPlayer(playerSelecionadoTeleport)
+    end
+end)
+
+-- 3. Toggle de Perseguição Contínua (Teleporta e fica seguindo via CFrame)
+CreateToggle("Teleport", "Perseguir Jogador (Loop)", false, function(state)
+    tpPerseguicaoAtivo = state
+    if state then
+        if playerSelecionadoTeleport then
+            IniciarPerseguicao()
+        else
+            tpPerseguicaoAtivo = false
+        end
+    else
+        PararPerseguicao()
     end
 end)
 
