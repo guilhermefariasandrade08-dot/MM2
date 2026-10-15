@@ -303,6 +303,12 @@ local MAP_SAFE_POSITIONS = {
     ["Hospital3"]        = Vector3.new(15.84, 284.26, 9013.94),
 }
 
+-- ============================
+-- VARIÁVEIS: TELEPORT - LOBBY & PLATAFORMA
+-- ============================
+local LOBBY_POSITION = Vector3.new(13.97, 504.82, -10.56)
+local PLATAFORMA_POSITION = Vector3.new(0.00, 5003.50, 0.00)
+
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
@@ -3835,6 +3841,17 @@ local function TeleportarParaSpawnDoMapa()
     end
 end
 
+-- =========================================================================
+-- 🚀 SISTEMA: TELEPORTE PARA LOBBY E PLATAFORMA
+-- =========================================================================
+
+local function TeleportarParaPosicao(posVector)
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") and posVector then
+        char.HumanoidRootPart.CFrame = CFrame.new(posVector)
+    end
+end
+
 -- ============================
 -- SEÇÃO: TELEPORT - PLAYER TAB CALLERS
 -- ============================
@@ -3877,12 +3894,16 @@ CreateToggle("Teleporte", "Perseguir Jogador (Loop)", false, function(state)
     end
 end)
 
--- ============================
--- SEÇÃO: TELEPORT - MAP TELEPORT BUTTON
--- ============================
-
 CreateButton("Teleporte", "Teleportar para o Mapa Atual", function()
     TeleportarParaSpawnDoMapa()
+end)
+
+CreateButton("Teleporte", "Teleportar para o Lobby", function()
+    TeleportarParaPosicao(LOBBY_POSITION)
+end)
+
+CreateButton("Teleporte", "Teleportar para a plataforma", function()
+    TeleportarParaPosicao(PLATAFORMA_POSITION)
 end)
 
 --==============================================================--
