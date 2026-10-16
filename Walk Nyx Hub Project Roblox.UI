@@ -3839,7 +3839,18 @@ local function TeleportarParaSpawnDoMapa()
     end
 end
 
+-- =========================================================================
+-- 🏰 SISTEMA: TELEPORTAR PARA O LOBBY (BLINDADO)
+-- =========================================================================
 
+local function TeleportarParaLobby()
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = CFrame.new(LOBBY_POSITTION)
+        end
+    end)
+end
 
 
 
@@ -3893,19 +3904,6 @@ end)
 CreateButton("Teleporte", "Teleportar para o Lobby", function()
     TeleportarParaLobby()
 end)
-
--- =========================================================================
--- 🏰 SISTEMA: TELEPORTAR PARA O LOBBY (BLINDADO)
--- =========================================================================
-
-local function TeleportarParaLobby()
-    pcall(function()
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = CFrame.new(LOBBY_POSITTION)
-        end
-    end)
-end
 
 --==============================================================--
 -- 15. CONFIRMAÇÃO DE FECHAMENTO E BOTÃO FLUTUANTE
