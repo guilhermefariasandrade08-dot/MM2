@@ -302,6 +302,8 @@ local MAP_SAFE_POSITIONS = {
     ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
 }
 
+local LOBBY_POSITION = Vector3.new(13.68, 504.82, -9.04)
+
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
@@ -3834,6 +3836,13 @@ local function TeleportarParaSpawnDoMapa()
     end
 end
 
+local function TeleportarParaLobby()
+    local char = Player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(LOBBY_POSITION)
+        print("[Teleport] Teleportado com sucesso para o Lobby!")
+    end
+end
 
 
 
@@ -3882,6 +3891,10 @@ end)
 
 CreateButton("Teleporte", "Teleportar para o Mapa Atual", function()
     TeleportarParaSpawnDoMapa()
+end)
+
+CreateButton("Teleporte", "Teleportar para o Lobby", function()
+    TeleportarParaLobby()
 end)
 
 
