@@ -286,6 +286,12 @@ local tpPerseguicaoConnection = nil
 -- ============================
 -- VARIÁVEIS: TELEPORT - MAP SAFE POSITIONS
 -- ============================
+-- ============================
+-- VARIÁVEIS: TELEPORT - POSIÇÕES E LOCAIS
+-- ============================
+local LOBBY_POSITION = Vector3.new(13.97, 504.82, -10.56)
+local PLATAFORMA_POSITION = Vector3.new(0.00, 5003.50, 0.00)
+
 local MAP_SAFE_POSITIONS = {
     ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
     ["Hotel2014"]        = Vector3.new(414.55, 7.59, 722.01),
@@ -302,6 +308,14 @@ local MAP_SAFE_POSITIONS = {
     ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
     ["Hospital3"]        = Vector3.new(15.84, 284.26, 9013.94),
 }
+
+local playerSelecionadoTeleport = nil
+local tpPerseguicaoAtivo = false
+local tpPerseguicaoConnection = nil
+= Vector3.new(-90.47, 310.10, 8972.12),
+
+
+    
 
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
