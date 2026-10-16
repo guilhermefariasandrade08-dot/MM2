@@ -3884,25 +3884,7 @@ CreateButton("Teleporte", "Teleportar para o Mapa Atual", function()
     TeleportarParaSpawnDoMapa()
 end)
 
--- =========================================================================
--- 🏰 SISTEMA: TELEPORTE PARA O LOBBY (BLINDADO E SEPARADO)
--- =========================================================================
 
-local LOBBY_POSITION = Vector3.new(13.68, 504.82, -9.04)
-
-local function TeleportarParaLobby()
-    pcall(function()
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = CFrame.new(LOBBY_POSITION)
-        end
-    end)
-end
-
--- Adiciona o botão logo abaixo dos outros botões na aba "Teleporte"
-CreateButton("Teleporte", "Teleportar para o Lobby", function()
-    TeleportarParaLobby()
-end)
 
 --==============================================================--
 -- 15. CONFIRMAÇÃO DE FECHAMENTO E BOTÃO FLUTUANTE
