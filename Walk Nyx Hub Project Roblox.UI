@@ -3794,46 +3794,7 @@ local function PararPerseguicao()
     end
 end
 
--- =========================================================================
--- 🗺️ SISTEMA: DETETAR MAPA ATUAL E TELEPORTAR
--- =========================================================================
 
-local function ObterMapaAtual()
-    -- Procura no workspace por qualquer um dos mapas da tabela que esteja carregado
-    for mapName, _ in pairs(MAP_SAFE_POSITIONS) do
-        if workspace:FindFirstChild(mapName, true) then
-            return mapName
-        end
-    end
-    
-    -- Método alternativo caso o mapa esteja dentro de uma pasta específica de ronda
-    local CoinContainer = workspace:FindFirstChild("CoinContainer", true)
-    if CoinContainer then
-        local parentFolder = CoinContainer.Parent
-        if parentFolder and parentFolder ~= workspace then
-            if MAP_SAFE_POSITIONS[parentFolder.Name] then
-                return parentFolder.Name
-            end
-        end
-    end
-    
-    return nil
-end
-
-local function TeleportarParaSpawnDoMapa()
-    local mapaAtual = ObterMapaAtual()
-    if not mapaAtual then
-        warn("[Teleport] Nenhum mapa conhecido foi detetado no momento!")
-        return
-    end
-    
-    local posVector = MAP_SAFE_POSITIONS[mapaAtual]
-    local char = LocalPlayer.Character
-    if posVector and char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(posVector)
-        print("[Teleport] Teleportado com sucesso para o mapa: " .. mapaAtual)
-    end
-end
 
 
 
@@ -3878,11 +3839,6 @@ CreateToggle("Teleporte", "Perseguir Jogador (Loop)", false, function(state)
         PararPerseguicao()
     end
 end)
-
-CreateButton("Teleporte", "Teleportar para o Mapa Atual", function()
-    TeleportarParaSpawnDoMapa()
-end)
-
 
 
 --==============================================================--
