@@ -302,11 +302,6 @@ local MAP_SAFE_POSITIONS = {
     ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
 }
 
--- ============================
--- VARIÁVEIS: TELEPORT - LOBBY
--- ============================
-local LOBBY_POSITION = Vector3.new(13.68, 504.82, -9.04)
-
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
@@ -3839,23 +3834,6 @@ local function TeleportarParaSpawnDoMapa()
     end
 end
 
--- =========================================================================
--- 🏰 SISTEMA: TELEPORTAR PARA O LOBBY (SEM ERROS DE VARIAVEL)
--- =========================================================================
-
-local function TeleportarParaLobby()
-    -- Busca o jogador de forma segura via Players.LocalPlayer
-    local localPlayer = game:GetService("Players").LocalPlayer
-    if not localPlayer then return end
-    
-    local char = localPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(LOBBY_POSITION)
-        print("[Teleport] Teleportado com sucesso para o Lobby!")
-    else
-        warn("[Teleport] Personagem não encontrado para teleportar!")
-    end
-end
 
 
 
@@ -3906,9 +3884,7 @@ CreateButton("Teleporte", "Teleportar para o Mapa Atual", function()
     TeleportarParaSpawnDoMapa()
 end)
 
-CreateButton("Teleporte", "Teleportar para o Lobby", function()
-    TeleportarParaLobby()
-end)
+
 
 --==============================================================--
 -- 15. CONFIRMAÇÃO DE FECHAMENTO E BOTÃO FLUTUANTE
