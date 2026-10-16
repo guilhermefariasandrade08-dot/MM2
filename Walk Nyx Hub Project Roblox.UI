@@ -190,7 +190,7 @@ local CONFIG_FARM = {
     MurdererDangerRadius = 15
 }
 
-local LOBBY_SAFE_POS = Vector3.new(13.68, 504.82, -9.04)
+local LOBBY_SAFE_POS = Vector3.new(13.68, 504.82, -9.09)
 
 local MAP_SAFE_POSITIONS = {
     ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
