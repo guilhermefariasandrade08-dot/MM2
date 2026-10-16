@@ -3906,7 +3906,7 @@ CreateButton("Teleporte", "Teleportar para o Mapa Atual", function()
     TeleportarParaSpawnDoMapa()
 end)
 
-CreateButton("Teleport", "Teleportar para o Lobby", function()
+CreateButton("Teleporte", "Teleportar para o Lobby", function()
     TeleportarParaLobby()
 end)
 
