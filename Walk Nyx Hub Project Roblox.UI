@@ -3837,15 +3837,18 @@ local function TeleportarParaSpawnDoMapa()
     end
 end
 
-local LOBBY_POSITION = Vector3.new(13.68, 504.82, -9.04)
-
 local function TeleportarParaLobby()
-    pcall(function()
-        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-            Player.Character.HumanoidRootPart.CFrame = CFrame.new(LOBBY_POSITION)
-        end
-    end)
+    local posVector = LOBBY_SAFE_POS
+    local char = Player.Character
+    
+    if posVector and char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(posVector)
+        print("[Teleport] Teleportado com sucesso para o Lobby!")
+    else
+        warn("[Teleport] Personagem não encontrado para teleportar para o lobby!")
+    end
 end
+
 
 
 
