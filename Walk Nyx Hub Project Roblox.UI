@@ -3840,16 +3840,23 @@ local function TeleportarParaSpawnDoMapa()
 end
 
 -- =========================================================================
--- 🏰 SISTEMA: TELEPORTAR PARA O LOBBY
+-- 🏰 SISTEMA: TELEPORTAR PARA O LOBBY (SEM ERROS DE VARIAVEL)
 -- =========================================================================
 
 local function TeleportarParaLobby()
-    local char = LocalPlayer.Character or Player.Character
+    -- Busca o jogador de forma segura via Players.LocalPlayer
+    local localPlayer = game:GetService("Players").LocalPlayer
+    if not localPlayer then return end
+    
+    local char = localPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
         char.HumanoidRootPart.CFrame = CFrame.new(LOBBY_POSITION)
         print("[Teleport] Teleportado com sucesso para o Lobby!")
+    else
+        warn("[Teleport] Personagem não encontrado para teleportar!")
     end
 end
+
 
 
 
