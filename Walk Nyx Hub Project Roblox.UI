@@ -302,7 +302,7 @@ local MAP_SAFE_POSITIONS = {
     ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
 }
 
-local LOBBY_POSITION = Vector3.new(13.68, 504.82, -9.04)
+
 
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
