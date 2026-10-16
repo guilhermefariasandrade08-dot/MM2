@@ -3889,13 +3889,14 @@ CreateToggle("Teleporte", "Perseguir Jogador (Loop)", false, function(state)
     end
 end)
 
-CreateButton("Teleporte", "Teleport mapa", function()
+CreateButton("Teleporte", "Teleportar para mapa atual", function()
     TeleportarParaSpawnDoMapa()
 end)
 
-CreateButton("Teleporte", "Teleport Lobby", function()
+CreateButton("Teleporte", "Teleportar para o Lobby", function()
     TeleportarParaLobby()
 end)
+
 
 
 
