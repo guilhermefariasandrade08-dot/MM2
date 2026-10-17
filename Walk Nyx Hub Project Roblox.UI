@@ -20,7 +20,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 local GUI_NAME = "ScriptAimbotRoblox"
 
 --==============================================================--
--- 02. CORES DA INTERFACE
+-- 02. CORES DA INTERFACE ASCRIPT ROBLOX 
 --==============================================================--
 
 local C = {
@@ -422,7 +422,7 @@ Create("Frame", {
 
 local HeaderTitle = Label(
     Header,
-    "Script Aimbot Roblox",
+    "Nyx Hub / Murderer Mystery 2",
     14,
     UDim2.fromOffset(13, 0),
     UDim2.new(1, -55, 1, 0)
