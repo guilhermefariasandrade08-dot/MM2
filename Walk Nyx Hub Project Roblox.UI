@@ -3815,7 +3815,8 @@ local function ObterMapaAtual()
             end
         end
     end
-
+    return nil
+end
 
 local function TeleportarParaSpawnDoMapa()
     local mapaAtual = ObterMapaAtual()
