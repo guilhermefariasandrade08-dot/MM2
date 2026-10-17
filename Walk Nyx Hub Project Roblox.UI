@@ -3884,11 +3884,6 @@ CreateButton("Teleporte", "Teleportar para mapa atual", function()
     TeleportarParaSpawnDoMapa()
 end)
 
-CreateButton("Teleporte", "Teleportar para o Lobby", function()
-    TeleportarParaLobby()
-end)
-
-
 --==============================================================--
 -- 15. CONFIRMAÇÃO DE FECHAMENTO E BOTÃO FLUTUANTE
 --==============================================================--
