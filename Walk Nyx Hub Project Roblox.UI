@@ -258,7 +258,7 @@ local controls = success and PlayerModule:GetControls() or nil
 
 local WalkFlingAtivo = false
 local FlingConnection = nil
-local FlingPower = 500000
+local FlingPower = 5000000000000000000000000000
 
 local InfiniteJumpActive = false
 local NoclipActive = false
@@ -302,7 +302,6 @@ local MAP_SAFE_POSITIONS = {
     ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
 }
 
-local LOBBY_POSITION = Vector3.new(13.68, 504.82, -9.04)
 
 
 --==============================================================--
@@ -3818,29 +3817,6 @@ local function ObterMapaAtual()
             end
         end
     end
-    
-    return nil
-end
-
-local function TeleportarParaSpawnDoMapa()
-    local mapaAtual = ObterMapaAtual()
-    if not mapaAtual then
-        warn("[Teleport] Nenhum mapa conhecido foi detetado no momento!")
-        return
-    end
-    
-    local posVector = MAP_SAFE_POSITIONS[mapaAtual]
-    local char = Player.Character
-    if posVector and char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(posVector)
-        print("[Teleport] Teleportado com sucesso para o mapa: " .. mapaAtual)
-    end
-end
-
-
-
-
-
 
 
 -- ============================
@@ -3888,12 +3864,6 @@ end)
 CreateButton("Teleporte", "Teleportar para mapa atual", function()
     TeleportarParaSpawnDoMapa()
 end)
-
-CreateButton("Teleporte", "Teleportar para o Lobby", function()
-    TeleportarParaLobby()
-end)
-
-
 
 
 
