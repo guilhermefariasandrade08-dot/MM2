@@ -302,8 +302,6 @@ local MAP_SAFE_POSITIONS = {
     ["Hotel"]            = Vector3.new(-90.47, 310.10, 8972.12),
 }
 
-local LOBBY = Vector3.new(-0.32, -67.11, -31.52)
-
 --==============================================================--
 -- 04. FUNÇÕES AUXILIARES DA INTERFACE
 --==============================================================--
@@ -3835,33 +3833,6 @@ local function TeleportarParaSpawnDoMapa()
     end
 end
 
-
-
-
-local function GetLobbySpawn()
-    -- Se encontrar a pasta ou modelo do Lobby no Workspace, tenta pegar um Spawn oficial
-    local lobby = workspace:FindFirstChild("Lobby") or workspace:FindFirstChild("LobbyMap")
-    if lobby then
-        local spawns = lobby:FindFirstChild("Spawns") or lobby:FindFirstChild("Spawn")
-        if spawns then
-            local partesSpawn = spawns:GetChildren()
-            if #partesSpawn > 0 then
-                return partesSpawn[math.random(1, #partesSpawn)].CFrame + Vector3.new(0, 3, 0)
-            end
-        end
-    end
-
-    -- Retorna a coordenada fixa se não achar um spawn dinâmico
-    return CFrame.new(LOBBY + Vector3.new(0, 3, 0))
-end
-
-local function TeleportarParaLobby()
-    local char = Player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = GetLobbySpawn()
-        print("[Teleport] Teleportado com sucesso para o Lobby!")
-    end
-end
 
 -- ============================
 -- SEÇÃO: TELEPORT - PLAYER TAB CALLERS
