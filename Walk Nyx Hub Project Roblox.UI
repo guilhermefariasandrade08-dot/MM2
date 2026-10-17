@@ -3860,7 +3860,6 @@ local function TeleportarParaLobby()
     end
 end
 
-
 -- ============================
 -- SEÇÃO: TELEPORT - PLAYER TAB CALLERS
 -- ============================
