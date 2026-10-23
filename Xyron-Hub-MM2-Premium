@@ -1,0 +1,1378 @@
+--========================================================--
+--                       XYRON HUB                         --
+--========================================================--
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+--========================================================--
+--                    CONFIGURAÇÕES                       --
+--========================================================--
+
+local IMAGE_ID = "rbxassetid://95698243375603"
+
+local WINDOW_WIDTH = 550
+local WINDOW_HEIGHT = 430
+local MIN_WINDOW_WIDTH = 400
+local MIN_WINDOW_HEIGHT = 300
+local DRAG_THRESHOLD = 7
+
+local BLACK = Color3.fromRGB(12, 12, 12)
+local DARK = Color3.fromRGB(20, 20, 20)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local GRAY = Color3.fromRGB(160, 160, 160)
+
+--========================================================--
+--                  REMOVER INTERFACE ANTIGA              --
+--========================================================--
+
+for _, parent in ipairs({CoreGui, PlayerGui}) do
+    pcall(function()
+        local old = parent:FindFirstChild("XyronHub")
+        if old then
+            old:Destroy()
+        end
+    end)
+end
+
+--========================================================--
+--                    FOOTAGESUS ICONS V2                 --
+--========================================================--
+
+local Icons
+local IconsReady = false
+
+task.spawn(function()
+    local ok, result = pcall(function()
+        local source = game:HttpGet(
+            "https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"
+        )
+        return assert(loadstring(source))()
+    end)
+
+    if ok and type(result) == "table" then
+        Icons = result
+        IconsReady = pcall(function()
+            Icons.SetIconsType("lucide")
+        end)
+    else
+        warn("[Xyron Hub] Falha ao carregar os ícones:", result)
+    end
+end)
+
+local function GetIcon(name)
+    if not IconsReady or not Icons then
+        return nil
+    end
+
+    local ok, result = pcall(function()
+        return Icons.Icon2(name, "lucide")
+    end)
+
+    if not ok or type(result) ~= "table" then
+        return nil
+    end
+
+    local image = result[1]
+    local data = result[2]
+
+    if type(image) ~= "string" or type(data) ~= "table" then
+        return nil
+    end
+
+    return image, data
+end
+
+local function ApplyIcon(label, name)
+    local image, data = GetIcon(name)
+
+    if image and data then
+        label.Image = image
+        label.ImageRectSize = data.ImageRectSize or Vector2.zero
+        label.ImageRectOffset = data.ImageRectPosition or Vector2.zero
+        label.Visible = true
+    else
+        label.Visible = false
+    end
+end
+
+local function AnimateIcon(icon, selected)
+    TweenService:Create(
+        icon,
+        TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        {
+            Size = selected
+                and UDim2.fromOffset(22, 22)
+                or UDim2.fromOffset(18, 18),
+            ImageColor3 = selected and WHITE or GRAY
+        }
+    ):Play()
+end
+
+--========================================================--
+--                       SCREEN GUI                        --
+--========================================================--
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "XyronHub"
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 999999
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local parentSuccess = pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+
+if not parentSuccess or not ScreenGui.Parent then
+    ScreenGui.Parent = PlayerGui
+end
+
+--========================================================--
+--                    BOTÃO FLUTUANTE                      --
+--========================================================--
+
+local Floating = Instance.new("TextButton")
+Floating.Name = "FloatingFPS"
+Floating.Size = UDim2.fromOffset(145, 48)
+Floating.AnchorPoint = Vector2.new(0.5, 0)
+Floating.Position = UDim2.new(0.5, 0, 0, 18)
+Floating.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Floating.BackgroundTransparency = 0.15
+Floating.Text = ""
+Floating.AutoButtonColor = false
+Floating.BorderSizePixel = 0
+Floating.Active = true
+Floating.ZIndex = 20
+Floating.Parent = ScreenGui
+
+Instance.new("UICorner", Floating).CornerRadius = UDim.new(1, 0)
+
+local FloatingGradient = Instance.new("UIGradient")
+FloatingGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(240, 240, 240)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 180, 180))
+})
+FloatingGradient.Rotation = 45
+FloatingGradient.Parent = Floating
+
+local FloatingStroke = Instance.new("UIStroke")
+FloatingStroke.Color = WHITE
+FloatingStroke.Transparency = 0.2
+FloatingStroke.Thickness = 1.5
+FloatingStroke.Parent = Floating
+
+-- IMAGEM DENTRO DO CÍRCULO
+local AvatarCircle = Instance.new("Frame")
+AvatarCircle.Name = "AvatarCircle"
+AvatarCircle.Size = UDim2.fromOffset(38, 38)
+AvatarCircle.Position = UDim2.new(0, 5, 0.5, -19)
+AvatarCircle.BackgroundColor3 = BLACK
+AvatarCircle.BorderSizePixel = 0
+AvatarCircle.ZIndex = 21
+AvatarCircle.Parent = Floating
+
+Instance.new("UICorner", AvatarCircle).CornerRadius = UDim.new(1, 0)
+
+local AvatarStroke = Instance.new("UIStroke")
+AvatarStroke.Color = WHITE
+AvatarStroke.Thickness = 1.5
+AvatarStroke.Parent = AvatarCircle
+
+local AvatarImage = Instance.new("ImageLabel")
+AvatarImage.Name = "AvatarImage"
+AvatarImage.Size = UDim2.new(1, -4, 1, -4)
+AvatarImage.Position = UDim2.fromOffset(2, 2)
+AvatarImage.BackgroundTransparency = 1
+AvatarImage.Image = IMAGE_ID
+AvatarImage.ScaleType = Enum.ScaleType.Crop
+AvatarImage.ZIndex = 22
+AvatarImage.Parent = AvatarCircle
+
+Instance.new("UICorner", AvatarImage).CornerRadius = UDim.new(1, 0)
+
+-- TEXTO FPS
+local FPSText = Instance.new("TextLabel")
+FPSText.Name = "FPSText"
+FPSText.Size = UDim2.new(1, -53, 1, 0)
+FPSText.Position = UDim2.fromOffset(49, 0)
+FPSText.BackgroundTransparency = 1
+FPSText.Text = "12 FPS"
+FPSText.TextColor3 = WHITE
+FPSText.TextSize = 16
+FPSText.Font = Enum.Font.GothamBold
+FPSText.TextXAlignment = Enum.TextXAlignment.Center
+FPSText.ZIndex = 21
+FPSText.Parent = Floating
+
+--========================================================--
+--                    JANELA PRINCIPAL                    --
+--========================================================--
+
+local Window = Instance.new("Frame")
+Window.Name = "MainWindow"
+Window.Size = UDim2.fromOffset(WINDOW_WIDTH, WINDOW_HEIGHT)
+Window.AnchorPoint = Vector2.zero
+Window.Position = UDim2.new(
+    0.5, -WINDOW_WIDTH / 2,
+    0.5, -WINDOW_HEIGHT / 2
+)
+Window.BackgroundColor3 = BLACK
+Window.BorderSizePixel = 0
+Window.Visible = false
+Window.Active = true
+Window.ClipsDescendants = true
+Window.Parent = ScreenGui
+
+Instance.new("UICorner", Window).CornerRadius = UDim.new(0, 18)
+
+local WindowStroke = Instance.new("UIStroke")
+WindowStroke.Color = Color3.fromRGB(120, 120, 120)
+WindowStroke.Thickness = 1.5
+WindowStroke.Parent = Window
+
+--========================================================--
+--                         SIDEBAR                         --
+--========================================================--
+
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Size = UDim2.new(0, 165, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = Window
+
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 18)
+
+local SidebarGradient = Instance.new("UIGradient")
+SidebarGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 35)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 12, 12))
+})
+SidebarGradient.Rotation = 90
+SidebarGradient.Parent = Sidebar
+
+local SidebarLine = Instance.new("Frame")
+SidebarLine.Size = UDim2.new(0, 1, 1, 0)
+SidebarLine.Position = UDim2.new(1, -1, 0, 0)
+SidebarLine.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SidebarLine.BorderSizePixel = 0
+SidebarLine.Parent = Sidebar
+
+--========================================================--
+--                    CABEÇALHO XYRON HUB                 --
+--========================================================--
+
+local DragHeader = Instance.new("Frame")
+DragHeader.Name = "DragHeader"
+DragHeader.Size = UDim2.new(1, 0, 0, 60)
+DragHeader.BackgroundTransparency = 1
+DragHeader.Active = true
+DragHeader.Parent = Sidebar
+
+local LogoX = Instance.new("TextLabel")
+LogoX.Name = "LogoX"
+LogoX.Size = UDim2.fromOffset(30, 38)
+LogoX.Position = UDim2.fromOffset(12, 9)
+LogoX.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+LogoX.BorderSizePixel = 0
+LogoX.Text = "X"
+LogoX.TextColor3 = Color3.fromRGB(0, 0, 0)
+LogoX.TextSize = 27
+LogoX.Font = Enum.Font.GothamBlack
+LogoX.Parent = DragHeader
+
+Instance.new("UICorner", LogoX).CornerRadius = UDim.new(0, 7)
+
+local LogoXStroke = Instance.new("UIStroke")
+LogoXStroke.Color = WHITE
+LogoXStroke.Thickness = 1.5
+LogoXStroke.Parent = LogoX
+
+local LogoText = Instance.new("TextLabel")
+LogoText.Name = "LogoText"
+LogoText.Size = UDim2.new(1, -52, 0, 38)
+LogoText.Position = UDim2.fromOffset(45, 9)
+LogoText.BackgroundTransparency = 1
+LogoText.Text = "yron Hub"
+LogoText.TextColor3 = WHITE
+LogoText.TextSize = 18
+LogoText.Font = Enum.Font.GothamBold
+LogoText.TextXAlignment = Enum.TextXAlignment.Left
+LogoText.Parent = DragHeader
+
+--========================================================--
+--                         PESQUISA                        --
+--========================================================--
+
+local SearchContainer = Instance.new("Frame")
+SearchContainer.Name = "SearchContainer"
+SearchContainer.Size = UDim2.new(1, -20, 0, 30)
+SearchContainer.Position = UDim2.new(0, 10, 0, 65)
+SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+SearchContainer.BorderSizePixel = 0
+SearchContainer.Parent = Sidebar
+
+Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8)
+
+local SearchStroke = Instance.new("UIStroke")
+SearchStroke.Color = Color3.fromRGB(70, 70, 70)
+SearchStroke.Thickness = 1.2
+SearchStroke.Parent = SearchContainer
+
+local SearchIcon = Instance.new("ImageLabel")
+SearchIcon.Name = "SearchIcon"
+SearchIcon.Size = UDim2.fromOffset(16, 16)
+SearchIcon.Position = UDim2.fromOffset(8, 7)
+SearchIcon.BackgroundTransparency = 1
+SearchIcon.ImageColor3 = GRAY
+SearchIcon.Parent = SearchContainer
+
+local SearchBox = Instance.new("TextBox")
+SearchBox.Name = "SearchBox"
+SearchBox.Size = UDim2.new(1, -30, 1, 0)
+SearchBox.Position = UDim2.fromOffset(28, 0)
+SearchBox.BackgroundTransparency = 1
+SearchBox.BorderSizePixel = 0
+SearchBox.PlaceholderText = "Digite algo..."
+SearchBox.PlaceholderColor3 = GRAY
+SearchBox.Text = ""
+SearchBox.TextColor3 = WHITE
+SearchBox.TextSize = 11
+SearchBox.Font = Enum.Font.Gotham
+SearchBox.ClearTextOnFocus = false
+SearchBox.Parent = SearchContainer
+
+local SearchDivider = Instance.new("Frame")
+SearchDivider.Size = UDim2.new(1, -20, 0, 1)
+SearchDivider.Position = UDim2.fromOffset(10, 102)
+SearchDivider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SearchDivider.BorderSizePixel = 0
+SearchDivider.Parent = Sidebar
+
+--========================================================--
+--                       LISTA DE ABAS                     --
+--========================================================--
+
+local TabScroll = Instance.new("ScrollingFrame")
+TabScroll.Name = "Tabs"
+TabScroll.Size = UDim2.new(1, -12, 1, -168)
+TabScroll.Position = UDim2.fromOffset(6, 108)
+TabScroll.BackgroundTransparency = 1
+TabScroll.BorderSizePixel = 0
+TabScroll.ScrollBarThickness = 0
+TabScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+TabScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+TabScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+TabScroll.Parent = Sidebar
+
+local TabLayout = Instance.new("UIListLayout")
+TabLayout.Padding = UDim.new(0, 5)
+TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabLayout.Parent = TabScroll
+
+local TabPadding = Instance.new("UIPadding")
+TabPadding.PaddingTop = UDim.new(0, 3)
+TabPadding.PaddingBottom = UDim.new(0, 4)
+TabPadding.Parent = TabScroll
+
+--========================================================--
+--                          PERFIL                         --
+--========================================================--
+
+local ProfileBottom = Instance.new("Frame")
+ProfileBottom.Size = UDim2.new(1, -18, 0, 48)
+ProfileBottom.Position = UDim2.new(0, 9, 1, -54)
+ProfileBottom.BackgroundTransparency = 1
+ProfileBottom.Parent = Sidebar
+
+local BottomDivider = Instance.new("Frame")
+BottomDivider.Size = UDim2.new(1, 0, 0, 1)
+BottomDivider.Position = UDim2.new(0, 0, 0, -6)
+BottomDivider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+BottomDivider.BorderSizePixel = 0
+BottomDivider.Parent = ProfileBottom
+
+local BottomAvatar = Instance.new("ImageLabel")
+BottomAvatar.Size = UDim2.fromOffset(36, 36)
+BottomAvatar.Position = UDim2.fromOffset(0, 5)
+BottomAvatar.BackgroundColor3 = DARK
+BottomAvatar.Image = "rbxthumb://type=AvatarHeadShot&id="
+    .. Player.UserId .. "&w=150&h=150"
+BottomAvatar.ScaleType = Enum.ScaleType.Crop
+BottomAvatar.Parent = ProfileBottom
+
+Instance.new("UICorner", BottomAvatar).CornerRadius = UDim.new(1, 0)
+
+local BottomAvatarStroke = Instance.new("UIStroke")
+BottomAvatarStroke.Color = WHITE
+BottomAvatarStroke.Thickness = 1.2
+BottomAvatarStroke.Parent = BottomAvatar
+
+local ProfileName = Instance.new("TextLabel")
+ProfileName.Size = UDim2.new(1, -45, 0, 18)
+ProfileName.Position = UDim2.fromOffset(42, 6)
+ProfileName.BackgroundTransparency = 1
+ProfileName.Text = Player.DisplayName
+ProfileName.TextColor3 = WHITE
+ProfileName.TextSize = 11
+ProfileName.Font = Enum.Font.GothamSemibold
+ProfileName.TextXAlignment = Enum.TextXAlignment.Left
+ProfileName.TextTruncate = Enum.TextTruncate.AtEnd
+ProfileName.Parent = ProfileBottom
+
+local ProfileUser = Instance.new("TextLabel")
+ProfileUser.Size = UDim2.new(1, -45, 0, 15)
+ProfileUser.Position = UDim2.fromOffset(42, 22)
+ProfileUser.BackgroundTransparency = 1
+ProfileUser.Text = "@" .. Player.Name
+ProfileUser.TextColor3 = GRAY
+ProfileUser.TextSize = 9
+ProfileUser.Font = Enum.Font.Gotham
+ProfileUser.TextXAlignment = Enum.TextXAlignment.Left
+ProfileUser.TextTruncate = Enum.TextTruncate.AtEnd
+ProfileUser.Parent = ProfileBottom
+
+--========================================================--
+--                       ÁREA DE CONTEÚDO                 --
+--========================================================--
+
+local Content = Instance.new("Frame")
+Content.Name = "Content"
+Content.Position = UDim2.fromOffset(166, 0)
+Content.Size = UDim2.new(1, -166, 1, 0)
+Content.BackgroundColor3 = BLACK
+Content.BorderSizePixel = 0
+Content.ClipsDescendants = true
+Content.Parent = Window
+
+Instance.new("UICorner", Content).CornerRadius = UDim.new(0, 18)
+
+local ContentGradient = Instance.new("UIGradient")
+ContentGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))
+})
+ContentGradient.Rotation = 45
+ContentGradient.Parent = Content
+
+--========================================================--
+--                       DEFINIÇÃO DAS ABAS               --
+--========================================================--
+
+local Pages = {}
+local TabButtons = {}
+local CurrentTab = "Informations"
+
+local TabData = {
+    {Name = "Informations", Icon = "info"},
+    {Name = "Murderer", Icon = "skull"},
+    {Name = "Sheriff", Icon = "shield"},
+    {Name = "ESP", Icon = "eye"},
+    {Name = "Farm coin", Icon = "coins"},
+    {Name = "Local player", Icon = "user"},
+    {Name = "Teleport", Icon = "map-pin"},
+    {Name = "Fling", Icon = "rotate-cw"},
+    {Name = "Others", Icon = "layers"},
+    {Name = "Senttings", Icon = "settings"},
+}
+
+--========================================================--
+--                 RESULTADOS DA PESQUISA                 --
+--========================================================--
+
+local SearchResults = Instance.new("ScrollingFrame")
+SearchResults.Name = "SearchResults"
+SearchResults.Position = UDim2.fromOffset(15, 10)
+SearchResults.Size = UDim2.new(1, -30, 1, -20)
+SearchResults.BackgroundTransparency = 1
+SearchResults.BorderSizePixel = 0
+SearchResults.ScrollBarThickness = 0
+SearchResults.ScrollingDirection = Enum.ScrollingDirection.Y
+SearchResults.AutomaticCanvasSize = Enum.AutomaticSize.Y
+SearchResults.CanvasSize = UDim2.new(0, 0, 0, 0)
+SearchResults.Visible = false
+SearchResults.ZIndex = 5
+SearchResults.Parent = Content
+
+local SearchResultsLayout = Instance.new("UIListLayout")
+SearchResultsLayout.Padding = UDim.new(0, 6)
+SearchResultsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SearchResultsLayout.Parent = SearchResults
+
+local SearchResultsPadding = Instance.new("UIPadding")
+SearchResultsPadding.PaddingBottom = UDim.new(0, 5)
+SearchResultsPadding.Parent = SearchResults
+
+local SearchEmpty = Instance.new("TextLabel")
+SearchEmpty.Name = "SearchEmpty"
+SearchEmpty.Size = UDim2.new(1, -10, 0, 35)
+SearchEmpty.BackgroundTransparency = 1
+SearchEmpty.Text = "Nenhuma função encontrada"
+SearchEmpty.TextColor3 = GRAY
+SearchEmpty.TextSize = 13
+SearchEmpty.Font = Enum.Font.Gotham
+SearchEmpty.TextXAlignment = Enum.TextXAlignment.Left
+SearchEmpty.Visible = false
+SearchEmpty.LayoutOrder = 999999
+SearchEmpty.Parent = SearchResults
+
+--========================================================--
+--                    FUNÇÕES DE PESQUISA                 --
+--========================================================--
+
+local function ClearSearchResults()
+    for _, child in ipairs(SearchResults:GetChildren()) do
+        if child ~= SearchResultsLayout
+            and child ~= SearchResultsPadding
+            and child ~= SearchEmpty then
+            child:Destroy()
+        end
+    end
+end
+
+--========================================================--
+--                     SELECIONAR ABA                      --
+--========================================================--
+
+local function SelectTab(tabName)
+    if not Pages[tabName] then
+        return
+    end
+
+    CurrentTab = tabName
+    SearchResults.Visible = false
+
+    for name, page in pairs(Pages) do
+        page.Visible = name == tabName
+    end
+
+    for name, objects in pairs(TabButtons) do
+        local selected = name == tabName
+
+        objects.Button.BackgroundTransparency = selected and 0 or 1
+        objects.Button.BackgroundColor3 = selected
+            and Color3.fromRGB(50, 50, 50)
+            or BLACK
+
+        objects.Text.TextColor3 = selected and WHITE or GRAY
+        AnimateIcon(objects.Icon, selected)
+    end
+end
+
+--========================================================--
+--                  CRIAR BOTÕES DAS ABAS                  --
+--========================================================--
+
+for index, data in ipairs(TabData) do
+    local Button = Instance.new("TextButton")
+    Button.Name = data.Name
+    Button.Size = UDim2.new(1, -2, 0, 34)
+    Button.BackgroundColor3 = BLACK
+    Button.BackgroundTransparency = 1
+    Button.BorderSizePixel = 0
+    Button.AutoButtonColor = false
+    Button.Text = ""
+    Button.LayoutOrder = index
+    Button.Parent = TabScroll
+
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 8)
+
+    local IconImage = Instance.new("ImageLabel")
+    IconImage.Name = "Icon"
+    IconImage.Size = UDim2.fromOffset(18, 18)
+    IconImage.AnchorPoint = Vector2.new(0.5, 0.5)
+    IconImage.Position = UDim2.fromOffset(19, 17)
+    IconImage.BackgroundTransparency = 1
+    IconImage.ImageColor3 = GRAY
+    IconImage.Parent = Button
+
+    local ButtonText = Instance.new("TextLabel")
+    ButtonText.Size = UDim2.new(1, -38, 1, 0)
+    ButtonText.Position = UDim2.fromOffset(36, 0)
+    ButtonText.BackgroundTransparency = 1
+    ButtonText.Text = data.Name
+    ButtonText.TextColor3 = GRAY
+    ButtonText.TextSize = 12
+    ButtonText.Font = Enum.Font.GothamMedium
+    ButtonText.TextXAlignment = Enum.TextXAlignment.Left
+    ButtonText.Parent = Button
+
+    -- ÁREA DE CONTEÚDO COM ROLAGEM AUTOMÁTICA
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = data.Name .. "Page"
+    Page.Size = UDim2.new(1, -30, 1, -20)
+    Page.Position = UDim2.fromOffset(15, 10)
+    Page.BackgroundTransparency = 1
+    Page.BorderSizePixel = 0
+    Page.ScrollBarThickness = 0
+    Page.ScrollingDirection = Enum.ScrollingDirection.Y
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.Visible = false
+    Page.ClipsDescendants = true
+    Page.Parent = Content
+
+    local PagePadding = Instance.new("UIPadding")
+    PagePadding.PaddingBottom = UDim.new(0, 8)
+    PagePadding.Parent = Page
+
+    local PageLayout = Instance.new("UIListLayout")
+    PageLayout.Padding = UDim.new(0, 8)
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PageLayout.Parent = Page
+
+    Pages[data.Name] = Page
+
+    TabButtons[data.Name] = {
+        Button = Button,
+        Icon = IconImage,
+        Text = ButtonText,
+        IconName = data.Icon
+    }
+
+    Button.Activated:Connect(function()
+        SearchBox.Text = ""
+        SearchResults.Visible = false
+        SelectTab(data.Name)
+    end)
+end
+
+--========================================================--
+--                    CARREGAR ÍCONES                     --
+--========================================================--
+
+task.spawn(function()
+    local timeout = os.clock() + 15
+
+    repeat
+        task.wait(0.1)
+    until IconsReady or os.clock() >= timeout
+
+    if not IconsReady then
+        warn("[Xyron Hub] Tempo esgotado ao carregar os ícones.")
+        return
+    end
+
+    ApplyIcon(SearchIcon, "search")
+
+    for _, objects in pairs(TabButtons) do
+        ApplyIcon(objects.Icon, objects.IconName)
+    end
+
+    SelectTab(CurrentTab)
+end)
+
+SelectTab("Informations")
+
+--========================================================--
+--       CRIAÇÃO ÚNICA DOS COMPONENTES REUTILIZÁVEIS      --
+--                                                      --
+-- Crie o código de cada tipo de componente aqui apenas  --
+-- uma vez. Depois chame CreateToggle nas abas abaixo.   --
+--========================================================--
+
+local function CreateToggle(tabName, toggleName, callback)
+    local page = Pages[tabName]
+
+    if not page then
+        warn("[Xyron Hub] Aba não encontrada: " .. tostring(tabName))
+        return
+    end
+
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Name = toggleName
+    ToggleButton.Size = UDim2.new(1, -8, 0, 42)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    ToggleButton.BorderSizePixel = 0
+    ToggleButton.AutoButtonColor = false
+    ToggleButton.Text = ""
+    ToggleButton.LayoutOrder = #page:GetChildren()
+    ToggleButton.Parent = page
+
+    Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(55, 55, 55)
+    Stroke.Thickness = 1
+    Stroke.Parent = ToggleButton
+
+    local Label = Instance.new("TextLabel")
+    Label.Name = "ToggleLabel"
+    Label.Size = UDim2.new(1, -65, 1, 0)
+    Label.Position = UDim2.fromOffset(12, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = toggleName
+    Label.TextColor3 = WHITE
+    Label.TextSize = 12
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = ToggleButton
+
+    local Switch = Instance.new("Frame")
+    Switch.Name = "Switch"
+    Switch.Size = UDim2.fromOffset(34, 18)
+    Switch.Position = UDim2.new(1, -44, 0.5, -9)
+    Switch.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    Switch.BorderSizePixel = 0
+    Switch.Parent = ToggleButton
+
+    Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
+
+    local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
+    Knob.Size = UDim2.fromOffset(12, 12)
+    Knob.Position = UDim2.fromOffset(3, 3)
+    Knob.BackgroundColor3 = WHITE
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Switch
+
+    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
+
+    local enabled = false
+
+    local function SetToggle(state)
+        enabled = state
+
+        TweenService:Create(
+            Switch,
+            TweenInfo.new(0.18),
+            {
+                BackgroundColor3 = enabled
+                    and Color3.fromRGB(235, 235, 235)
+                    or Color3.fromRGB(55, 55, 55)
+            }
+        ):Play()
+
+        TweenService:Create(
+            Knob,
+            TweenInfo.new(0.18),
+            {
+                Position = enabled
+                    and UDim2.new(1, -15, 0, 3)
+                    or UDim2.fromOffset(3, 3),
+                BackgroundColor3 = enabled
+                    and Color3.fromRGB(15, 15, 15)
+                    or WHITE
+            }
+        ):Play()
+
+        if callback then
+            callback(enabled)
+        end
+    end
+
+    ToggleButton.Activated:Connect(function()
+        SetToggle(not enabled)
+    end)
+
+    return ToggleButton, SetToggle
+end
+
+--========================================================--
+--             ADICIONAR COMPONENTES ÀS ABAS              --
+--                                                      --
+-- Use: CreateToggle("Nome da aba", "Nome do botão")      --
+-- Você não precisa recriar o código do toggle.          --
+--========================================================--
+
+-- ABA: INFORMATIONS
+-- CreateToggle("Informations", "Meu toggle")
+
+-- ABA: MURDERER
+-- CreateToggle("Murderer", "ESP player")
+
+-- ABA: SHERIFF
+-- CreateToggle("Sheriff", "Meu toggle")
+
+-- ABA: ESP
+-- CreateToggle("ESP", "Mostrar jogadores")
+
+-- ABA: FARM COIN
+-- CreateToggle("Farm coin", "Coletar moedas")
+
+-- ABA: LOCAL PLAYER
+-- CreateToggle("Local player", "Velocidade")
+
+-- ABA: TELEPORT
+-- CreateToggle("Teleport", "Teleporte")
+
+-- ABA: FLING
+-- CreateToggle("Fling", "Ativar fling")
+
+-- ABA: OTHERS
+-- CreateToggle("Others", "Meu toggle")
+
+-- ABA: SETTINGS
+-- CreateToggle("Senttings", "Meu toggle")
+
+--========================================================--
+--                FIM DA ÁREA DE COMPONENTES              --
+--========================================================--
+
+--========================================================--
+--                    CONTEÚDO INFORMATION                --
+--========================================================--
+
+local function AddInfo(parent, title, description)
+    local Card = Instance.new("Frame")
+    Card.Name = "InfoCard"
+    Card.Size = UDim2.new(1, -8, 0, 76)
+    Card.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Card.BorderSizePixel = 0
+    Card.Parent = parent
+
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
+
+    local Title = Instance.new("TextLabel")
+    Title.Name = "InfoTitle"
+    Title.Size = UDim2.new(1, -20, 0, 24)
+    Title.Position = UDim2.fromOffset(10, 8)
+    Title.BackgroundTransparency = 1
+    Title.Text = title
+    Title.TextColor3 = WHITE
+    Title.TextSize = 14
+    Title.Font = Enum.Font.GothamSemibold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Card
+
+    local Description = Instance.new("TextLabel")
+    Description.Name = "InfoDescription"
+    Description.Size = UDim2.new(1, -20, 0, 34)
+    Description.Position = UDim2.fromOffset(10, 34)
+    Description.BackgroundTransparency = 1
+    Description.Text = description
+    Description.TextColor3 = GRAY
+    Description.TextSize = 11
+    Description.Font = Enum.Font.Gotham
+    Description.TextWrapped = true
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextYAlignment = Enum.TextYAlignment.Top
+    Description.Parent = Card
+end
+
+AddInfo(
+    Pages["Informations"],
+    "Welcome to Xyron Hub",
+    "Interface carregada. Selecione uma aba no menu lateral."
+)
+
+--========================================================--
+--                    PESQUISA FUNCIONAL                  --
+--========================================================--
+
+local function SearchFunctions(query)
+    ClearSearchResults()
+    query = string.lower(query or "")
+
+    if query == "" then
+        SearchResults.Visible = false
+        SearchEmpty.Visible = false
+        SelectTab(CurrentTab)
+        return
+    end
+
+    SearchResults.Visible = true
+
+    for _, page in pairs(Pages) do
+        page.Visible = false
+    end
+
+    local found = 0
+
+    for tabName, page in pairs(Pages) do
+        for _, object in ipairs(page:GetDescendants()) do
+            if object:IsA("TextButton") and object.Visible then
+                local label = object:FindFirstChild("ToggleLabel")
+                local buttonText = label and label.Text or object.Text or ""
+
+                local searchable = string.lower(
+                    buttonText .. " " .. object.Name .. " " .. tabName
+                )
+
+                if string.find(searchable, query, 1, true) then
+                    found += 1
+
+                    local originalButton = object
+                    local originalPage = page
+
+                    local result = Instance.new("TextButton")
+                    result.Name = "SearchResult_" .. found
+                    result.Size = UDim2.new(1, -4, 0, 42)
+                    result.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+                    result.BorderSizePixel = 0
+                    result.AutoButtonColor = true
+                    result.Text = ""
+                    result.LayoutOrder = found
+                    result.ZIndex = 6
+                    result.Parent = SearchResults
+
+                    Instance.new("UICorner", result).CornerRadius =
+                        UDim.new(0, 8)
+
+                    local resultStroke = Instance.new("UIStroke")
+                    resultStroke.Color = Color3.fromRGB(55, 55, 55)
+                    resultStroke.Thickness = 1
+                    resultStroke.Parent = result
+
+                    local resultName = Instance.new("TextLabel")
+                    resultName.Size = UDim2.new(1, -20, 0, 20)
+                    resultName.Position = UDim2.fromOffset(10, 3)
+                    resultName.BackgroundTransparency = 1
+                    resultName.Text = buttonText ~= ""
+                        and buttonText
+                        or object.Name
+                    resultName.TextColor3 = WHITE
+                    resultName.TextSize = 12
+                    resultName.Font = Enum.Font.GothamMedium
+                    resultName.TextXAlignment = Enum.TextXAlignment.Left
+                    resultName.TextTruncate = Enum.TextTruncate.AtEnd
+                    resultName.ZIndex = 7
+                    resultName.Parent = result
+
+                    local resultTab = Instance.new("TextLabel")
+                    resultTab.Size = UDim2.new(1, -20, 0, 12)
+                    resultTab.Position = UDim2.fromOffset(10, 24)
+                    resultTab.BackgroundTransparency = 1
+                    resultTab.Text = "Aba: " .. tabName
+                    resultTab.TextColor3 = GRAY
+                    resultTab.TextSize = 9
+                    resultTab.Font = Enum.Font.Gotham
+                    resultTab.TextXAlignment = Enum.TextXAlignment.Left
+                    resultTab.ZIndex = 7
+                    resultTab.Parent = result
+
+                    result.Activated:Connect(function()
+                        if not originalButton:IsDescendantOf(originalPage) then
+                            return
+                        end
+
+                        SearchBox.Text = ""
+                        SearchResults.Visible = false
+                        SelectTab(tabName)
+
+                        task.defer(function()
+                            if originalButton.Parent then
+                                originalButton:Activate()
+                            end
+                        end)
+                    end)
+                end
+            end
+        end
+    end
+
+    SearchEmpty.Visible = found == 0
+end
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    SearchFunctions(SearchBox.Text)
+end)
+
+--========================================================--
+--                    CONTADOR DE FPS                     --
+--========================================================--
+
+local frames = 0
+local lastUpdate = os.clock()
+
+RunService.RenderStepped:Connect(function()
+    frames += 1
+    local now = os.clock()
+
+    if now - lastUpdate >= 0.5 then
+        local fps = math.floor(frames / (now - lastUpdate))
+
+        frames = 0
+        lastUpdate = now
+
+        FPSText.Text = tostring(fps) .. " FPS"
+
+        if fps >= 60 then
+            FPSText.TextColor3 = Color3.fromRGB(80, 255, 120)
+        elseif fps >= 30 then
+            FPSText.TextColor3 = Color3.fromRGB(255, 220, 80)
+        else
+            FPSText.TextColor3 = Color3.fromRGB(255, 85, 85)
+        end
+    end
+end)
+
+--========================================================--
+--               ÁREA INVISÍVEL DE REDIMENSIONAR           --
+--========================================================--
+
+local ResizeHandle = Instance.new("TextButton")
+ResizeHandle.Name = "ResizeHandle"
+ResizeHandle.Size = UDim2.fromOffset(25, 25)
+ResizeHandle.AnchorPoint = Vector2.new(1, 1)
+ResizeHandle.Position = UDim2.new(1, 0, 1, 0)
+ResizeHandle.BackgroundTransparency = 1
+ResizeHandle.BorderSizePixel = 0
+ResizeHandle.Text = ""
+ResizeHandle.AutoButtonColor = false
+ResizeHandle.Active = true
+ResizeHandle.ZIndex = 50
+ResizeHandle.Parent = Window
+
+--========================================================--
+--                  POSIÇÃO E LIMITES DA TELA             --
+--========================================================--
+
+local function GetViewportSize()
+    local camera = workspace.CurrentCamera
+    if camera then
+        return camera.ViewportSize
+    end
+    return Vector2.new(800, 600)
+end
+
+local function ClampPosition(object, position)
+    local viewport = GetViewportSize()
+    local size = object.AbsoluteSize
+    local anchor = object.AnchorPoint
+
+    local x = position.X.Scale * viewport.X + position.X.Offset
+    local y = position.Y.Scale * viewport.Y + position.Y.Offset
+
+    local minX = size.X * anchor.X
+    local maxX = viewport.X - size.X * (1 - anchor.X)
+    local minY = size.Y * anchor.Y
+    local maxY = viewport.Y - size.Y * (1 - anchor.Y)
+
+    x = math.clamp(x, minX, math.max(minX, maxX))
+    y = math.clamp(y, minY, math.max(minY, maxY))
+
+    return UDim2.fromOffset(
+        x - size.X * anchor.X,
+        y - size.Y * anchor.Y
+    )
+end
+
+--========================================================--
+--                 ARRASTAR BOTÃO E JANELA                --
+--========================================================--
+
+local function MakeDraggable(object, handle, onClick)
+    local dragging = false
+    local moved = false
+    local activeInput = nil
+    local startPointer = Vector2.zero
+    local startPosition = UDim2.new()
+    local changedConnection
+    local endedConnection
+
+    local function FinishDrag()
+        if not dragging then
+            return
+        end
+
+        local wasClick = not moved
+        dragging = false
+        activeInput = nil
+
+        if changedConnection then
+            changedConnection:Disconnect()
+            changedConnection = nil
+        end
+
+        if endedConnection then
+            endedConnection:Disconnect()
+            endedConnection = nil
+        end
+
+        if wasClick and onClick then
+            onClick()
+        end
+    end
+
+    handle.InputBegan:Connect(function(input)
+        local inputType = input.UserInputType
+
+        if inputType ~= Enum.UserInputType.Touch
+            and inputType ~= Enum.UserInputType.MouseButton1 then
+            return
+        end
+
+        if dragging then
+            return
+        end
+
+        dragging = true
+        moved = false
+        activeInput = input
+
+        startPointer = Vector2.new(input.Position.X, input.Position.Y)
+        startPosition = object.Position
+
+        changedConnection = UserInputService.InputChanged:Connect(
+            function(changedInput)
+                if not dragging or not activeInput then
+                    return
+                end
+
+                local isMouseMove =
+                    activeInput.UserInputType == Enum.UserInputType.MouseButton1
+                    and changedInput.UserInputType
+                        == Enum.UserInputType.MouseMovement
+
+                local isTouchMove =
+                    activeInput.UserInputType == Enum.UserInputType.Touch
+                    and changedInput.UserInputType
+                        == Enum.UserInputType.Touch
+
+                if not isMouseMove and not isTouchMove then
+                    return
+                end
+
+                local pointer = Vector2.new(
+                    changedInput.Position.X,
+                    changedInput.Position.Y
+                )
+
+                local delta = pointer - startPointer
+
+                if delta.Magnitude >= DRAG_THRESHOLD then
+                    moved = true
+                end
+
+                if not moved then
+                    return
+                end
+
+                object.Position = ClampPosition(
+                    object,
+                    UDim2.new(
+                        startPosition.X.Scale,
+                        startPosition.X.Offset + delta.X,
+                        startPosition.Y.Scale,
+                        startPosition.Y.Offset + delta.Y
+                    )
+                )
+            end
+        )
+
+        endedConnection = UserInputService.InputEnded:Connect(
+            function(endedInput)
+                if not dragging or not activeInput then
+                    return
+                end
+
+                local finished
+
+                if activeInput.UserInputType
+                    == Enum.UserInputType.MouseButton1 then
+                    finished = endedInput.UserInputType
+                        == Enum.UserInputType.MouseButton1
+                else
+                    finished = endedInput == activeInput
+                end
+
+                if finished then
+                    FinishDrag()
+                end
+            end
+        )
+    end)
+end
+
+--========================================================--
+--                 REDIMENSIONAR A JANELA                  --
+--========================================================--
+
+local resizing = false
+local resizeInput
+local resizeStartPointer = Vector2.zero
+local resizeStartSize = Vector2.zero
+local resizeStartPosition = UDim2.new()
+local resizeChangedConnection
+local resizeEndedConnection
+
+ResizeHandle.InputBegan:Connect(function(input)
+    local inputType = input.UserInputType
+
+    if inputType ~= Enum.UserInputType.Touch
+        and inputType ~= Enum.UserInputType.MouseButton1 then
+        return
+    end
+
+    if resizing then
+        return
+    end
+
+    resizing = true
+    resizeInput = input
+
+    resizeStartPointer = Vector2.new(input.Position.X, input.Position.Y)
+    resizeStartSize = Vector2.new(
+        Window.AbsoluteSize.X,
+        Window.AbsoluteSize.Y
+    )
+    resizeStartPosition = Window.Position
+
+    resizeChangedConnection = UserInputService.InputChanged:Connect(
+        function(changedInput)
+            if not resizing or not resizeInput then
+                return
+            end
+
+            local isMouseMove =
+                resizeInput.UserInputType == Enum.UserInputType.MouseButton1
+                and changedInput.UserInputType
+                    == Enum.UserInputType.MouseMovement
+
+            local isTouchMove =
+                resizeInput.UserInputType == Enum.UserInputType.Touch
+                and changedInput.UserInputType
+                    == Enum.UserInputType.Touch
+
+            if not isMouseMove and not isTouchMove then
+                return
+            end
+
+            local pointer = Vector2.new(
+                changedInput.Position.X,
+                changedInput.Position.Y
+            )
+            local delta = pointer - resizeStartPointer
+            local viewport = GetViewportSize()
+
+            local maxWidth = math.max(MIN_WINDOW_WIDTH, viewport.X - 16)
+            local maxHeight = math.max(MIN_WINDOW_HEIGHT, viewport.Y - 16)
+
+            Window.Size = UDim2.fromOffset(
+                math.clamp(
+                    resizeStartSize.X + delta.X,
+                    MIN_WINDOW_WIDTH,
+                    maxWidth
+                ),
+                math.clamp(
+                    resizeStartSize.Y + delta.Y,
+                    MIN_WINDOW_HEIGHT,
+                    maxHeight
+                )
+            )
+
+            Window.Position = ClampPosition(Window, resizeStartPosition)
+        end
+    )
+
+    resizeEndedConnection = UserInputService.InputEnded:Connect(
+        function(endedInput)
+            if not resizing or not resizeInput then
+                return
+            end
+
+            local finished
+
+            if resizeInput.UserInputType
+                == Enum.UserInputType.MouseButton1 then
+                finished = endedInput.UserInputType
+                    == Enum.UserInputType.MouseButton1
+            else
+                finished = endedInput == resizeInput
+            end
+
+            if finished then
+                resizing = false
+                resizeInput = nil
+
+                if resizeChangedConnection then
+                    resizeChangedConnection:Disconnect()
+                    resizeChangedConnection = nil
+                end
+
+                if resizeEndedConnection then
+                    resizeEndedConnection:Disconnect()
+                    resizeEndedConnection = nil
+                end
+            end
+        end
+    )
+end)
+
+--========================================================--
+--                    POSIÇÕES INICIAIS                   --
+--========================================================--
+
+Floating.AnchorPoint = Vector2.new(0.5, 0)
+Floating.Position = UDim2.new(0.5, 0, 0, 18)
+
+Window.AnchorPoint = Vector2.zero
+Window.Size = UDim2.fromOffset(WINDOW_WIDTH, WINDOW_HEIGHT)
+Window.Position = UDim2.new(
+    0.5, -WINDOW_WIDTH / 2,
+    0.5, -WINDOW_HEIGHT / 2
+)
+
+-- BOTÃO FLUTUANTE: ARRASTAR OU TOCAR PARA ABRIR/FECHAR
+MakeDraggable(Floating, Floating, function()
+    Window.Visible = not Window.Visible
+
+    if Window.Visible then
+        Window.Position = ClampPosition(Window, Window.Position)
+    end
+end)
+
+-- JANELA: ARRASTAR PELO CABEÇALHO
+MakeDraggable(Window, DragHeader)
+
+--========================================================--
+--               AJUSTAR QUANDO A TELA MUDAR              --
+--========================================================--
+
+local cameraConnection
+
+local function WatchCamera()
+    if cameraConnection then
+        cameraConnection:Disconnect()
+        cameraConnection = nil
+    end
+
+    local camera = workspace.CurrentCamera
+    if not camera then
+        return
+    end
+
+    cameraConnection = camera:GetPropertyChangedSignal(
+        "ViewportSize"
+    ):Connect(function()
+        task.defer(function()
+            local viewport = GetViewportSize()
+            local maxWidth = math.max(MIN_WINDOW_WIDTH, viewport.X - 16)
+            local maxHeight = math.max(MIN_WINDOW_HEIGHT, viewport.Y - 16)
+
+            Window.Size = UDim2.fromOffset(
+                math.clamp(
+                    Window.AbsoluteSize.X,
+                    MIN_WINDOW_WIDTH,
+                    maxWidth
+                ),
+                math.clamp(
+                    Window.AbsoluteSize.Y,
+                    MIN_WINDOW_HEIGHT,
+                    maxHeight
+                )
+            )
+
+            Floating.Position = ClampPosition(Floating, Floating.Position)
+            Window.Position = ClampPosition(Window, Window.Position)
+        end)
+    end)
+
+    task.defer(function()
+        Floating.Position = ClampPosition(Floating, Floating.Position)
+        Window.Position = ClampPosition(Window, Window.Position)
+    end)
+end
+
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(WatchCamera)
+WatchCamera()
+
+print("[Xyron Hub] Interface carregada!")
