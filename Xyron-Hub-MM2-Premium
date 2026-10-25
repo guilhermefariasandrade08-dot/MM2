@@ -833,6 +833,280 @@ local function CreateWindToggle(Parent, Config)
     return ToggleAPI
 end
 
+-- SLIDER COM CAMPO NUMÉRICO EDITÁVEL
+-- Requer: UserInputService e TweenService já definidos no script.
+
+local function CreateWindSlider(Parent, Config)
+    Config = Config or {}
+
+    local TitleText = Config.Title or "Slider"
+    local SubtitleText = Config.Subtitle or ""
+    local Min = Config.Min or 0
+    local Max = Config.Max or 100
+    local Default = math.clamp(Config.Default or Min, Min, Max)
+    local Callback = Config.Callback or function() end
+
+    local Value = Default
+    local Dragging = false
+    local ActiveInput = nil
+    local Connections = {}
+
+    local Container = Instance.new("Frame")
+    Container.Name = "WindSlider"
+    Container.Size = UDim2.new(1, -10, 0, 82)
+    Container.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    Container.BorderSizePixel = 0
+    Container.Parent = Parent
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Container
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(42, 42, 42)
+    Stroke.Thickness = 1
+    Stroke.Parent = Container
+
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.new(0, 12, 0, 7)
+    Title.Size = UDim2.new(1, -24, 0, 18)
+    Title.BackgroundTransparency = 1
+    Title.Font = Enum.Font.Gotham
+    Title.Text = TitleText
+    Title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Title.TextSize = 13
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Container
+
+    -- TRILHO DO SLIDER
+    local Track = Instance.new("Frame")
+    Track.Name = "Track"
+    Track.Position = UDim2.new(0, 12, 0, 34)
+    Track.Size = UDim2.new(1, -95, 0, 5)
+    Track.BackgroundColor3 = Color3.fromRGB(43, 43, 43)
+    Track.BorderSizePixel = 0
+    Track.Parent = Container
+
+    local TrackCorner = Instance.new("UICorner")
+    TrackCorner.CornerRadius = UDim.new(1, 0)
+    TrackCorner.Parent = Track
+
+    local Fill = Instance.new("Frame")
+    Fill.Name = "Fill"
+    Fill.Size = UDim2.new(0, 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(40, 125, 255)
+    Fill.BorderSizePixel = 0
+    Fill.Parent = Track
+
+    local FillCorner = Instance.new("UICorner")
+    FillCorner.CornerRadius = UDim.new(1, 0)
+    FillCorner.Parent = Fill
+
+    local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
+    Knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    Knob.Size = UDim2.new(0, 13, 0, 13)
+    Knob.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Track
+
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
+
+    -- BOTÃO INVISÍVEL PARA ARRASTAR O SLIDER
+    local Hitbox = Instance.new("TextButton")
+    Hitbox.Name = "Hitbox"
+    Hitbox.Size = UDim2.new(1, 0, 0, 28)
+    Hitbox.Position = UDim2.new(0, 0, 0.5, -14)
+    Hitbox.BackgroundTransparency = 1
+    Hitbox.Text = ""
+    Hitbox.AutoButtonColor = false
+    Hitbox.Parent = Track
+
+    -- CAIXA NUMÉRICA À DIREITA
+    local NumberBox = Instance.new("TextBox")
+    NumberBox.Name = "NumberBox"
+    NumberBox.AnchorPoint = Vector2.new(1, 0)
+    NumberBox.Position = UDim2.new(1, -12, 0, 25)
+    NumberBox.Size = UDim2.new(0, 65, 0, 24)
+    NumberBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    NumberBox.BorderSizePixel = 0
+    NumberBox.Font = Enum.Font.Gotham
+    NumberBox.Text = tostring(Default)
+    NumberBox.TextColor3 = Color3.fromRGB(245, 245, 245)
+    NumberBox.TextSize = 12
+    NumberBox.ClearTextOnFocus = false
+    NumberBox.Parent = Container
+
+    local NumberCorner = Instance.new("UICorner")
+    NumberCorner.CornerRadius = UDim.new(0, 5)
+    NumberCorner.Parent = NumberBox
+
+    local NumberStroke = Instance.new("UIStroke")
+    NumberStroke.Color = Color3.fromRGB(55, 55, 55)
+    NumberStroke.Thickness = 1
+    NumberStroke.Parent = NumberBox
+
+    -- SUBTÍTULO ABAIXO DO SLIDER
+    local Subtitle = Instance.new("TextLabel")
+    Subtitle.Name = "Subtitle"
+    Subtitle.Position = UDim2.new(0, 12, 0, 53)
+    Subtitle.Size = UDim2.new(1, -24, 0, 20)
+    Subtitle.BackgroundTransparency = 1
+    Subtitle.Font = Enum.Font.Gotham
+    Subtitle.Text = SubtitleText
+    Subtitle.TextColor3 = Color3.fromRGB(140, 140, 140)
+    Subtitle.TextSize = 11
+    Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    Subtitle.TextTruncate = Enum.TextTruncate.AtEnd
+    Subtitle.Parent = Container
+
+    local function UpdateSlider(NewValue, FireCallback)
+        NewValue = math.clamp(math.floor(NewValue), Min, Max)
+        Value = NewValue
+
+        local Percent
+        if Max == Min then
+            Percent = 0
+        else
+            Percent = (Value - Min) / (Max - Min)
+        end
+
+        Fill.Size = UDim2.new(Percent, 0, 1, 0)
+        Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
+        NumberBox.Text = tostring(Value)
+
+        if FireCallback then
+            Callback(Value)
+        end
+    end
+
+    local function SetFromPosition(X)
+        local Width = Track.AbsoluteSize.X
+        if Width <= 0 then
+            return
+        end
+
+        local Percent = math.clamp(
+            (X - Track.AbsolutePosition.X) / Width,
+            0,
+            1
+        )
+
+        UpdateSlider(Min + (Max - Min) * Percent, true)
+    end
+
+    -- ARRASTO COM MOUSE OU UM ÚNICO TOQUE
+    Hitbox.InputBegan:Connect(function(Input)
+        if ActiveInput then
+            return
+        end
+
+        if Input.UserInputType == Enum.UserInputType.MouseButton1
+        or Input.UserInputType == Enum.UserInputType.Touch then
+            ActiveInput = Input
+            Dragging = true
+            SetFromPosition(Input.Position.X)
+        end
+    end)
+
+    table.insert(Connections, UserInputService.InputChanged:Connect(function(Input)
+        if not Dragging or not ActiveInput then
+            return
+        end
+
+        if ActiveInput.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseMovement then
+                SetFromPosition(Input.Position.X)
+            end
+        elseif Input == ActiveInput then
+            SetFromPosition(Input.Position.X)
+        end
+    end))
+
+    table.insert(Connections, UserInputService.InputEnded:Connect(function(Input)
+        if not ActiveInput then
+            return
+        end
+
+        if Input == ActiveInput
+        or (ActiveInput.UserInputType == Enum.UserInputType.MouseButton1
+            and Input.UserInputType == Enum.UserInputType.MouseButton1) then
+            Dragging = false
+            ActiveInput = nil
+        end
+    end))
+
+    -- ACEITA SOMENTE NÚMEROS NA CAIXA
+    NumberBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local CleanText = NumberBox.Text:gsub("%D", "")
+
+        if CleanText ~= NumberBox.Text then
+            local Cursor = NumberBox.CursorPosition
+            NumberBox.Text = CleanText
+
+            if Cursor >= 0 then
+                NumberBox.CursorPosition = math.min(Cursor, #CleanText + 1)
+            end
+        end
+    end)
+
+    NumberBox.FocusLost:Connect(function()
+        local TextValue = NumberBox.Text
+
+        if TextValue == "" then
+            UpdateSlider(Value, false)
+            return
+        end
+
+        local NumericValue = tonumber(TextValue)
+
+        if not NumericValue then
+            UpdateSlider(Value, false)
+            return
+        end
+
+        UpdateSlider(NumericValue, true)
+    end)
+
+    UpdateSlider(Default, false)
+    Callback(Default)
+
+    return {
+        SetValue = function(NewValue)
+            UpdateSlider(NewValue, true)
+        end,
+
+        GetValue = function()
+            return Value
+        end,
+
+        Destroy = function()
+            for _, Connection in ipairs(Connections) do
+                Connection:Disconnect()
+            end
+
+            Container:Destroy()
+        end
+    }
+end
+
+-- EXEMPLO DE USO
+CreateWindSlider(Pages["Informations"], {
+    Title = "Walk speed",
+    Subtitle = "Faz com que aumente a velocidade do seu boneco",
+    Min = 0,
+    Max = 100,
+    Default = 17,
+
+    Callback = function(Value)
+        print("Walk speed:", Value)
+        -- Coloque aqui a lógica que aplica a velocidade.
+    end
+})
+
 -- EXEMPLO NA ABA INFORMATIONS
 local MainPage = Pages["Informations"]
 
