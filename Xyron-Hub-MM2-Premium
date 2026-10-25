@@ -671,201 +671,226 @@ end)
 
 SelectTab("Informations")
 
---========================================================--
---                 SISTEMA DE TOGGLES                      --
---========================================================--
+--==================================================
+-- SISTEMA DE TOGGLE - XYRON HUB
+--==================================================
 
-local savedStates = {}
+local TweenService = game:GetService("TweenService")
+
 local ToggleStates = {}
 local ToggleCallbacks = {}
 
-local function LoadToggleStates()
-    if type(isfile) ~= "function" or type(readfile) ~= "function" then
-        return
-    end
-
-    pcall(function()
-        if isfile(SAVE_FILE) then
-            local decoded = HttpService:JSONDecode(readfile(SAVE_FILE))
-            if type(decoded) == "table" then
-                savedStates = decoded
-            end
-        end
-    end)
-end
-
-local function SaveToggleStates()
-    if type(writefile) ~= "function" then
-        return
-    end
-
-    pcall(function()
-        writefile(SAVE_FILE, HttpService:JSONEncode(savedStates))
-    end)
-end
-
-LoadToggleStates()
-
-local function CreateToggle(tabName, toggleName, defaultState, callback)
+local function CreateToggle(tabName, toggleName, description, defaultState, callback)
     local page = Pages[tabName]
 
     if not page then
-        warn("[Xyron Hub] Aba não encontrada:", tabName)
-        return nil
+        warn("A aba '" .. tabName .. "' não foi encontrada.")
+        return
     end
 
     local toggleKey = tabName .. "_" .. toggleName
 
     if ToggleStates[toggleKey] ~= nil then
-        warn("[Xyron Hub] Toggle duplicado:", toggleName)
-        return nil
+        warn("Já existe um toggle com esse nome: " .. toggleKey)
+        return
     end
 
-    local enabled = savedStates[toggleKey]
-
-    if enabled == nil then
-        enabled = defaultState == true
-    end
+    local enabled = defaultState == true
 
     ToggleStates[toggleKey] = enabled
+    ToggleCallbacks[toggleKey] = callback
 
-    local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Name = "Toggle_" .. toggleName
-    ToggleButton.Size = UDim2.new(1, -8, 0, 46)
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    ToggleButton.BorderSizePixel = 0
-    ToggleButton.AutoButtonColor = false
-    ToggleButton.Text = ""
-    ToggleButton.LayoutOrder = #page:GetChildren()
-    ToggleButton.Parent = page
+    -- CAIXA PRINCIPAL
+    local Container = Instance.new("TextButton")
+    Container.Name = toggleName .. "_Toggle"
+    Container.Size = UDim2.new(1, -10, 0, 64)
+    Container.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+    Container.BorderSizePixel = 0
+    Container.Text = ""
+    Container.AutoButtonColor = false
+    Container.Parent = page
 
-    Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 9)
+    local ContainerCorner = Instance.new("UICorner")
+    ContainerCorner.CornerRadius = UDim.new(0, 6)
+    ContainerCorner.Parent = Container
 
-    local ToggleStroke = Instance.new("UIStroke")
-    ToggleStroke.Color = Color3.fromRGB(45, 45, 45)
-    ToggleStroke.Thickness = 1
-    ToggleStroke.Parent = ToggleButton
+    local ContainerStroke = Instance.new("UIStroke")
+    ContainerStroke.Color = Color3.fromRGB(245, 245, 245)
+    ContainerStroke.Thickness = 1
+    ContainerStroke.Parent = Container
 
-    local ToggleLabel = Instance.new("TextLabel")
-    ToggleLabel.Name = "ToggleLabel"
-    ToggleLabel.Size = UDim2.new(1, -65, 1, 0)
-    ToggleLabel.Position = UDim2.fromOffset(12, 0)
-    ToggleLabel.BackgroundTransparency = 1
-    ToggleLabel.Text = toggleName
-    ToggleLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
-    ToggleLabel.TextSize = 13
-    ToggleLabel.Font = Enum.Font.Gotham
-    ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    ToggleLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    ToggleLabel.Parent = ToggleButton
+    -- TÍTULO
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.new(0, 12, 0, 8)
+    Title.Size = UDim2.new(1, -65, 0, 22)
+    Title.BackgroundTransparency = 1
+    Title.Text = toggleName
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 15
+    Title.Font = Enum.Font.Gotham
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextYAlignment = Enum.TextYAlignment.Center
+    Title.TextTruncate = Enum.TextTruncate.AtEnd
+    Title.Parent = Container
 
-    local Track = Instance.new("Frame")
-    Track.Name = "ToggleTrack"
-    Track.Size = UDim2.fromOffset(38, 21)
-    Track.AnchorPoint = Vector2.new(1, 0.5)
-    Track.Position = UDim2.new(1, -12, 0.5, 0)
-    Track.BackgroundColor3 = Color3.fromRGB(48, 48, 48)
-    Track.BorderSizePixel = 0
-    Track.Parent = ToggleButton
+    -- SUBTEXTO
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Position = UDim2.new(0, 12, 0, 31)
+    Description.Size = UDim2.new(1, -65, 0, 23)
+    Description.BackgroundTransparency = 1
+    Description.Text = description or ""
+    Description.TextColor3 = Color3.fromRGB(205, 205, 205)
+    Description.TextSize = 11
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextYAlignment = Enum.TextYAlignment.Top
+    Description.TextWrapped = true
+    Description.TextTruncate = Enum.TextTruncate.AtEnd
+    Description.Parent = Container
 
-    Instance.new("UICorner", Track).CornerRadius = UDim.new(1, 0)
+    -- QUADRADO DO TOGGLE
+    local CheckBox = Instance.new("Frame")
+    CheckBox.Name = "CheckBox"
+    CheckBox.AnchorPoint = Vector2.new(1, 0.5)
+    CheckBox.Position = UDim2.new(1, -14, 0.5, 0)
+    CheckBox.Size = UDim2.new(0, 22, 0, 22)
+    CheckBox.BackgroundColor3 = enabled
+        and Color3.fromRGB(255, 255, 255)
+        or Color3.fromRGB(35, 35, 35)
+    CheckBox.BorderSizePixel = 0
+    CheckBox.Parent = Container
 
-    local TrackStroke = Instance.new("UIStroke")
-    TrackStroke.Color = Color3.fromRGB(75, 75, 75)
-    TrackStroke.Thickness = 1
-    TrackStroke.Parent = Track
+    local CheckCorner = Instance.new("UICorner")
+    CheckCorner.CornerRadius = UDim.new(0, 4)
+    CheckCorner.Parent = CheckBox
 
-    local Knob = Instance.new("Frame")
-    Knob.Name = "Knob"
-    Knob.Size = UDim2.fromOffset(15, 15)
-    Knob.AnchorPoint = Vector2.new(0, 0.5)
-    Knob.Position = UDim2.new(0, 3, 0.5, 0)
-    Knob.BackgroundColor3 = Color3.fromRGB(190, 190, 190)
-    Knob.BorderSizePixel = 0
-    Knob.Parent = Track
+    local CheckStroke = Instance.new("UIStroke")
+    CheckStroke.Color = Color3.fromRGB(255, 255, 255)
+    CheckStroke.Thickness = 1
+    CheckStroke.Parent = CheckBox
 
-    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
+    -- SÍMBOLO DE CONFIRMAÇÃO
+    local CheckMark = Instance.new("TextLabel")
+    CheckMark.Name = "CheckMark"
+    CheckMark.Size = UDim2.new(1, 0, 1, 0)
+    CheckMark.BackgroundTransparency = 1
+    CheckMark.Text = "✔"
+    CheckMark.TextColor3 = Color3.fromRGB(10, 10, 10)
+    CheckMark.TextSize = 15
+    CheckMark.Font = Enum.Font.GothamBold
+    CheckMark.TextTransparency = enabled and 0 or 1
+    CheckMark.Parent = CheckBox
 
-    local function UpdateToggle(instant)
-        local state = ToggleStates[toggleKey]
-        local duration = instant and 0 or 0.2
-        local info = TweenInfo.new(
-            duration,
-            Enum.EasingStyle.Quint,
-            Enum.EasingDirection.Out
-        )
+    -- ANIMAÇÃO E ATUALIZAÇÃO
+    local function SetState(state, instant)
+        enabled = state == true
+        ToggleStates[toggleKey] = enabled
 
-        TweenService:Create(Track, info, {
-            BackgroundColor3 = state
-                and Color3.fromRGB(235, 235, 235)
-                or Color3.fromRGB(48, 48, 48)
-        }):Play()
+        local boxColor = enabled
+            and Color3.fromRGB(255, 255, 255)
+            or Color3.fromRGB(35, 35, 35)
 
-        TweenService:Create(Knob, info, {
-            Position = state
-                and UDim2.new(1, -18, 0.5, 0)
-                or UDim2.new(0, 3, 0.5, 0),
-            BackgroundColor3 = state
-                and Color3.fromRGB(15, 15, 15)
-                or Color3.fromRGB(190, 190, 190)
-        }):Play()
+        local textTransparency = enabled and 0 or 1
 
-        savedStates[toggleKey] = state
-        SaveToggleStates()
-    end
+        if instant then
+            CheckBox.BackgroundColor3 = boxColor
+            CheckMark.TextTransparency = textTransparency
+        else
+            local info = TweenInfo.new(
+                0.18,
+                Enum.EasingStyle.Quad,
+                Enum.EasingDirection.Out
+            )
 
-    local function SetToggle(state, instant)
-        ToggleStates[toggleKey] = state == true
-        UpdateToggle(instant == true)
+            TweenService:Create(CheckBox, info, {
+                BackgroundColor3 = boxColor
+            }):Play()
 
-        if callback then
+            TweenService:Create(CheckMark, info, {
+                TextTransparency = textTransparency
+            }):Play()
+
+            local targetSize = enabled
+                and UDim2.new(0, 22, 0, 22)
+                or UDim2.new(0, 19, 0, 19)
+
+            CheckBox.Size = UDim2.new(0, 19, 0, 19)
+
+            TweenService:Create(CheckBox, info, {
+                Size = targetSize
+            }):Play()
+        end
+
+        if ToggleCallbacks[toggleKey] then
             task.spawn(function()
                 local success, err = pcall(
-                    callback,
-                    ToggleStates[toggleKey]
+                    ToggleCallbacks[toggleKey],
+                    enabled
                 )
 
                 if not success then
-                    warn(
-                        "[Xyron Hub] Erro no toggle "
-                        .. toggleName .. ": " .. tostring(err)
-                    )
+                    warn("Erro no toggle '" .. toggleName .. "': " .. tostring(err))
                 end
             end)
         end
     end
 
-    ToggleCallbacks[toggleKey] = SetToggle
-
-    UpdateToggle(true)
-
-    if callback then
-        task.spawn(function()
-            local success, err = pcall(callback, ToggleStates[toggleKey])
-
-            if not success then
-                warn(
-                    "[Xyron Hub] Erro inicial no toggle "
-                    .. toggleName .. ": " .. tostring(err)
-                )
-            end
-        end)
-    end
-
-    ToggleButton.Activated:Connect(function()
-        SetToggle(not ToggleStates[toggleKey], false)
+    -- CLIQUE NA CAIXA INTEIRA
+    Container.Activated:Connect(function()
+        SetState(not enabled, false)
     end)
 
+    -- APLICA O ESTADO INICIAL
+    SetState(enabled, true)
+
+    -- RETORNA CONTROLES DO TOGGLE
     return {
-        Button = ToggleButton,
+        Button = Container,
+
         GetState = function()
-            return ToggleStates[toggleKey]
+            return enabled
         end,
+
         SetState = function(state)
-            SetToggle(state, false)
+            SetState(state, false)
         end
     }
 end
+
+--==================================================
+-- EXEMPLOS DE USO
+--==================================================
+
+-- Começa DESLIGADO
+CreateToggle(
+    "ESP",
+    "Highlight player",
+    "Faz com que os jogadores fiquem destacados por uma cor.",
+    false,
+    function(ativo)
+        if ativo then
+            print("Highlight player ativado")
+            -- Coloque aqui o código para ativar o highlight.
+        else
+            print("Highlight player desativado")
+            -- Coloque aqui o código para desativar o highlight.
+        end
+    end
+)
+
+-- Começa LIGADO
+CreateToggle(
+    "ESP",
+    "Show Names",
+    "Mostra os nomes dos jogadores na tela.",
+    true,
+    function(ativo)
+        print("Show Names:", ativo)
+        -- Coloque aqui o código dessa função.
+    end
+)
 
 --========================================================--
 --                 CRIAR TOGGLES NAS ABAS                  --
@@ -884,10 +909,7 @@ end
 -- end)
 
 -- ABA: ESP
-CreateToggle("ESP", "Highlight players", true, function(ativo)
-    -- Coloque aqui o código da função de destaque dos jogadores.
-    -- O argumento "ativo" será true quando ligado e false quando desligado.
-end)
+
 
 -- ABA: FARM COIN
 -- CreateToggle("Farm coin", "Coletar moedas", false, function(ativo)
