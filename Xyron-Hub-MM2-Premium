@@ -6,7 +6,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 
 local Player = Players.LocalPlayer
@@ -28,8 +27,7 @@ local BLACK = Color3.fromRGB(12, 12, 12)
 local DARK = Color3.fromRGB(20, 20, 20)
 local WHITE = Color3.fromRGB(255, 255, 255)
 local GRAY = Color3.fromRGB(160, 160, 160)
-
-local SAVE_FILE = "XyronHub_Toggles.json"
+local BLUE = Color3.fromRGB(0, 125, 255)
 
 --========================================================--
 --                  REMOVER INTERFACE ANTIGA              --
@@ -82,14 +80,11 @@ local function GetIcon(name)
         return nil
     end
 
-    local image = result[1]
-    local data = result[2]
-
-    if type(image) ~= "string" or type(data) ~= "table" then
+    if type(result[1]) ~= "string" or type(result[2]) ~= "table" then
         return nil
     end
 
-    return image, data
+    return result[1], result[2]
 end
 
 local function ApplyIcon(label, name)
@@ -108,16 +103,11 @@ end
 local function AnimateIcon(icon, selected)
     TweenService:Create(
         icon,
-        TweenInfo.new(
-            0.22,
-            Enum.EasingStyle.Quint,
-            Enum.EasingDirection.Out
-        ),
+        TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
         {
             Size = selected
                 and UDim2.fromOffset(22, 22)
                 or UDim2.fromOffset(18, 18),
-
             ImageColor3 = selected and WHITE or GRAY
         }
     ):Play()
@@ -529,10 +519,6 @@ SearchEmpty.Visible = false
 SearchEmpty.LayoutOrder = 999999
 SearchEmpty.Parent = SearchResults
 
---========================================================--
---                    FUNÇÕES DE PESQUISA                 --
---========================================================--
-
 local function ClearSearchResults()
     for _, child in ipairs(SearchResults:GetChildren()) do
         if child ~= SearchResultsLayout
@@ -544,7 +530,7 @@ local function ClearSearchResults()
 end
 
 --========================================================--
---                     SELECIONAR ABA                      --
+--                     SELECIONAR ABA                     --
 --========================================================--
 
 local function SelectTab(tabName)
@@ -600,6 +586,7 @@ for index, data in ipairs(TabData) do
     IconImage.Parent = Button
 
     local ButtonText = Instance.new("TextLabel")
+    ButtonText.Name = "TabLabel"
     ButtonText.Size = UDim2.new(1, -38, 1, 0)
     ButtonText.Position = UDim2.fromOffset(36, 0)
     ButtonText.BackgroundTransparency = 1
@@ -610,7 +597,6 @@ for index, data in ipairs(TabData) do
     ButtonText.TextXAlignment = Enum.TextXAlignment.Left
     ButtonText.Parent = Button
 
-    -- PÁGINA DA ABA
     local Page = Instance.new("ScrollingFrame")
     Page.Name = data.Name .. "Page"
     Page.Size = UDim2.new(1, -30, 1, -20)
@@ -625,7 +611,6 @@ for index, data in ipairs(TabData) do
     Page.ClipsDescendants = true
     Page.Parent = Content
 
-    -- MARGENS INTERNAS CORRIGIDAS
     local PagePadding = Instance.new("UIPadding")
     PagePadding.PaddingLeft = UDim.new(0, 2)
     PagePadding.PaddingRight = UDim.new(0, 2)
@@ -685,12 +670,6 @@ SelectTab("Informations")
 --                 SISTEMA DE TOGGLE                       --
 --========================================================--
 
---==================================================
--- XYRON HUB | WINDUI STYLE TOGGLE CORRIGIDO
---==================================================
-
-local TweenService = game:GetService("TweenService")
-
 local function CreateWindToggle(Parent, Config)
     Config = Config or {}
 
@@ -698,8 +677,8 @@ local function CreateWindToggle(Parent, Config)
     local Callback = Config.Callback or function() end
     local Connections = {}
 
-    local function Connect(Signal, Function)
-        table.insert(Connections, Signal:Connect(Function))
+    local function Connect(signal, callback)
+        table.insert(Connections, signal:Connect(callback))
     end
 
     local Container = Instance.new("Frame")
@@ -709,9 +688,7 @@ local function CreateWindToggle(Parent, Config)
     Container.BorderSizePixel = 0
     Container.Parent = Parent
 
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 10)
-    Corner.Parent = Container
+    Instance.new("UICorner", Container).CornerRadius = UDim.new(0, 10)
 
     local Border = Instance.new("UIStroke")
     Border.Color = Color3.fromRGB(38, 38, 38)
@@ -742,7 +719,6 @@ local function CreateWindToggle(Parent, Config)
     Description.TextXAlignment = Enum.TextXAlignment.Left
     Description.Parent = Container
 
-    -- FUNDO DO INTERRUPTOR
     local Switch = Instance.new("Frame")
     Switch.Name = "Switch"
     Switch.AnchorPoint = Vector2.new(1, 0.5)
@@ -752,16 +728,13 @@ local function CreateWindToggle(Parent, Config)
     Switch.BorderSizePixel = 0
     Switch.Parent = Container
 
-    local SwitchCorner = Instance.new("UICorner")
-    SwitchCorner.CornerRadius = UDim.new(1, 0)
-    SwitchCorner.Parent = Switch
+    Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
 
     local SwitchBorder = Instance.new("UIStroke")
     SwitchBorder.Color = Color3.fromRGB(65, 65, 65)
     SwitchBorder.Thickness = 1
     SwitchBorder.Parent = Switch
 
-    -- BOTÃO MÓVEL
     local Knob = Instance.new("Frame")
     Knob.Name = "Knob"
     Knob.AnchorPoint = Vector2.new(0, 0.5)
@@ -772,16 +745,13 @@ local function CreateWindToggle(Parent, Config)
     Knob.ZIndex = 2
     Knob.Parent = Switch
 
-    local KnobCorner = Instance.new("UICorner")
-    KnobCorner.CornerRadius = UDim.new(1, 0)
-    KnobCorner.Parent = Knob
+    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
     local KnobBorder = Instance.new("UIStroke")
-    KnobBorder.Color = Color3.fromRGB(255, 255, 255)
+    KnobBorder.Color = WHITE
     KnobBorder.Transparency = 0.7
     KnobBorder.Parent = Knob
 
-    -- BOTÃO DE CLIQUE/TOQUE
     local Hitbox = Instance.new("TextButton")
     Hitbox.Name = "Hitbox"
     Hitbox.Size = UDim2.fromScale(1, 1)
@@ -791,59 +761,49 @@ local function CreateWindToggle(Parent, Config)
     Hitbox.ZIndex = 5
     Hitbox.Parent = Switch
 
-    local function Animate(Value)
-        local KnobPosition
-        local KnobColor
-        local SwitchColor
-        local BorderColor
+    local function Animate(value)
+        local knobPosition = value
+            and UDim2.new(1, -23, 0.5, 0)
+            or UDim2.new(0, 3, 0.5, 0)
 
-        if Value then
-            KnobPosition = UDim2.new(1, -23, 0.5, 0)
-            KnobColor = Color3.fromRGB(255, 255, 255)
-            SwitchColor = Color3.fromRGB(220, 220, 220)
-            BorderColor = Color3.fromRGB(240, 240, 240)
-        else
-            KnobPosition = UDim2.new(0, 3, 0.5, 0)
-            KnobColor = Color3.fromRGB(155, 155, 155)
-            SwitchColor = Color3.fromRGB(23, 23, 23)
-            BorderColor = Color3.fromRGB(65, 65, 65)
-        end
+        local knobColor = value and WHITE or Color3.fromRGB(155, 155, 155)
+
+        -- Fundo azul quando ativado.
+        local switchColor = value and BLUE or Color3.fromRGB(23, 23, 23)
+        local borderColor = value and Color3.fromRGB(90, 175, 255)
+            or Color3.fromRGB(65, 65, 65)
 
         TweenService:Create(
             Knob,
             TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
             {
-                Position = KnobPosition,
-                BackgroundColor3 = KnobColor
+                Position = knobPosition,
+                BackgroundColor3 = knobColor
             }
         ):Play()
 
         TweenService:Create(
             Switch,
             TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {
-                BackgroundColor3 = SwitchColor
-            }
+            {BackgroundColor3 = switchColor}
         ):Play()
 
         TweenService:Create(
             SwitchBorder,
             TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {
-                Color = BorderColor
-            }
+            {Color = borderColor}
         ):Play()
     end
 
-    local function Set(Value, FireCallback)
-        Enabled = Value == true
+    local function Set(value, fireCallback)
+        Enabled = value == true
         Animate(Enabled)
 
-        if FireCallback then
-            local Success, ErrorMessage = pcall(Callback, Enabled)
-
-            if not Success then
-                warn("[XYRON HUB] Erro no callback do toggle: " .. tostring(ErrorMessage))
+        if fireCallback then
+            local success, errorMessage = pcall(Callback, Enabled)
+            if not success then
+                warn("[XYRON HUB] Erro no callback do toggle: "
+                    .. tostring(errorMessage))
             end
         end
     end
@@ -852,11 +812,10 @@ local function CreateWindToggle(Parent, Config)
         Set(not Enabled, true)
     end)
 
-    -- API DO TOGGLE
     local ToggleAPI = {}
 
-    function ToggleAPI:Set(Value)
-        Set(Value, true)
+    function ToggleAPI:Set(value)
+        Set(value, true)
     end
 
     function ToggleAPI:Get()
@@ -864,77 +823,29 @@ local function CreateWindToggle(Parent, Config)
     end
 
     function ToggleAPI:Destroy()
-        for _, Connection in ipairs(Connections) do
-            Connection:Disconnect()
+        for _, connection in ipairs(Connections) do
+            connection:Disconnect()
         end
-
         Container:Destroy()
     end
 
-    -- ESTADO INICIAL, SEM EXECUTAR CALLBACK
     Animate(Enabled)
-
     return ToggleAPI
 end
 
---==================================================
--- EXEMPLO DE USO NA ABA MAIN
---==================================================
-
-local MainPage = Pages["ESP"]
+-- EXEMPLO NA ABA INFORMATIONS
+local MainPage = Pages["Informations"]
 
 if MainPage then
-    local ExampleToggle = CreateWindToggle(MainPage, {
+    CreateWindToggle(MainPage, {
         Title = "Exemplo WindUI",
         Description = "Teste ligar e desligar.",
         Default = false,
-
         Callback = function(Value)
             -- Coloque aqui a ação que o toggle controla.
-            -- Não precisa imprimir nada no console.
         end
     })
 end
-
---========================================================--
---                 EXEMPLOS PARA OUTRAS ABAS              --
---========================================================--
-
--- ABA: INFORMATIONS
--- CreateToggle("Informations", "Meu toggle", "Descrição da função.", false, function(ativo)
--- end)
-
--- ABA: MURDERER
--- CreateToggle("Murderer", "Meu toggle", "Descrição da função.", false, function(ativo)
--- end)
-
--- ABA: SHERIFF
--- CreateToggle("Sheriff", "Meu toggle", "Descrição da função.", false, function(ativo)
--- end)
-
--- ABA: FARM COIN
--- CreateToggle("Farm coin", "Coletar moedas", "Descrição da função.", false, function(ativo)
--- end)
-
--- ABA: LOCAL PLAYER
--- CreateToggle("Local player", "Velocidade", "Descrição da função.", false, function(ativo)
--- end)
-
--- ABA: TELEPORT
--- CreateToggle("Teleport", "Teleporte", "Descrição da função.", false, function(ativo)
--- end)
-
--- ABA: FLING
--- CreateToggle("Fling", "Ativar fling", "Descrição da função.", false, function(ativo)
--- end)
-
--- ABA: OTHERS
--- CreateToggle("Others", "Meu toggle", "Descrição da função.", false, function(ativo)
--- end)
-
--- ABA: SETTINGS
--- CreateToggle("Senttings", "Meu toggle", "Descrição da função.", false, function(ativo)
--- end)
 
 --========================================================--
 --                    CONTEÚDO INFORMATION                --
@@ -999,32 +910,68 @@ local function SearchFunctions(query)
     end
 
     SearchResults.Visible = true
+    SearchEmpty.Visible = false
 
     for _, page in pairs(Pages) do
         page.Visible = false
     end
 
     local found = 0
+    local alreadyAdded = {}
 
+    -- Procura tanto botões quanto toggles e seus títulos.
     for tabName, page in pairs(Pages) do
         for _, object in ipairs(page:GetDescendants()) do
-            if object:IsA("TextButton") and object.Visible then
-                local label = object:FindFirstChild("Title")
-                    or object:FindFirstChild("ToggleLabel")
+            local searchableObject
+            local buttonText = ""
+            local activationButton
 
-                local buttonText = label and label.Text
-                    or object.Text
-                    or ""
+            if object:IsA("Frame") and object.Name == "WindToggle" then
+                searchableObject = object
+
+                local title = object:FindFirstChild("Title")
+                local description = object:FindFirstChild("Description")
+                local hitbox = object:FindFirstChild("Switch")
+                    and object.Switch:FindFirstChild("Hitbox")
+
+                buttonText = title and title.Text or object.Name
+
+                local descriptionText = description and description.Text or ""
+
+                searchableObject:SetAttribute(
+                    "SearchText",
+                    buttonText .. " " .. descriptionText
+                )
+
+                activationButton = hitbox
+            elseif object:IsA("TextButton") and object.Name ~= "Hitbox" then
+                searchableObject = object
+
+                local title = object:FindFirstChild("Title")
+                    or object:FindFirstChild("ToggleLabel")
+                    or object:FindFirstChild("TabLabel")
+
+                buttonText = title and title.Text or object.Text or ""
+                activationButton = object
+            end
+
+            if searchableObject and not alreadyAdded[searchableObject] then
+                local extraText = searchableObject:GetAttribute("SearchText") or ""
 
                 local searchable = string.lower(
-                    buttonText .. " " .. object.Name .. " " .. tabName
+                    buttonText .. " " .. searchableObject.Name .. " "
+                    .. tabName .. " " .. extraText
                 )
 
                 if string.find(searchable, query, 1, true) then
+                    alreadyAdded[searchableObject] = true
                     found += 1
 
-                    local originalButton = object
+                    local originalObject = searchableObject
                     local originalPage = page
+                    local originalActivation = activationButton
+                    local resultText = buttonText
+                    local resultTabName = tabName
 
                     local result = Instance.new("TextButton")
                     result.Name = "SearchResult_" .. found
@@ -1049,9 +996,8 @@ local function SearchFunctions(query)
                     resultName.Size = UDim2.new(1, -20, 0, 20)
                     resultName.Position = UDim2.fromOffset(10, 3)
                     resultName.BackgroundTransparency = 1
-                    resultName.Text = buttonText ~= ""
-                        and buttonText
-                        or object.Name
+                    resultName.Text = resultText ~= ""
+                        and resultText or originalObject.Name
                     resultName.TextColor3 = WHITE
                     resultName.TextSize = 12
                     resultName.Font = Enum.Font.GothamMedium
@@ -1064,7 +1010,7 @@ local function SearchFunctions(query)
                     resultTab.Size = UDim2.new(1, -20, 0, 12)
                     resultTab.Position = UDim2.fromOffset(10, 24)
                     resultTab.BackgroundTransparency = 1
-                    resultTab.Text = "Aba: " .. tabName
+                    resultTab.Text = "Aba: " .. resultTabName
                     resultTab.TextColor3 = GRAY
                     resultTab.TextSize = 9
                     resultTab.Font = Enum.Font.Gotham
@@ -1073,17 +1019,19 @@ local function SearchFunctions(query)
                     resultTab.Parent = result
 
                     result.Activated:Connect(function()
-                        if not originalButton:IsDescendantOf(originalPage) then
+                        if not originalObject:IsDescendantOf(originalPage) then
                             return
                         end
 
                         SearchBox.Text = ""
                         SearchResults.Visible = false
-                        SelectTab(tabName)
+                        SelectTab(resultTabName)
 
                         task.defer(function()
-                            if originalButton.Parent then
-                                originalButton:Activate()
+                            if originalActivation
+                                and originalActivation.Parent
+                                and originalActivation:IsDescendantOf(originalPage) then
+                                originalActivation:Activate()
                             end
                         end)
                     end)
@@ -1129,7 +1077,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --========================================================--
---               ÁREA INVISÍVEL DE REDIMENSIONAR           --
+--               ÁREA DE REDIMENSIONAMENTO                --
 --========================================================--
 
 local ResizeHandle = Instance.new("TextButton")
@@ -1175,10 +1123,8 @@ local function ClampPosition(object, position)
     x = math.clamp(x, minX, math.max(minX, maxX))
     y = math.clamp(y, minY, math.max(minY, maxY))
 
-    return UDim2.fromOffset(
-        x - size.X * anchor.X,
-        y - size.Y * anchor.Y
-    )
+    -- x e y já representam a posição do AnchorPoint.
+    return UDim2.fromOffset(x, y)
 end
 
 --========================================================--
@@ -1188,21 +1134,14 @@ end
 local function MakeDraggable(object, handle, onClick)
     local dragging = false
     local moved = false
-    local activeInput
+    local activeInput = nil
     local startPointer = Vector2.zero
     local startPosition = UDim2.new()
+
     local changedConnection
     local endedConnection
 
-    local function FinishDrag()
-        if not dragging then
-            return
-        end
-
-        local wasClick = not moved
-        dragging = false
-        activeInput = nil
-
+    local function DisconnectDragConnections()
         if changedConnection then
             changedConnection:Disconnect()
             changedConnection = nil
@@ -1212,6 +1151,19 @@ local function MakeDraggable(object, handle, onClick)
             endedConnection:Disconnect()
             endedConnection = nil
         end
+    end
+
+    local function FinishDrag()
+        if not dragging then
+            return
+        end
+
+        local wasClick = not moved
+
+        dragging = false
+        activeInput = nil
+
+        DisconnectDragConnections()
 
         if wasClick and onClick then
             onClick()
@@ -1237,6 +1189,8 @@ local function MakeDraggable(object, handle, onClick)
         startPointer = Vector2.new(input.Position.X, input.Position.Y)
         startPosition = object.Position
 
+        DisconnectDragConnections()
+
         changedConnection = UserInputService.InputChanged:Connect(
             function(changedInput)
                 if not dragging or not activeInput then
@@ -1244,14 +1198,15 @@ local function MakeDraggable(object, handle, onClick)
                 end
 
                 local isMouseMove =
-                    activeInput.UserInputType == Enum.UserInputType.MouseButton1
+                    activeInput.UserInputType
+                        == Enum.UserInputType.MouseButton1
                     and changedInput.UserInputType
                         == Enum.UserInputType.MouseMovement
 
+                -- Em dispositivos móveis, só acompanha o dedo original.
                 local isTouchMove =
                     activeInput.UserInputType == Enum.UserInputType.Touch
-                    and changedInput.UserInputType
-                        == Enum.UserInputType.Touch
+                    and changedInput == activeInput
 
                 if not isMouseMove and not isTouchMove then
                     return
@@ -1313,12 +1268,31 @@ end
 --========================================================--
 
 local resizing = false
-local resizeInput
+local resizeInput = nil
 local resizeStartPointer = Vector2.zero
 local resizeStartSize = Vector2.zero
 local resizeStartPosition = UDim2.new()
+
 local resizeChangedConnection
 local resizeEndedConnection
+
+local function DisconnectResizeConnections()
+    if resizeChangedConnection then
+        resizeChangedConnection:Disconnect()
+        resizeChangedConnection = nil
+    end
+
+    if resizeEndedConnection then
+        resizeEndedConnection:Disconnect()
+        resizeEndedConnection = nil
+    end
+end
+
+local function FinishResize()
+    resizing = false
+    resizeInput = nil
+    DisconnectResizeConnections()
+end
 
 ResizeHandle.InputBegan:Connect(function(input)
     local inputType = input.UserInputType
@@ -1342,6 +1316,8 @@ ResizeHandle.InputBegan:Connect(function(input)
     )
     resizeStartPosition = Window.Position
 
+    DisconnectResizeConnections()
+
     resizeChangedConnection = UserInputService.InputChanged:Connect(
         function(changedInput)
             if not resizing or not resizeInput then
@@ -1349,14 +1325,14 @@ ResizeHandle.InputBegan:Connect(function(input)
             end
 
             local isMouseMove =
-                resizeInput.UserInputType == Enum.UserInputType.MouseButton1
+                resizeInput.UserInputType
+                    == Enum.UserInputType.MouseButton1
                 and changedInput.UserInputType
                     == Enum.UserInputType.MouseMovement
 
             local isTouchMove =
                 resizeInput.UserInputType == Enum.UserInputType.Touch
-                and changedInput.UserInputType
-                    == Enum.UserInputType.Touch
+                and changedInput == resizeInput
 
             if not isMouseMove and not isTouchMove then
                 return
@@ -1407,18 +1383,7 @@ ResizeHandle.InputBegan:Connect(function(input)
             end
 
             if finished then
-                resizing = false
-                resizeInput = nil
-
-                if resizeChangedConnection then
-                    resizeChangedConnection:Disconnect()
-                    resizeChangedConnection = nil
-                end
-
-                if resizeEndedConnection then
-                    resizeEndedConnection:Disconnect()
-                    resizeEndedConnection = nil
-                end
+                FinishResize()
             end
         end
     )
@@ -1468,31 +1433,38 @@ local function WatchCamera()
         return
     end
 
-    cameraConnection = camera:GetPropertyChangedSignal(
-        "ViewportSize"
-    ):Connect(function()
-        task.defer(function()
-            local viewport = GetViewportSize()
-            local maxWidth = math.max(MIN_WINDOW_WIDTH, viewport.X - 16)
-            local maxHeight = math.max(MIN_WINDOW_HEIGHT, viewport.Y - 16)
+    cameraConnection = camera:GetPropertyChangedSignal("ViewportSize")
+        :Connect(function()
+            task.defer(function()
+                local viewport = GetViewportSize()
 
-            Window.Size = UDim2.fromOffset(
-                math.clamp(
-                    Window.AbsoluteSize.X,
-                    MIN_WINDOW_WIDTH,
-                    maxWidth
-                ),
-                math.clamp(
-                    Window.AbsoluteSize.Y,
-                    MIN_WINDOW_HEIGHT,
-                    maxHeight
+                local maxWidth = math.max(MIN_WINDOW_WIDTH, viewport.X - 16)
+                local maxHeight = math.max(MIN_WINDOW_HEIGHT, viewport.Y - 16)
+
+                Window.Size = UDim2.fromOffset(
+                    math.clamp(
+                        Window.AbsoluteSize.X,
+                        MIN_WINDOW_WIDTH,
+                        maxWidth
+                    ),
+                    math.clamp(
+                        Window.AbsoluteSize.Y,
+                        MIN_WINDOW_HEIGHT,
+                        maxHeight
+                    )
                 )
-            )
 
-            Floating.Position = ClampPosition(Floating, Floating.Position)
-            Window.Position = ClampPosition(Window, Window.Position)
+                Floating.Position = ClampPosition(
+                    Floating,
+                    Floating.Position
+                )
+
+                Window.Position = ClampPosition(
+                    Window,
+                    Window.Position
+                )
+            end)
         end)
-    end)
 
     task.defer(function()
         Floating.Position = ClampPosition(Floating, Floating.Position)
