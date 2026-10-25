@@ -108,11 +108,16 @@ end
 local function AnimateIcon(icon, selected)
     TweenService:Create(
         icon,
-        TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        TweenInfo.new(
+            0.22,
+            Enum.EasingStyle.Quint,
+            Enum.EasingDirection.Out
+        ),
         {
             Size = selected
                 and UDim2.fromOffset(22, 22)
                 or UDim2.fromOffset(18, 18),
+
             ImageColor3 = selected and WHITE or GRAY
         }
     ):Play()
@@ -605,6 +610,7 @@ for index, data in ipairs(TabData) do
     ButtonText.TextXAlignment = Enum.TextXAlignment.Left
     ButtonText.Parent = Button
 
+    -- PÁGINA DA ABA
     local Page = Instance.new("ScrollingFrame")
     Page.Name = data.Name .. "Page"
     Page.Size = UDim2.new(1, -30, 1, -20)
@@ -619,7 +625,11 @@ for index, data in ipairs(TabData) do
     Page.ClipsDescendants = true
     Page.Parent = Content
 
+    -- MARGENS INTERNAS CORRIGIDAS
     local PagePadding = Instance.new("UIPadding")
+    PagePadding.PaddingLeft = UDim.new(0, 2)
+    PagePadding.PaddingRight = UDim.new(0, 2)
+    PagePadding.PaddingTop = UDim.new(0, 2)
     PagePadding.PaddingBottom = UDim.new(0, 8)
     PagePadding.Parent = Page
 
@@ -671,27 +681,31 @@ end)
 
 SelectTab("Informations")
 
---==================================================
--- SISTEMA DE TOGGLE - XYRON HUB
---==================================================
-
-local TweenService = game:GetService("TweenService")
+--========================================================--
+--                 SISTEMA DE TOGGLE                       --
+--========================================================--
 
 local ToggleStates = {}
 local ToggleCallbacks = {}
 
-local function CreateToggle(tabName, toggleName, description, defaultState, callback)
+local function CreateToggle(
+    tabName,
+    toggleName,
+    description,
+    defaultState,
+    callback
+)
     local page = Pages[tabName]
 
     if not page then
-        warn("A aba '" .. tabName .. "' não foi encontrada.")
+        warn("[Xyron Hub] Aba não encontrada: " .. tostring(tabName))
         return
     end
 
     local toggleKey = tabName .. "_" .. toggleName
 
     if ToggleStates[toggleKey] ~= nil then
-        warn("Já existe um toggle com esse nome: " .. toggleKey)
+        warn("[Xyron Hub] Toggle duplicado: " .. toggleKey)
         return
     end
 
@@ -703,21 +717,25 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     -- BASE RETANGULAR
     local Container = Instance.new("TextButton")
     Container.Name = toggleName .. "_Toggle"
-    Container.Size = UDim2.new(1, -10, 0, 64)
+
+    -- TAMANHO AJUSTADO PARA NÃO CORTAR AS BORDAS
+    Container.Size = UDim2.new(1, -4, 0, 80)
+
     Container.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
     Container.BorderSizePixel = 0
     Container.Text = ""
     Container.AutoButtonColor = false
+    Container.LayoutOrder = #page:GetChildren()
+    Container.ClipsDescendants = false
     Container.Parent = page
 
-    local ContainerCorner = Instance.new("UICorner")
-    ContainerCorner.CornerRadius = UDim.new(0, 6)
-    ContainerCorner.Parent = Container
+    Instance.new("UICorner", Container).CornerRadius =
+        UDim.new(0, 6)
 
-    -- BORDA BRANCA FINA EM VOLTA DO RETÂNGULO
+    -- BORDA BRANCA FINA AO REDOR DA BASE
     local ContainerStroke = Instance.new("UIStroke")
     ContainerStroke.Name = "WhiteBorder"
-    ContainerStroke.Color = Color3.fromRGB(255, 255, 255)
+    ContainerStroke.Color = Color3.fromRGB(10, 10, 10)
     ContainerStroke.Thickness = 1
     ContainerStroke.Transparency = 0
     ContainerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -726,11 +744,11 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     -- TÍTULO
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
-    Title.Position = UDim2.new(0, 12, 0, 8)
-    Title.Size = UDim2.new(1, -75, 0, 22)
+    Title.Position = UDim2.new(0, 12, 0, 12)
+    Title.Size = UDim2.new(1, -78, 0, 22)
     Title.BackgroundTransparency = 1
     Title.Text = toggleName
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextColor3 = WHITE
     Title.TextSize = 15
     Title.Font = Enum.Font.Gotham
     Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -741,8 +759,8 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     -- SUBTEXTO
     local Description = Instance.new("TextLabel")
     Description.Name = "Description"
-    Description.Position = UDim2.new(0, 12, 0, 31)
-    Description.Size = UDim2.new(1, -75, 0, 23)
+    Description.Position = UDim2.new(0, 12, 0, 37)
+    Description.Size = UDim2.new(1, -78, 0, 32)
     Description.BackgroundTransparency = 1
     Description.Text = description or ""
     Description.TextColor3 = Color3.fromRGB(175, 175, 175)
@@ -759,16 +777,14 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     Switch.Name = "Switch"
     Switch.AnchorPoint = Vector2.new(1, 0.5)
     Switch.Position = UDim2.new(1, -12, 0.5, 0)
-    Switch.Size = UDim2.new(0, 38, 0, 21)
+    Switch.Size = UDim2.fromOffset(38, 21)
     Switch.BackgroundColor3 = enabled
         and Color3.fromRGB(40, 130, 255)
         or Color3.fromRGB(55, 55, 55)
     Switch.BorderSizePixel = 0
     Switch.Parent = Container
 
-    local SwitchCorner = Instance.new("UICorner")
-    SwitchCorner.CornerRadius = UDim.new(1, 0)
-    SwitchCorner.Parent = Switch
+    Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
 
     -- BOLINHA BRANCA
     local Knob = Instance.new("Frame")
@@ -777,16 +793,14 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     Knob.Position = enabled
         and UDim2.new(1, -18, 0.5, 0)
         or UDim2.new(0, 3, 0.5, 0)
-    Knob.Size = UDim2.new(0, 15, 0, 15)
-    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Knob.Size = UDim2.fromOffset(15, 15)
+    Knob.BackgroundColor3 = WHITE
     Knob.BorderSizePixel = 0
     Knob.Parent = Switch
 
-    local KnobCorner = Instance.new("UICorner")
-    KnobCorner.CornerRadius = UDim.new(1, 0)
-    KnobCorner.Parent = Knob
+    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
-    -- ANIMAÇÃO E ATUALIZAÇÃO DO ESTADO
+    -- ANIMAÇÃO E ESTADO
     local function SetState(state, instant)
         enabled = state == true
         ToggleStates[toggleKey] = enabled
@@ -818,16 +832,15 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
             }):Play()
         end
 
-        if ToggleCallbacks[toggleKey] then
+        local toggleCallback = ToggleCallbacks[toggleKey]
+
+        if toggleCallback then
             task.spawn(function()
-                local success, err = pcall(
-                    ToggleCallbacks[toggleKey],
-                    enabled
-                )
+                local success, err = pcall(toggleCallback, enabled)
 
                 if not success then
                     warn(
-                        "Erro no toggle '" ..
+                        "[Xyron Hub] Erro no toggle '" ..
                         toggleName .. "': " .. tostring(err)
                     )
                 end
@@ -835,7 +848,6 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
         end
     end
 
-    -- CLIQUE NA BASE
     Container.Activated:Connect(function()
         SetState(not enabled, false)
     end)
@@ -843,7 +855,6 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     -- APLICA O ESTADO INICIAL
     SetState(enabled, true)
 
-    -- CONTROLES DO TOGGLE
     return {
         Button = Container,
 
@@ -857,11 +868,10 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     }
 end
 
---==================================================
--- EXEMPLOS DE USO
---==================================================
+--========================================================--
+--                     EXEMPLOS DE USO                    --
+--========================================================--
 
--- COMEÇA DESLIGADO
 CreateToggle(
     "ESP",
     "Highlight player",
@@ -870,15 +880,14 @@ CreateToggle(
     function(ativo)
         if ativo then
             print("Highlight player ativado")
-            -- Código para ativar o Highlight.
+            -- Coloque aqui o código para ativar o Highlight.
         else
             print("Highlight player desativado")
-            -- Código para desativar o Highlight.
+            -- Coloque aqui o código para desativar o Highlight.
         end
     end
 )
 
--- COMEÇA LIGADO
 CreateToggle(
     "ESP",
     "Show Names",
@@ -886,51 +895,48 @@ CreateToggle(
     true,
     function(ativo)
         print("Show Names:", ativo)
-        -- Código para mostrar ou esconder os nomes.
+        -- Coloque aqui o código para mostrar ou esconder os nomes.
     end
 )
 
 --========================================================--
---                 CRIAR TOGGLES NAS ABAS                  --
+--                 EXEMPLOS PARA OUTRAS ABAS              --
 --========================================================--
 
 -- ABA: INFORMATIONS
--- CreateToggle("Informations", "Meu toggle", false, function(ativo)
+-- CreateToggle("Informations", "Meu toggle", "Descrição da função.", false, function(ativo)
 -- end)
 
 -- ABA: MURDERER
--- CreateToggle("Murderer", "Meu toggle", false, function(ativo)
+-- CreateToggle("Murderer", "Meu toggle", "Descrição da função.", false, function(ativo)
 -- end)
 
 -- ABA: SHERIFF
--- CreateToggle("Sheriff", "Meu toggle", false, function(ativo)
+-- CreateToggle("Sheriff", "Meu toggle", "Descrição da função.", false, function(ativo)
 -- end)
 
--- ABA: ESP
-
-
 -- ABA: FARM COIN
--- CreateToggle("Farm coin", "Coletar moedas", false, function(ativo)
+-- CreateToggle("Farm coin", "Coletar moedas", "Descrição da função.", false, function(ativo)
 -- end)
 
 -- ABA: LOCAL PLAYER
--- CreateToggle("Local player", "Velocidade", false, function(ativo)
+-- CreateToggle("Local player", "Velocidade", "Descrição da função.", false, function(ativo)
 -- end)
 
 -- ABA: TELEPORT
--- CreateToggle("Teleport", "Teleporte", false, function(ativo)
+-- CreateToggle("Teleport", "Teleporte", "Descrição da função.", false, function(ativo)
 -- end)
 
 -- ABA: FLING
--- CreateToggle("Fling", "Ativar fling", false, function(ativo)
+-- CreateToggle("Fling", "Ativar fling", "Descrição da função.", false, function(ativo)
 -- end)
 
 -- ABA: OTHERS
--- CreateToggle("Others", "Meu toggle", false, function(ativo)
+-- CreateToggle("Others", "Meu toggle", "Descrição da função.", false, function(ativo)
 -- end)
 
 -- ABA: SETTINGS
--- CreateToggle("Senttings", "Meu toggle", false, function(ativo)
+-- CreateToggle("Senttings", "Meu toggle", "Descrição da função.", false, function(ativo)
 -- end)
 
 --========================================================--
@@ -940,7 +946,7 @@ CreateToggle(
 local function AddInfo(parent, title, description)
     local Card = Instance.new("Frame")
     Card.Name = "InfoCard"
-    Card.Size = UDim2.new(1, -8, 0, 76)
+    Card.Size = UDim2.new(1, -4, 0, 76)
     Card.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     Card.BorderSizePixel = 0
     Card.Parent = parent
@@ -1006,8 +1012,12 @@ local function SearchFunctions(query)
     for tabName, page in pairs(Pages) do
         for _, object in ipairs(page:GetDescendants()) do
             if object:IsA("TextButton") and object.Visible then
-                local label = object:FindFirstChild("ToggleLabel")
-                local buttonText = label and label.Text or object.Text or ""
+                local label = object:FindFirstChild("Title")
+                    or object:FindFirstChild("ToggleLabel")
+
+                local buttonText = label and label.Text
+                    or object.Text
+                    or ""
 
                 local searchable = string.lower(
                     buttonText .. " " .. object.Name .. " " .. tabName
