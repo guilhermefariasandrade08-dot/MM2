@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 
 local Player = Players.LocalPlayer
@@ -27,6 +28,8 @@ local BLACK = Color3.fromRGB(12, 12, 12)
 local DARK = Color3.fromRGB(20, 20, 20)
 local WHITE = Color3.fromRGB(255, 255, 255)
 local GRAY = Color3.fromRGB(160, 160, 160)
+
+local SAVE_FILE = "XyronHub_Toggles.json"
 
 --========================================================--
 --                  REMOVER INTERFACE ANTIGA              --
@@ -168,7 +171,6 @@ FloatingStroke.Transparency = 0.2
 FloatingStroke.Thickness = 1.5
 FloatingStroke.Parent = Floating
 
--- IMAGEM DENTRO DO CÍRCULO
 local AvatarCircle = Instance.new("Frame")
 AvatarCircle.Name = "AvatarCircle"
 AvatarCircle.Size = UDim2.fromOffset(38, 38)
@@ -197,7 +199,6 @@ AvatarImage.Parent = AvatarCircle
 
 Instance.new("UICorner", AvatarImage).CornerRadius = UDim.new(1, 0)
 
--- TEXTO FPS
 local FPSText = Instance.new("TextLabel")
 FPSText.Name = "FPSText"
 FPSText.Size = UDim2.new(1, -53, 1, 0)
@@ -604,7 +605,6 @@ for index, data in ipairs(TabData) do
     ButtonText.TextXAlignment = Enum.TextXAlignment.Left
     ButtonText.Parent = Button
 
-    -- ÁREA DE CONTEÚDO COM ROLAGEM AUTOMÁTICA
     local Page = Instance.new("ScrollingFrame")
     Page.Name = data.Name .. "Page"
     Page.Size = UDim2.new(1, -30, 1, -20)
@@ -671,39 +671,30 @@ end)
 
 SelectTab("Informations")
 
---========================================
--- XYRON HUB - TOGGLE ÚNICO
---========================================
+--========================================================--
+--                 SISTEMA DE TOGGLES                      --
+--========================================================--
 
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-
--- CONFIGURAÇÕES
-local TOGGLE_NAME = "Highlight players"
-local START_ENABLED = true
-
--- PERSISTÊNCIA
-local SAVE_FILE = "XyronHub_Toggles.json"
 local savedStates = {}
+local ToggleStates = {}
+local ToggleCallbacks = {}
 
-local HttpService = game:GetService("HttpService")
-
-local function LoadStates()
-    if type(readfile) ~= "function"
-        or type(isfile) ~= "function"
-        or type(writefile) ~= "function" then
+local function LoadToggleStates()
+    if type(isfile) ~= "function" or type(readfile) ~= "function" then
         return
     end
 
     pcall(function()
         if isfile(SAVE_FILE) then
-            savedStates = HttpService:JSONDecode(readfile(SAVE_FILE))
+            local decoded = HttpService:JSONDecode(readfile(SAVE_FILE))
+            if type(decoded) == "table" then
+                savedStates = decoded
+            end
         end
     end)
 end
 
-local function SaveStates()
+local function SaveToggleStates()
     if type(writefile) ~= "function" then
         return
     end
@@ -713,204 +704,214 @@ local function SaveStates()
     end)
 end
 
-LoadStates()
+LoadToggleStates()
 
--- ESTADO INICIAL
-local toggleKey = "ESP_" .. TOGGLE_NAME
-local enabled = savedStates[toggleKey]
+local function CreateToggle(tabName, toggleName, defaultState, callback)
+    local page = Pages[tabName]
 
-if enabled == nil then
-    enabled = START_ENABLED
+    if not page then
+        warn("[Xyron Hub] Aba não encontrada:", tabName)
+        return nil
+    end
+
+    local toggleKey = tabName .. "_" .. toggleName
+
+    if ToggleStates[toggleKey] ~= nil then
+        warn("[Xyron Hub] Toggle duplicado:", toggleName)
+        return nil
+    end
+
+    local enabled = savedStates[toggleKey]
+
+    if enabled == nil then
+        enabled = defaultState == true
+    end
+
+    ToggleStates[toggleKey] = enabled
+
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Name = "Toggle_" .. toggleName
+    ToggleButton.Size = UDim2.new(1, -8, 0, 46)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    ToggleButton.BorderSizePixel = 0
+    ToggleButton.AutoButtonColor = false
+    ToggleButton.Text = ""
+    ToggleButton.LayoutOrder = #page:GetChildren()
+    ToggleButton.Parent = page
+
+    Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 9)
+
+    local ToggleStroke = Instance.new("UIStroke")
+    ToggleStroke.Color = Color3.fromRGB(45, 45, 45)
+    ToggleStroke.Thickness = 1
+    ToggleStroke.Parent = ToggleButton
+
+    local ToggleLabel = Instance.new("TextLabel")
+    ToggleLabel.Name = "ToggleLabel"
+    ToggleLabel.Size = UDim2.new(1, -65, 1, 0)
+    ToggleLabel.Position = UDim2.fromOffset(12, 0)
+    ToggleLabel.BackgroundTransparency = 1
+    ToggleLabel.Text = toggleName
+    ToggleLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
+    ToggleLabel.TextSize = 13
+    ToggleLabel.Font = Enum.Font.Gotham
+    ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    ToggleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    ToggleLabel.Parent = ToggleButton
+
+    local Track = Instance.new("Frame")
+    Track.Name = "ToggleTrack"
+    Track.Size = UDim2.fromOffset(38, 21)
+    Track.AnchorPoint = Vector2.new(1, 0.5)
+    Track.Position = UDim2.new(1, -12, 0.5, 0)
+    Track.BackgroundColor3 = Color3.fromRGB(48, 48, 48)
+    Track.BorderSizePixel = 0
+    Track.Parent = ToggleButton
+
+    Instance.new("UICorner", Track).CornerRadius = UDim.new(1, 0)
+
+    local TrackStroke = Instance.new("UIStroke")
+    TrackStroke.Color = Color3.fromRGB(75, 75, 75)
+    TrackStroke.Thickness = 1
+    TrackStroke.Parent = Track
+
+    local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
+    Knob.Size = UDim2.fromOffset(15, 15)
+    Knob.AnchorPoint = Vector2.new(0, 0.5)
+    Knob.Position = UDim2.new(0, 3, 0.5, 0)
+    Knob.BackgroundColor3 = Color3.fromRGB(190, 190, 190)
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Track
+
+    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
+
+    local function UpdateToggle(instant)
+        local state = ToggleStates[toggleKey]
+        local duration = instant and 0 or 0.2
+        local info = TweenInfo.new(
+            duration,
+            Enum.EasingStyle.Quint,
+            Enum.EasingDirection.Out
+        )
+
+        TweenService:Create(Track, info, {
+            BackgroundColor3 = state
+                and Color3.fromRGB(235, 235, 235)
+                or Color3.fromRGB(48, 48, 48)
+        }):Play()
+
+        TweenService:Create(Knob, info, {
+            Position = state
+                and UDim2.new(1, -18, 0.5, 0)
+                or UDim2.new(0, 3, 0.5, 0),
+            BackgroundColor3 = state
+                and Color3.fromRGB(15, 15, 15)
+                or Color3.fromRGB(190, 190, 190)
+        }):Play()
+
+        savedStates[toggleKey] = state
+        SaveToggleStates()
+    end
+
+    local function SetToggle(state, instant)
+        ToggleStates[toggleKey] = state == true
+        UpdateToggle(instant == true)
+
+        if callback then
+            task.spawn(function()
+                local success, err = pcall(
+                    callback,
+                    ToggleStates[toggleKey]
+                )
+
+                if not success then
+                    warn(
+                        "[Xyron Hub] Erro no toggle "
+                        .. toggleName .. ": " .. tostring(err)
+                    )
+                end
+            end)
+        end
+    end
+
+    ToggleCallbacks[toggleKey] = SetToggle
+
+    UpdateToggle(true)
+
+    if callback then
+        task.spawn(function()
+            local success, err = pcall(callback, ToggleStates[toggleKey])
+
+            if not success then
+                warn(
+                    "[Xyron Hub] Erro inicial no toggle "
+                    .. toggleName .. ": " .. tostring(err)
+                )
+            end
+        end)
+    end
+
+    ToggleButton.Activated:Connect(function()
+        SetToggle(not ToggleStates[toggleKey], false)
+    end)
+
+    return {
+        Button = ToggleButton,
+        GetState = function()
+            return ToggleStates[toggleKey]
+        end,
+        SetState = function(state)
+            SetToggle(state, false)
+        end
+    }
 end
-
---========================================
--- INTERFACE
---========================================
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "XyronToggleTest"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999
-ScreenGui.Parent = game:GetService("CoreGui")
-
-local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.new(0, 280, 0, 90)
-Main.Position = UDim2.new(0.5, -140, 0.5, -45)
-Main.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-Main.BorderSizePixel = 0
-Main.Parent = ScreenGui
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = Main
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(45, 45, 45)
-MainStroke.Thickness = 1
-MainStroke.Parent = Main
-
--- BOTÃO RETANGULAR
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Size = UDim2.new(1, -20, 0, 48)
-ToggleButton.Position = UDim2.new(0, 10, 0, 21)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Text = ""
-ToggleButton.AutoButtonColor = false
-ToggleButton.Parent = Main
-
-local ButtonCorner = Instance.new("UICorner")
-ButtonCorner.CornerRadius = UDim.new(0, 9)
-ButtonCorner.Parent = ToggleButton
-
-local ButtonStroke = Instance.new("UIStroke")
-ButtonStroke.Color = Color3.fromRGB(42, 42, 42)
-ButtonStroke.Thickness = 1
-ButtonStroke.Parent = ToggleButton
-
--- CAIXINHA À ESQUERDA
-local Checkbox = Instance.new("Frame")
-Checkbox.Name = "Checkbox"
-Checkbox.Size = UDim2.new(0, 23, 0, 23)
-Checkbox.Position = UDim2.new(0, 12, 0.5, -11.5)
-Checkbox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Checkbox.BorderSizePixel = 0
-Checkbox.Parent = ToggleButton
-
-local CheckboxCorner = Instance.new("UICorner")
-CheckboxCorner.CornerRadius = UDim.new(0, 6)
-CheckboxCorner.Parent = Checkbox
-
-local CheckboxStroke = Instance.new("UIStroke")
-CheckboxStroke.Color = Color3.fromRGB(65, 65, 65)
-CheckboxStroke.Thickness = 1
-CheckboxStroke.Parent = Checkbox
-
--- SÍMBOLO DE CONFIRMAÇÃO
-local Check = Instance.new("TextLabel")
-Check.Name = "Check"
-Check.Size = UDim2.new(1, 0, 1, 0)
-Check.BackgroundTransparency = 1
-Check.Text = "✔"
-Check.TextColor3 = Color3.fromRGB(0, 0, 0)
-Check.TextSize = 16
-Check.Font = Enum.Font.GothamBold
-Check.TextTransparency = 1
-Check.Rotation = -35
-Check.Parent = Checkbox
-
--- TEXTO AO LADO DA CAIXINHA
-local Label = Instance.new("TextLabel")
-Label.Name = "Label"
-Label.Size = UDim2.new(1, -55, 1, 0)
-Label.Position = UDim2.new(0, 45, 0, 0)
-Label.BackgroundTransparency = 1
-Label.Text = TOGGLE_NAME
-Label.TextColor3 = Color3.fromRGB(235, 235, 235)
-Label.TextSize = 13
-Label.Font = Enum.Font.Gotham
-Label.TextXAlignment = Enum.TextXAlignment.Left
-Label.Parent = ToggleButton
-
---========================================
--- ATUALIZAÇÃO DO TOGGLE
---========================================
-
-local function UpdateToggle(instant)
-    local duration = instant and 0 or 0.2
-
-    TweenService:Create(
-        Checkbox,
-        TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {
-            BackgroundColor3 = enabled
-                and Color3.fromRGB(245, 245, 245)
-                or Color3.fromRGB(20, 20, 20)
-        }
-    ):Play()
-
-    TweenService:Create(
-        Check,
-        TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {
-            TextTransparency = enabled and 0 or 1,
-            Rotation = enabled and 0 or -35
-        }
-    ):Play()
-
-    savedStates[toggleKey] = enabled
-    SaveStates()
-end
-
--- ESTADO INICIAL VISUAL
-UpdateToggle(true)
-
--- CLIQUE
-ToggleButton.Activated:Connect(function()
-    enabled = not enabled
-    UpdateToggle(false)
-
-    print(TOGGLE_NAME .. ": " .. (enabled and "LIGADO" or "DESLIGADO"))
-end)
-
---========================================
--- FUNÇÃO PARA CONSULTAR O ESTADO
---========================================
-
-local function GetToggleState()
-    return enabled
-end
-
--- Exemplo:
--- print(GetToggleState())
-
-
-
 
 --========================================================--
---             ADICIONAR COMPONENTES ÀS ABAS              --
---                                                      --
--- Use: CreateToggle("Nome da aba", "Nome do botão")      --
--- Você não precisa recriar o código do toggle.          --
+--                 CRIAR TOGGLES NAS ABAS                  --
 --========================================================--
 
 -- ABA: INFORMATIONS
--- CreateToggle("Informations", "Meu toggle")
+-- CreateToggle("Informations", "Meu toggle", false, function(ativo)
+-- end)
 
 -- ABA: MURDERER
--- CreateToggle("Murderer", "ESP player")
+-- CreateToggle("Murderer", "Meu toggle", false, function(ativo)
+-- end)
 
 -- ABA: SHERIFF
--- CreateToggle("Sheriff", "Meu toggle")
+-- CreateToggle("Sheriff", "Meu toggle", false, function(ativo)
+-- end)
 
 -- ABA: ESP
 CreateToggle("ESP", "Highlight players", true, function(ativo)
-    -- Código que será executado quando ligar ou desligar
+    -- Coloque aqui o código da função de destaque dos jogadores.
+    -- O argumento "ativo" será true quando ligado e false quando desligado.
 end)
 
 -- ABA: FARM COIN
--- CreateToggle("Farm coin", "Coletar moedas")
+-- CreateToggle("Farm coin", "Coletar moedas", false, function(ativo)
+-- end)
 
 -- ABA: LOCAL PLAYER
--- CreateToggle("Local player", "Velocidade")
+-- CreateToggle("Local player", "Velocidade", false, function(ativo)
+-- end)
 
 -- ABA: TELEPORT
--- CreateToggle("Teleport", "Teleporte")
+-- CreateToggle("Teleport", "Teleporte", false, function(ativo)
+-- end)
 
 -- ABA: FLING
--- CreateToggle("Fling", "Ativar fling")
+-- CreateToggle("Fling", "Ativar fling", false, function(ativo)
+-- end)
 
 -- ABA: OTHERS
--- CreateToggle("Others", "Meu toggle")
+-- CreateToggle("Others", "Meu toggle", false, function(ativo)
+-- end)
 
 -- ABA: SETTINGS
--- CreateToggle("Senttings", "Meu toggle")
-
---========================================================--
---                FIM DA ÁREA DE COMPONENTES              --
---========================================================--
+-- CreateToggle("Senttings", "Meu toggle", false, function(ativo)
+-- end)
 
 --========================================================--
 --                    CONTEÚDO INFORMATION                --
@@ -1123,9 +1124,11 @@ ResizeHandle.Parent = Window
 
 local function GetViewportSize()
     local camera = workspace.CurrentCamera
+
     if camera then
         return camera.ViewportSize
     end
+
     return Vector2.new(800, 600)
 end
 
@@ -1158,7 +1161,7 @@ end
 local function MakeDraggable(object, handle, onClick)
     local dragging = false
     local moved = false
-    local activeInput = nil
+    local activeInput
     local startPointer = Vector2.zero
     local startPosition = UDim2.new()
     local changedConnection
@@ -1336,6 +1339,7 @@ ResizeHandle.InputBegan:Connect(function(input)
                 changedInput.Position.X,
                 changedInput.Position.Y
             )
+
             local delta = pointer - resizeStartPointer
             local viewport = GetViewportSize()
 
@@ -1432,6 +1436,7 @@ local function WatchCamera()
     end
 
     local camera = workspace.CurrentCamera
+
     if not camera then
         return
     end
