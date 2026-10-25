@@ -881,7 +881,7 @@ end
 -- EXEMPLO DE USO NA ABA MAIN
 --==================================================
 
-local MainPage = Pages["Main"]
+local MainPage = Pages["ESP"]
 
 if MainPage then
     local ExampleToggle = CreateWindToggle(MainPage, {
