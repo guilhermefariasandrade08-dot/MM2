@@ -1093,8 +1093,15 @@ local function CreateWindSlider(Parent, Config)
     }
 end
 
--- DROPDOWN / LISTA
--- Requer UserInputService já definido no script.
+--==================================================
+-- XYRON HUB - DROPDOWN / LISTA
+--==================================================
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local function CreateWindDropdown(Parent, Config)
     Config = Config or {}
@@ -1103,12 +1110,16 @@ local function CreateWindDropdown(Parent, Config)
     local SubtitleText = Config.Subtitle or ""
     local Values = Config.Values or {}
     local Default = Config.Default
+    local MenuWidth = Config.MenuWidth or 180
+    local Multi = Config.Multi == true
+    local AllowNone = Config.AllowNone == true
     local Callback = Config.Callback or function() end
 
-    local MenuWidth = Config.MenuWidth or 180
-    local Multi = Config.Multi or false
-
     local Selected = {}
+    local Opened = false
+    local Destroyed = false
+    local Connections = {}
+    local OptionButtons = {}
 
     if Multi then
         if typeof(Default) == "table" then
@@ -1118,51 +1129,78 @@ local function CreateWindDropdown(Parent, Config)
         elseif Default ~= nil then
             Selected[Default] = true
         end
-    elseif Default ~= nil then
+    elseif Default ~= nil and table.find(Values, Default) then
         Selected[Default] = true
-    elseif Values[1] ~= nil then
+    elseif Values[1] ~= nil and not AllowNone then
         Selected[Values[1]] = true
     end
 
+    local function Connect(Signal, Function)
+        local Connection = Signal:Connect(Function)
+        table.insert(Connections, Connection)
+        return Connection
+    end
+
+    -- CONTAINER PRINCIPAL
     local Container = Instance.new("Frame")
     Container.Name = "WindDropdown"
-    Container.Size = UDim2.new(1, -10, 0, 66)
+    Container.Size = UDim2.new(1, -10, 0, SubtitleText ~= "" and 82 or 56)
     Container.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
     Container.BorderSizePixel = 0
     Container.ClipsDescendants = false
+    Container.ZIndex = 2
     Container.Parent = Parent
 
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 8)
-    Corner.Parent = Container
+    local ContainerCorner = Instance.new("UICorner")
+    ContainerCorner.CornerRadius = UDim.new(0, 8)
+    ContainerCorner.Parent = Container
 
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Color3.fromRGB(42, 42, 42)
-    Stroke.Thickness = 1
-    Stroke.Parent = Container
+    local ContainerStroke = Instance.new("UIStroke")
+    ContainerStroke.Color = Color3.fromRGB(42, 42, 42)
+    ContainerStroke.Thickness = 1
+    ContainerStroke.Parent = Container
 
+    -- TÍTULO
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
     Title.Position = UDim2.new(0, 12, 0, 0)
-    Title.Size = UDim2.new(1, -MenuWidth - 38, 1, 0)
+    Title.Size = UDim2.new(1, -MenuWidth - 38, 0, 46)
     Title.BackgroundTransparency = 1
     Title.Font = Enum.Font.Gotham
     Title.Text = TitleText
     Title.TextColor3 = Color3.fromRGB(245, 245, 245)
     Title.TextSize = 13
     Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.ZIndex = 3
     Title.Parent = Container
 
-    -- CAIXA DA OPÇÃO SELECIONADA
+    -- SUBTÍTULO
+    local Subtitle = Instance.new("TextLabel")
+    Subtitle.Name = "Subtitle"
+    Subtitle.Position = UDim2.new(0, 12, 0, 48)
+    Subtitle.Size = UDim2.new(1, -24, 0, 22)
+    Subtitle.BackgroundTransparency = 1
+    Subtitle.Font = Enum.Font.Gotham
+    Subtitle.Text = SubtitleText
+    Subtitle.TextColor3 = Color3.fromRGB(140, 140, 140)
+    Subtitle.TextSize = 11
+    Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    Subtitle.TextTruncate = Enum.TextTruncate.AtEnd
+    Subtitle.ZIndex = 3
+    Subtitle.Visible = SubtitleText ~= ""
+    Subtitle.Parent = Container
+
+    -- CAIXA DE SELEÇÃO
     local Selector = Instance.new("TextButton")
     Selector.Name = "Selector"
     Selector.AnchorPoint = Vector2.new(1, 0.5)
-    Selector.Position = UDim2.new(1, -10, 0.5, 0)
+    Selector.Position = UDim2.new(1, -10, 0, 23)
     Selector.Size = UDim2.new(0, MenuWidth, 0, 36)
     Selector.BackgroundColor3 = Color3.fromRGB(27, 27, 27)
     Selector.BorderSizePixel = 0
     Selector.Text = ""
     Selector.AutoButtonColor = false
+    Selector.ZIndex = 4
     Selector.Parent = Container
 
     local SelectorCorner = Instance.new("UICorner")
@@ -1185,44 +1223,64 @@ local function CreateWindDropdown(Parent, Config)
     SelectedLabel.TextSize = 12
     SelectedLabel.TextXAlignment = Enum.TextXAlignment.Left
     SelectedLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    SelectedLabel.ZIndex = 5
     SelectedLabel.Parent = Selector
 
-    -- ÍCONES DE SETA PARA CIMA E PARA BAIXO
-    local ArrowUp = Instance.new("TextLabel")
-    ArrowUp.Name = "ArrowUp"
-    ArrowUp.AnchorPoint = Vector2.new(1, 0)
-    ArrowUp.Position = UDim2.new(1, -8, 0, 5)
-    ArrowUp.Size = UDim2.new(0, 14, 0, 12)
-    ArrowUp.BackgroundTransparency = 1
-    ArrowUp.Font = Enum.Font.Gotham
-    ArrowUp.Text = "⌃"
-    ArrowUp.TextColor3 = Color3.fromRGB(175, 175, 175)
-    ArrowUp.TextSize = 13
-    ArrowUp.Parent = Selector
+    -- SETAS DESENHADAS COM LINHAS
+    local function CreateArrow(Name, IsUp)
+        local Arrow = Instance.new("Frame")
+        Arrow.Name = Name
+        Arrow.Size = UDim2.new(0, 12, 0, 12)
+        Arrow.Position = IsUp
+            and UDim2.new(1, -19, 0, 5)
+            or UDim2.new(1, -19, 1, -17)
+        Arrow.BackgroundTransparency = 1
+        Arrow.ZIndex = 6
+        Arrow.Parent = Selector
 
-    local ArrowDown = Instance.new("TextLabel")
-    ArrowDown.Name = "ArrowDown"
-    ArrowDown.AnchorPoint = Vector2.new(1, 1)
-    ArrowDown.Position = UDim2.new(1, -8, 1, -3)
-    ArrowDown.Size = UDim2.new(0, 14, 0, 12)
-    ArrowDown.BackgroundTransparency = 1
-    ArrowDown.Font = Enum.Font.Gotham
-    ArrowDown.Text = "⌄"
-    ArrowDown.TextColor3 = Color3.fromRGB(175, 175, 175)
-    ArrowDown.TextSize = 13
-    ArrowDown.Parent = Selector
+        local Line1 = Instance.new("Frame")
+        Line1.Size = UDim2.new(0, 7, 0, 2)
+        Line1.Position = UDim2.new(0, 1, 0, 4)
+        Line1.Rotation = IsUp and -45 or 45
+        Line1.BackgroundColor3 = Color3.fromRGB(175, 175, 175)
+        Line1.BorderSizePixel = 0
+        Line1.ZIndex = 6
+        Line1.Parent = Arrow
 
-    -- PAINEL DE OPÇÕES
+        local Line2 = Instance.new("Frame")
+        Line2.Size = UDim2.new(0, 7, 0, 2)
+        Line2.Position = UDim2.new(0, 5, 0, 4)
+        Line2.Rotation = IsUp and 45 or -45
+        Line2.BackgroundColor3 = Color3.fromRGB(175, 175, 175)
+        Line2.BorderSizePixel = 0
+        Line2.ZIndex = 6
+        Line2.Parent = Arrow
+
+        return Arrow
+    end
+
+    local ArrowUp = CreateArrow("ArrowUp", true)
+    local ArrowDown = CreateArrow("ArrowDown", false)
+
+    -- MENU EM UMA CAMADA SEPARADA, ACIMA DA INTERFACE
+    local MenuLayer = Instance.new("ScreenGui")
+    MenuLayer.Name = "XyronDropdownLayer"
+    MenuLayer.DisplayOrder = 2147483647
+    MenuLayer.IgnoreGuiInset = true
+    MenuLayer.ResetOnSpawn = false
+    MenuLayer.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    MenuLayer.Enabled = false
+    MenuLayer.Parent = PlayerGui
+
     local Menu = Instance.new("Frame")
     Menu.Name = "DropdownMenu"
-    Menu.Position = UDim2.new(0, 0, 1, 5)
-    Menu.Size = UDim2.new(1, 0, 0, 0)
+    Menu.Size = UDim2.new(0, MenuWidth, 0, 0)
     Menu.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     Menu.BorderSizePixel = 0
     Menu.ClipsDescendants = true
     Menu.Visible = false
     Menu.ZIndex = 20
-    Menu.Parent = Selector
+    Menu.Parent = MenuLayer
 
     local MenuCorner = Instance.new("UICorner")
     MenuCorner.CornerRadius = UDim.new(0, 7)
@@ -1239,7 +1297,8 @@ local function CreateWindDropdown(Parent, Config)
     OptionsScroll.Size = UDim2.new(1, -8, 1, -8)
     OptionsScroll.BackgroundTransparency = 1
     OptionsScroll.BorderSizePixel = 0
-    OptionsScroll.ScrollBarThickness = 0
+    OptionsScroll.ScrollBarThickness = 2
+    OptionsScroll.ScrollBarImageColor3 = Color3.fromRGB(85, 85, 85)
     OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     OptionsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     OptionsScroll.ScrollingDirection = Enum.ScrollingDirection.Y
@@ -1254,9 +1313,6 @@ local function CreateWindDropdown(Parent, Config)
     local OptionsPadding = Instance.new("UIPadding")
     OptionsPadding.PaddingBottom = UDim.new(0, 3)
     OptionsPadding.Parent = OptionsScroll
-
-    local Opened = false
-    local OptionButtons = {}
 
     local function GetSelectedText()
         if Multi then
@@ -1324,24 +1380,41 @@ local function CreateWindDropdown(Parent, Config)
     local function CloseMenu()
         Opened = false
         Menu.Visible = false
-        Menu.Size = UDim2.new(1, 0, 0, 0)
-        ArrowUp.TextColor3 = Color3.fromRGB(175, 175, 175)
-        ArrowDown.TextColor3 = Color3.fromRGB(175, 175, 175)
+        MenuLayer.Enabled = false
+        ArrowUp.BackgroundTransparency = 1
+        ArrowDown.BackgroundTransparency = 1
     end
 
     local function OpenMenu()
-        if Opened then
+        if Opened or Destroyed then
             return
         end
 
-        Opened = true
-        Menu.Visible = true
+        local AbsolutePosition = Selector.AbsolutePosition
+        local AbsoluteSize = Selector.AbsoluteSize
+        local Viewport = workspace.CurrentCamera.ViewportSize
 
         local Height = math.min(#Values * 32 + 8, 160)
-        Menu.Size = UDim2.new(1, 0, 0, Height)
+        local X = math.clamp(
+            AbsolutePosition.X,
+            5,
+            math.max(5, Viewport.X - MenuWidth - 5)
+        )
 
-        ArrowUp.TextColor3 = Color3.fromRGB(80, 155, 255)
-        ArrowDown.TextColor3 = Color3.fromRGB(80, 155, 255)
+        local BelowY = AbsolutePosition.Y + AbsoluteSize.Y + 5
+        local AboveY = AbsolutePosition.Y - Height - 5
+
+        local Y = BelowY
+        if BelowY + Height > Viewport.Y and AboveY >= 5 then
+            Y = AboveY
+        end
+
+        Menu.Position = UDim2.fromOffset(X, Y)
+        Menu.Size = UDim2.new(0, MenuWidth, 0, Height)
+
+        MenuLayer.Enabled = true
+        Menu.Visible = true
+        Opened = true
     end
 
     local function ToggleMenu()
@@ -1387,7 +1460,7 @@ local function CreateWindDropdown(Parent, Config)
 
             OptionButtons[Option] = Button
 
-            Button.Activated:Connect(function()
+            Connect(Button.Activated, function()
                 if Multi then
                     Selected[Option] = not Selected[Option]
                 else
@@ -1404,10 +1477,9 @@ local function CreateWindDropdown(Parent, Config)
         RefreshOptions()
     end
 
-    Selector.Activated:Connect(ToggleMenu)
+    Connect(Selector.Activated, ToggleMenu)
 
-    -- FECHA A LISTA AO CLICAR FORA DEL COMPONENTE
-    UserInputService.InputBegan:Connect(function(Input)
+    Connect(UserInputService.InputBegan, function(Input)
         if not Opened then
             return
         end
@@ -1418,29 +1490,35 @@ local function CreateWindDropdown(Parent, Config)
         end
 
         local Position = Input.Position
-        local ContainerPos = Container.AbsolutePosition
-        local ContainerSize = Container.AbsoluteSize
-        local MenuPos = Menu.AbsolutePosition
+        local MenuPosition = Menu.AbsolutePosition
         local MenuSize = Menu.AbsoluteSize
-
-        local InContainer =
-            Position.X >= ContainerPos.X
-            and Position.X <= ContainerPos.X + ContainerSize.X
-            and Position.Y >= ContainerPos.Y
-            and Position.Y <= ContainerPos.Y + ContainerSize.Y
+        local SelectorPosition = Selector.AbsolutePosition
+        local SelectorSize = Selector.AbsoluteSize
 
         local InMenu =
-            Position.X >= MenuPos.X
-            and Position.X <= MenuPos.X + MenuSize.X
-            and Position.Y >= MenuPos.Y
-            and Position.Y <= MenuPos.Y + MenuSize.Y
+            Position.X >= MenuPosition.X
+            and Position.X <= MenuPosition.X + MenuSize.X
+            and Position.Y >= MenuPosition.Y
+            and Position.Y <= MenuPosition.Y + MenuSize.Y
 
-        if not InContainer and not InMenu then
+        local InSelector =
+            Position.X >= SelectorPosition.X
+            and Position.X <= SelectorPosition.X + SelectorSize.X
+            and Position.Y >= SelectorPosition.Y
+            and Position.Y <= SelectorPosition.Y + SelectorSize.Y
+
+        if not InMenu and not InSelector then
             CloseMenu()
         end
     end)
 
     BuildOptions()
+    RefreshOptions()
+
+    -- CALLBACK INICIAL
+    if Default ~= nil or (Values[1] ~= nil and not AllowNone) then
+        FireCallback()
+    end
 
     return {
         SetValue = function(NewValue)
@@ -1489,26 +1567,39 @@ local function CreateWindDropdown(Parent, Config)
         Refresh = function(NewValues)
             Values = NewValues or Values
             BuildOptions()
+            RefreshOptions()
         end,
 
         Open = OpenMenu,
         Close = CloseMenu,
+
         Destroy = function()
+            Destroyed = true
             CloseMenu()
+
+            for _, Connection in ipairs(Connections) do
+                Connection:Disconnect()
+            end
+
+            MenuLayer:Destroy()
             Container:Destroy()
         end
     }
 end
 
+--==================================================
 -- EXEMPLO DE USO
+--==================================================
+
 CreateWindDropdown(Pages["Informations"], {
     Title = "Escolher jogador",
-    Subtitle = "Selecione um jogador da lista",
+    Subtitle = "Selecione uma opção da lista",
     Values = {
         "Jogador 1",
         "Jogador 2",
         "Jogador 3",
-        "Jogador 4"
+        "Jogador 4",
+        "Jogador 5"
     },
     Default = "Jogador 1",
     MenuWidth = 180,
