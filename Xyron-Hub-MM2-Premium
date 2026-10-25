@@ -714,10 +714,13 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     ContainerCorner.CornerRadius = UDim.new(0, 6)
     ContainerCorner.Parent = Container
 
-    -- BORDA BRANCA
+    -- BORDA BRANCA FINA EM VOLTA DO RETÂNGULO
     local ContainerStroke = Instance.new("UIStroke")
-    ContainerStroke.Color = Color3.fromRGB(245, 245, 245)
+    ContainerStroke.Name = "WhiteBorder"
+    ContainerStroke.Color = Color3.fromRGB(255, 255, 255)
     ContainerStroke.Thickness = 1
+    ContainerStroke.Transparency = 0
+    ContainerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     ContainerStroke.Parent = Container
 
     -- TÍTULO
