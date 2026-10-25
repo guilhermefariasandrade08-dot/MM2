@@ -1093,6 +1093,432 @@ local function CreateWindSlider(Parent, Config)
     }
 end
 
+-- DROPDOWN / LISTA
+-- Requer UserInputService já definido no script.
+
+local function CreateWindDropdown(Parent, Config)
+    Config = Config or {}
+
+    local TitleText = Config.Title or "Dropdown"
+    local SubtitleText = Config.Subtitle or ""
+    local Values = Config.Values or {}
+    local Default = Config.Default
+    local Callback = Config.Callback or function() end
+
+    local MenuWidth = Config.MenuWidth or 180
+    local Multi = Config.Multi or false
+
+    local Selected = {}
+
+    if Multi then
+        if typeof(Default) == "table" then
+            for _, Value in ipairs(Default) do
+                Selected[Value] = true
+            end
+        elseif Default ~= nil then
+            Selected[Default] = true
+        end
+    elseif Default ~= nil then
+        Selected[Default] = true
+    elseif Values[1] ~= nil then
+        Selected[Values[1]] = true
+    end
+
+    local Container = Instance.new("Frame")
+    Container.Name = "WindDropdown"
+    Container.Size = UDim2.new(1, -10, 0, 66)
+    Container.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    Container.BorderSizePixel = 0
+    Container.ClipsDescendants = false
+    Container.Parent = Parent
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Container
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(42, 42, 42)
+    Stroke.Thickness = 1
+    Stroke.Parent = Container
+
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.new(0, 12, 0, 0)
+    Title.Size = UDim2.new(1, -MenuWidth - 38, 1, 0)
+    Title.BackgroundTransparency = 1
+    Title.Font = Enum.Font.Gotham
+    Title.Text = TitleText
+    Title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Title.TextSize = 13
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Container
+
+    -- CAIXA DA OPÇÃO SELECIONADA
+    local Selector = Instance.new("TextButton")
+    Selector.Name = "Selector"
+    Selector.AnchorPoint = Vector2.new(1, 0.5)
+    Selector.Position = UDim2.new(1, -10, 0.5, 0)
+    Selector.Size = UDim2.new(0, MenuWidth, 0, 36)
+    Selector.BackgroundColor3 = Color3.fromRGB(27, 27, 27)
+    Selector.BorderSizePixel = 0
+    Selector.Text = ""
+    Selector.AutoButtonColor = false
+    Selector.Parent = Container
+
+    local SelectorCorner = Instance.new("UICorner")
+    SelectorCorner.CornerRadius = UDim.new(0, 6)
+    SelectorCorner.Parent = Selector
+
+    local SelectorStroke = Instance.new("UIStroke")
+    SelectorStroke.Color = Color3.fromRGB(55, 55, 55)
+    SelectorStroke.Thickness = 1
+    SelectorStroke.Parent = Selector
+
+    local SelectedLabel = Instance.new("TextLabel")
+    SelectedLabel.Name = "Selected"
+    SelectedLabel.Position = UDim2.new(0, 10, 0, 0)
+    SelectedLabel.Size = UDim2.new(1, -40, 1, 0)
+    SelectedLabel.BackgroundTransparency = 1
+    SelectedLabel.Font = Enum.Font.Gotham
+    SelectedLabel.Text = ""
+    SelectedLabel.TextColor3 = Color3.fromRGB(225, 225, 225)
+    SelectedLabel.TextSize = 12
+    SelectedLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SelectedLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    SelectedLabel.Parent = Selector
+
+    -- ÍCONES DE SETA PARA CIMA E PARA BAIXO
+    local ArrowUp = Instance.new("TextLabel")
+    ArrowUp.Name = "ArrowUp"
+    ArrowUp.AnchorPoint = Vector2.new(1, 0)
+    ArrowUp.Position = UDim2.new(1, -8, 0, 5)
+    ArrowUp.Size = UDim2.new(0, 14, 0, 12)
+    ArrowUp.BackgroundTransparency = 1
+    ArrowUp.Font = Enum.Font.Gotham
+    ArrowUp.Text = "⌃"
+    ArrowUp.TextColor3 = Color3.fromRGB(175, 175, 175)
+    ArrowUp.TextSize = 13
+    ArrowUp.Parent = Selector
+
+    local ArrowDown = Instance.new("TextLabel")
+    ArrowDown.Name = "ArrowDown"
+    ArrowDown.AnchorPoint = Vector2.new(1, 1)
+    ArrowDown.Position = UDim2.new(1, -8, 1, -3)
+    ArrowDown.Size = UDim2.new(0, 14, 0, 12)
+    ArrowDown.BackgroundTransparency = 1
+    ArrowDown.Font = Enum.Font.Gotham
+    ArrowDown.Text = "⌄"
+    ArrowDown.TextColor3 = Color3.fromRGB(175, 175, 175)
+    ArrowDown.TextSize = 13
+    ArrowDown.Parent = Selector
+
+    -- PAINEL DE OPÇÕES
+    local Menu = Instance.new("Frame")
+    Menu.Name = "DropdownMenu"
+    Menu.Position = UDim2.new(0, 0, 1, 5)
+    Menu.Size = UDim2.new(1, 0, 0, 0)
+    Menu.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Menu.BorderSizePixel = 0
+    Menu.ClipsDescendants = true
+    Menu.Visible = false
+    Menu.ZIndex = 20
+    Menu.Parent = Selector
+
+    local MenuCorner = Instance.new("UICorner")
+    MenuCorner.CornerRadius = UDim.new(0, 7)
+    MenuCorner.Parent = Menu
+
+    local MenuStroke = Instance.new("UIStroke")
+    MenuStroke.Color = Color3.fromRGB(55, 55, 55)
+    MenuStroke.Thickness = 1
+    MenuStroke.Parent = Menu
+
+    local OptionsScroll = Instance.new("ScrollingFrame")
+    OptionsScroll.Name = "Options"
+    OptionsScroll.Position = UDim2.new(0, 4, 0, 4)
+    OptionsScroll.Size = UDim2.new(1, -8, 1, -8)
+    OptionsScroll.BackgroundTransparency = 1
+    OptionsScroll.BorderSizePixel = 0
+    OptionsScroll.ScrollBarThickness = 0
+    OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    OptionsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    OptionsScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+    OptionsScroll.ZIndex = 21
+    OptionsScroll.Parent = Menu
+
+    local OptionsLayout = Instance.new("UIListLayout")
+    OptionsLayout.Padding = UDim.new(0, 3)
+    OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    OptionsLayout.Parent = OptionsScroll
+
+    local OptionsPadding = Instance.new("UIPadding")
+    OptionsPadding.PaddingBottom = UDim.new(0, 3)
+    OptionsPadding.Parent = OptionsScroll
+
+    local Opened = false
+    local OptionButtons = {}
+
+    local function GetSelectedText()
+        if Multi then
+            local Result = {}
+
+            for _, Option in ipairs(Values) do
+                if Selected[Option] then
+                    table.insert(Result, tostring(Option))
+                end
+            end
+
+            return #Result > 0 and table.concat(Result, ", ") or "Nenhuma"
+        end
+
+        for _, Option in ipairs(Values) do
+            if Selected[Option] then
+                return tostring(Option)
+            end
+        end
+
+        return "Selecionar..."
+    end
+
+    local function FireCallback()
+        if Multi then
+            local Result = {}
+
+            for _, Option in ipairs(Values) do
+                if Selected[Option] then
+                    table.insert(Result, Option)
+                end
+            end
+
+            Callback(Result)
+        else
+            local Result
+
+            for _, Option in ipairs(Values) do
+                if Selected[Option] then
+                    Result = Option
+                    break
+                end
+            end
+
+            Callback(Result)
+        end
+    end
+
+    local function RefreshOptions()
+        SelectedLabel.Text = GetSelectedText()
+
+        for Option, Button in pairs(OptionButtons) do
+            local IsSelected = Selected[Option] == true
+
+            Button.BackgroundColor3 = IsSelected
+                and Color3.fromRGB(35, 75, 125)
+                or Color3.fromRGB(23, 23, 23)
+
+            Button.TextColor3 = IsSelected
+                and Color3.fromRGB(245, 245, 245)
+                or Color3.fromRGB(205, 205, 205)
+        end
+    end
+
+    local function CloseMenu()
+        Opened = false
+        Menu.Visible = false
+        Menu.Size = UDim2.new(1, 0, 0, 0)
+        ArrowUp.TextColor3 = Color3.fromRGB(175, 175, 175)
+        ArrowDown.TextColor3 = Color3.fromRGB(175, 175, 175)
+    end
+
+    local function OpenMenu()
+        if Opened then
+            return
+        end
+
+        Opened = true
+        Menu.Visible = true
+
+        local Height = math.min(#Values * 32 + 8, 160)
+        Menu.Size = UDim2.new(1, 0, 0, Height)
+
+        ArrowUp.TextColor3 = Color3.fromRGB(80, 155, 255)
+        ArrowDown.TextColor3 = Color3.fromRGB(80, 155, 255)
+    end
+
+    local function ToggleMenu()
+        if Opened then
+            CloseMenu()
+        else
+            OpenMenu()
+        end
+    end
+
+    local function BuildOptions()
+        for _, Child in ipairs(OptionsScroll:GetChildren()) do
+            if Child:IsA("TextButton") then
+                Child:Destroy()
+            end
+        end
+
+        table.clear(OptionButtons)
+
+        for Index, Option in ipairs(Values) do
+            local Button = Instance.new("TextButton")
+            Button.Name = "Option_" .. tostring(Index)
+            Button.Size = UDim2.new(1, 0, 0, 29)
+            Button.BackgroundColor3 = Color3.fromRGB(23, 23, 23)
+            Button.BorderSizePixel = 0
+            Button.AutoButtonColor = false
+            Button.Font = Enum.Font.Gotham
+            Button.Text = tostring(Option)
+            Button.TextColor3 = Color3.fromRGB(205, 205, 205)
+            Button.TextSize = 12
+            Button.TextXAlignment = Enum.TextXAlignment.Left
+            Button.LayoutOrder = Index
+            Button.ZIndex = 22
+            Button.Parent = OptionsScroll
+
+            local Padding = Instance.new("UIPadding")
+            Padding.PaddingLeft = UDim.new(0, 9)
+            Padding.Parent = Button
+
+            local ButtonCorner = Instance.new("UICorner")
+            ButtonCorner.CornerRadius = UDim.new(0, 4)
+            ButtonCorner.Parent = Button
+
+            OptionButtons[Option] = Button
+
+            Button.Activated:Connect(function()
+                if Multi then
+                    Selected[Option] = not Selected[Option]
+                else
+                    table.clear(Selected)
+                    Selected[Option] = true
+                    CloseMenu()
+                end
+
+                RefreshOptions()
+                FireCallback()
+            end)
+        end
+
+        RefreshOptions()
+    end
+
+    Selector.Activated:Connect(ToggleMenu)
+
+    -- FECHA A LISTA AO CLICAR FORA DEL COMPONENTE
+    UserInputService.InputBegan:Connect(function(Input)
+        if not Opened then
+            return
+        end
+
+        if Input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and Input.UserInputType ~= Enum.UserInputType.Touch then
+            return
+        end
+
+        local Position = Input.Position
+        local ContainerPos = Container.AbsolutePosition
+        local ContainerSize = Container.AbsoluteSize
+        local MenuPos = Menu.AbsolutePosition
+        local MenuSize = Menu.AbsoluteSize
+
+        local InContainer =
+            Position.X >= ContainerPos.X
+            and Position.X <= ContainerPos.X + ContainerSize.X
+            and Position.Y >= ContainerPos.Y
+            and Position.Y <= ContainerPos.Y + ContainerSize.Y
+
+        local InMenu =
+            Position.X >= MenuPos.X
+            and Position.X <= MenuPos.X + MenuSize.X
+            and Position.Y >= MenuPos.Y
+            and Position.Y <= MenuPos.Y + MenuSize.Y
+
+        if not InContainer and not InMenu then
+            CloseMenu()
+        end
+    end)
+
+    BuildOptions()
+
+    return {
+        SetValue = function(NewValue)
+            table.clear(Selected)
+
+            if Multi then
+                if typeof(NewValue) == "table" then
+                    for _, Option in ipairs(NewValue) do
+                        if table.find(Values, Option) then
+                            Selected[Option] = true
+                        end
+                    end
+                elseif table.find(Values, NewValue) then
+                    Selected[NewValue] = true
+                end
+            elseif table.find(Values, NewValue) then
+                Selected[NewValue] = true
+            end
+
+            RefreshOptions()
+            FireCallback()
+        end,
+
+        GetValue = function()
+            if Multi then
+                local Result = {}
+
+                for _, Option in ipairs(Values) do
+                    if Selected[Option] then
+                        table.insert(Result, Option)
+                    end
+                end
+
+                return Result
+            end
+
+            for _, Option in ipairs(Values) do
+                if Selected[Option] then
+                    return Option
+                end
+            end
+
+            return nil
+        end,
+
+        Refresh = function(NewValues)
+            Values = NewValues or Values
+            BuildOptions()
+        end,
+
+        Open = OpenMenu,
+        Close = CloseMenu,
+        Destroy = function()
+            CloseMenu()
+            Container:Destroy()
+        end
+    }
+end
+
+-- EXEMPLO DE USO
+CreateWindDropdown(Pages["Informations"], {
+    Title = "Escolher jogador",
+    Subtitle = "Selecione um jogador da lista",
+    Values = {
+        "Jogador 1",
+        "Jogador 2",
+        "Jogador 3",
+        "Jogador 4"
+    },
+    Default = "Jogador 1",
+    MenuWidth = 180,
+    Multi = false,
+
+    Callback = function(Selected)
+        print("Selecionado:", Selected)
+    end
+})
+
 -- EXEMPLO DE USO
 CreateWindSlider(Pages["Informations"], {
     Title = "Walk speed",
