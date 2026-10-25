@@ -1290,11 +1290,607 @@ local function CreateSlider(
 end
 
 --==================================================
+-- SISTEMA DE DROPDOWN / LISTA - XYRON HUB
+--==================================================
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+local DropdownStates = {}
+local DropdownCallbacks = {}
+
+local BLACK = Color3.fromRGB(5, 5, 5)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local GRAY = Color3.fromRGB(65, 65, 65)
+local DARK_GRAY = Color3.fromRGB(25, 25, 25)
+local TEXT_GRAY = Color3.fromRGB(175, 175, 175)
+local BLUE = Color3.fromRGB(40, 130, 255)
+
+local function CreateDropdown(
+    tabName,
+    dropdownName,
+    description,
+    options,
+    defaultValue,
+    playerMode,
+    callback
+)
+    local page = Pages[tabName]
+
+    if not page then
+        warn("A aba '" .. tostring(tabName) .. "' não foi encontrada.")
+        return
+    end
+
+    local dropdownKey = tabName .. "_" .. dropdownName
+
+    if DropdownStates[dropdownKey] then
+        warn("Já existe uma lista com esse nome: " .. dropdownKey)
+        return
+    end
+
+    options = options or {}
+    playerMode = playerMode == true
+
+    local selectedValue = defaultValue
+    local isOpen = false
+    local playerConnections = {}
+    local optionButtons = {}
+
+    DropdownStates[dropdownKey] = {
+        Value = selectedValue
+    }
+
+    DropdownCallbacks[dropdownKey] = callback
+
+    --==================================================
+    -- CAIXA PRINCIPAL
+    --==================================================
+
+    local Container = Instance.new("Frame")
+    Container.Name = dropdownName .. "_Dropdown"
+    Container.Size = UDim2.new(1, -4, 0, 72)
+    Container.BackgroundColor3 = BLACK
+    Container.BorderSizePixel = 0
+    Container.ClipsDescendants = false
+    Container.ZIndex = 2
+    Container.Parent = page
+
+    local ContainerCorner = Instance.new("UICorner")
+    ContainerCorner.CornerRadius = UDim.new(0, 7)
+    ContainerCorner.Parent = Container
+
+    local ContainerStroke = Instance.new("UIStroke")
+    ContainerStroke.Color = WHITE
+    ContainerStroke.Thickness = 1
+    ContainerStroke.Parent = Container
+
+    --==================================================
+    -- TÍTULO
+    --==================================================
+
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.fromOffset(12, 5)
+    Title.Size = UDim2.new(1, -80, 0, 19)
+    Title.BackgroundTransparency = 1
+    Title.Text = dropdownName
+    Title.TextColor3 = WHITE
+    Title.TextSize = 14
+    Title.Font = Enum.Font.Gotham
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextTruncate = Enum.TextTruncate.AtEnd
+    Title.ZIndex = 3
+    Title.Parent = Container
+
+    --==================================================
+    -- DESCRIÇÃO
+    --==================================================
+
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Position = UDim2.fromOffset(12, 25)
+    Description.Size = UDim2.new(1, -24, 0, 15)
+    Description.BackgroundTransparency = 1
+    Description.Text = description or ""
+    Description.TextColor3 = TEXT_GRAY
+    Description.TextSize = 10
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextTruncate = Enum.TextTruncate.AtEnd
+    Description.ZIndex = 3
+    Description.Parent = Container
+
+    --==================================================
+    -- VALOR SELECIONADO
+    --==================================================
+
+    local SelectedLabel = Instance.new("TextLabel")
+    SelectedLabel.Name = "SelectedValue"
+    SelectedLabel.Position = UDim2.fromOffset(12, 44)
+    SelectedLabel.Size = UDim2.new(1, -88, 0, 20)
+    SelectedLabel.BackgroundTransparency = 1
+    SelectedLabel.Text = selectedValue and tostring(selectedValue) or "Selecionar..."
+    SelectedLabel.TextColor3 = WHITE
+    SelectedLabel.TextSize = 12
+    SelectedLabel.Font = Enum.Font.Gotham
+    SelectedLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SelectedLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    SelectedLabel.ZIndex = 3
+    SelectedLabel.Parent = Container
+
+    --==================================================
+    -- BOTÃO CINZA COM SETAS
+    --==================================================
+
+    local ArrowBox = Instance.new("TextButton")
+    ArrowBox.Name = "ArrowBox"
+    ArrowBox.AnchorPoint = Vector2.new(1, 0.5)
+    ArrowBox.Position = UDim2.new(1, -9, 0.5, 0)
+    ArrowBox.Size = UDim2.fromOffset(39, 48)
+    ArrowBox.BackgroundColor3 = GRAY
+    ArrowBox.BorderSizePixel = 0
+    ArrowBox.Text = ""
+    ArrowBox.AutoButtonColor = false
+    ArrowBox.ZIndex = 4
+    ArrowBox.Parent = Container
+
+    local ArrowCorner = Instance.new("UICorner")
+    ArrowCorner.CornerRadius = UDim.new(0, 5)
+    ArrowCorner.Parent = ArrowBox
+
+    local ArrowStroke = Instance.new("UIStroke")
+    ArrowStroke.Color = Color3.fromRGB(95, 95, 95)
+    ArrowStroke.Thickness = 1
+    ArrowStroke.Parent = ArrowBox
+
+    local UpArrow = Instance.new("TextLabel")
+    UpArrow.Name = "UpArrow"
+    UpArrow.Position = UDim2.new(0, 0, 0, 2)
+    UpArrow.Size = UDim2.new(1, 0, 0.5, 0)
+    UpArrow.BackgroundTransparency = 1
+    UpArrow.Text = "^"
+    UpArrow.TextColor3 = WHITE
+    UpArrow.TextSize = 17
+    UpArrow.Font = Enum.Font.GothamMedium
+    UpArrow.ZIndex = 5
+    UpArrow.Parent = ArrowBox
+
+    local DownArrow = Instance.new("TextLabel")
+    DownArrow.Name = "DownArrow"
+    DownArrow.Position = UDim2.new(0, 0, 0.5, -3)
+    DownArrow.Size = UDim2.new(1, 0, 0.5, 0)
+    DownArrow.BackgroundTransparency = 1
+    DownArrow.Text = "v"
+    DownArrow.TextColor3 = WHITE
+    DownArrow.TextSize = 13
+    DownArrow.Font = Enum.Font.GothamMedium
+    DownArrow.ZIndex = 5
+    DownArrow.Parent = ArrowBox
+
+    --==================================================
+    -- LISTA SUSPENSA
+    --==================================================
+
+    local Popup = Instance.new("Frame")
+    Popup.Name = "DropdownPopup"
+    Popup.Position = UDim2.new(0, 0, 1, 7)
+    Popup.Size = UDim2.new(1, 0, 0, 0)
+    Popup.BackgroundColor3 = BLACK
+    Popup.BorderSizePixel = 0
+    Popup.ClipsDescendants = true
+    Popup.Visible = false
+    Popup.ZIndex = 20
+    Popup.Parent = Container
+
+    local PopupCorner = Instance.new("UICorner")
+    PopupCorner.CornerRadius = UDim.new(0, 8)
+    PopupCorner.Parent = Popup
+
+    local PopupStroke = Instance.new("UIStroke")
+    PopupStroke.Color = WHITE
+    PopupStroke.Thickness = 1
+    PopupStroke.Parent = Popup
+
+    local OptionsScroll = Instance.new("ScrollingFrame")
+    OptionsScroll.Name = "Options"
+    OptionsScroll.Position = UDim2.fromOffset(4, 4)
+    OptionsScroll.Size = UDim2.new(1, -8, 1, -8)
+    OptionsScroll.BackgroundTransparency = 1
+    OptionsScroll.BorderSizePixel = 0
+    OptionsScroll.ScrollBarThickness = 0
+    OptionsScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+    OptionsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    OptionsScroll.ZIndex = 21
+    OptionsScroll.Parent = Popup
+
+    local OptionsLayout = Instance.new("UIListLayout")
+    OptionsLayout.Padding = UDim.new(0, 4)
+    OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    OptionsLayout.Parent = OptionsScroll
+
+    local OptionsPadding = Instance.new("UIPadding")
+    OptionsPadding.PaddingTop = UDim.new(0, 3)
+    OptionsPadding.PaddingBottom = UDim.new(0, 3)
+    OptionsPadding.PaddingLeft = UDim.new(0, 3)
+    OptionsPadding.PaddingRight = UDim.new(0, 3)
+    OptionsPadding.Parent = OptionsScroll
+
+    --==================================================
+    -- FECHAR A LISTA
+    --==================================================
+
+    local function ClosePopup()
+        isOpen = false
+
+        local tween = TweenService:Create(
+            Popup,
+            TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {
+                Size = UDim2.new(1, 0, 0, 0)
+            }
+        )
+
+        tween:Play()
+        tween.Completed:Once(function()
+            if not isOpen and Popup.Parent then
+                Popup.Visible = false
+            end
+        end)
+
+        DownArrow.TextColor3 = WHITE
+        UpArrow.TextColor3 = WHITE
+    end
+
+    --==================================================
+    -- ABRIR A LISTA
+    --==================================================
+
+    local function OpenPopup()
+        if isOpen then
+            ClosePopup()
+            return
+        end
+
+        isOpen = true
+        Popup.Visible = true
+
+        local count = #OptionsScroll:GetChildren() - 2
+        count = math.max(count, 1)
+
+        local height = math.min(count * 35 + 12, 175)
+
+        Popup.Size = UDim2.new(1, 0, 0, 0)
+
+        TweenService:Create(
+            Popup,
+            TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {
+                Size = UDim2.new(1, 0, 0, height)
+            }
+        ):Play()
+
+        DownArrow.TextColor3 = BLUE
+        UpArrow.TextColor3 = BLUE
+    end
+
+    ArrowBox.Activated:Connect(OpenPopup)
+
+    --==================================================
+    -- LIMPAR OPÇÕES ANTIGAS
+    --==================================================
+
+    local function ClearOptions()
+        for _, connection in ipairs(playerConnections) do
+            connection:Disconnect()
+        end
+
+        table.clear(playerConnections)
+        table.clear(optionButtons)
+
+        for _, child in ipairs(OptionsScroll:GetChildren()) do
+            if child:IsA("TextButton") or child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+    end
+
+    --==================================================
+    -- SELECIONAR UMA OPÇÃO
+    --==================================================
+
+    local function SelectOption(value)
+        selectedValue = value
+
+        DropdownStates[dropdownKey].Value = value
+        SelectedLabel.Text = tostring(value)
+        ClosePopup()
+
+        if callback then
+            task.spawn(function()
+                local success, err = pcall(callback, value)
+
+                if not success then
+                    warn("Erro no dropdown '" .. dropdownName .. "': " .. tostring(err))
+                end
+            end)
+        end
+    end
+
+    --==================================================
+    -- CRIAR UMA OPÇÃO
+    --==================================================
+
+    local function AddOption(value, userId)
+        local item = Instance.new("TextButton")
+        item.Name = "Option_" .. tostring(value)
+        item.Size = UDim2.new(1, -2, 0, 32)
+        item.BackgroundColor3 = DARK_GRAY
+        item.BorderSizePixel = 0
+        item.Text = ""
+        item.AutoButtonColor = false
+        item.ZIndex = 22
+        item.Parent = OptionsScroll
+
+        local itemCorner = Instance.new("UICorner")
+        itemCorner.CornerRadius = UDim.new(0, 5)
+        itemCorner.Parent = item
+
+        -- LINHA BRANCA AO LADO DA OPÇÃO
+        local Line = Instance.new("Frame")
+        Line.Name = "WhiteLine"
+        Line.Position = UDim2.fromOffset(5, 7)
+        Line.Size = UDim2.new(0, 2, 1, -14)
+        Line.BackgroundColor3 = WHITE
+        Line.BorderSizePixel = 0
+        Line.ZIndex = 23
+        Line.Parent = item
+
+        local textOffset = 14
+
+        -- FOTO DE PERFIL CIRCULAR (SOMENTE NO MODO JOGADORES)
+        if playerMode and userId then
+            local Avatar = Instance.new("ImageLabel")
+            Avatar.Name = "Avatar"
+            Avatar.Position = UDim2.fromOffset(14, 4)
+            Avatar.Size = UDim2.fromOffset(24, 24)
+            Avatar.BackgroundColor3 = GRAY
+            Avatar.BorderSizePixel = 0
+            Avatar.Image = ""
+            Avatar.ZIndex = 24
+            Avatar.Parent = item
+
+            local AvatarCorner = Instance.new("UICorner")
+            AvatarCorner.CornerRadius = UDim.new(1, 0)
+            AvatarCorner.Parent = Avatar
+
+            local AvatarStroke = Instance.new("UIStroke")
+            AvatarStroke.Color = WHITE
+            AvatarStroke.Thickness = 1
+            AvatarStroke.Parent = Avatar
+
+            textOffset = 44
+
+            task.spawn(function()
+                local success, image = pcall(function()
+                    return Players:GetUserThumbnailAsync(
+                        userId,
+                        Enum.ThumbnailType.HeadShot,
+                        Enum.ThumbnailSize.Size48x48
+                    )
+                end)
+
+                if success and Avatar.Parent then
+                    Avatar.Image = image
+                end
+            end)
+        end
+
+        local OptionLabel = Instance.new("TextLabel")
+        OptionLabel.Name = "OptionName"
+        OptionLabel.Position = UDim2.fromOffset(textOffset, 0)
+        OptionLabel.Size = UDim2.new(1, -textOffset - 8, 1, 0)
+        OptionLabel.BackgroundTransparency = 1
+        OptionLabel.Text = tostring(value)
+        OptionLabel.TextColor3 = WHITE
+        OptionLabel.TextSize = 12
+        OptionLabel.Font = Enum.Font.Gotham
+        OptionLabel.TextXAlignment = Enum.TextXAlignment.Left
+        OptionLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        OptionLabel.ZIndex = 23
+        OptionLabel.Parent = item
+
+        item.MouseEnter:Connect(function()
+            TweenService:Create(
+                item,
+                TweenInfo.new(0.12),
+                { BackgroundColor3 = Color3.fromRGB(42, 42, 42) }
+            ):Play()
+        end)
+
+        item.MouseLeave:Connect(function()
+            TweenService:Create(
+                item,
+                TweenInfo.new(0.12),
+                { BackgroundColor3 = DARK_GRAY }
+            ):Play()
+        end)
+
+        item.Activated:Connect(function()
+            SelectOption(value)
+        end)
+
+        table.insert(optionButtons, item)
+    end
+
+    --==================================================
+    -- ATUALIZAR A LISTA DE JOGADORES OU OPÇÕES
+    --==================================================
+
+    local function RefreshOptions()
+        ClearOptions()
+
+        if playerMode then
+            local currentPlayers = Players:GetPlayers()
+
+            table.sort(currentPlayers, function(a, b)
+                return a.Name:lower() < b.Name:lower()
+            end)
+
+            for _, player in ipairs(currentPlayers) do
+                AddOption(player.Name, player.UserId)
+            end
+
+            if selectedValue then
+                local stillExists = false
+
+                for _, player in ipairs(currentPlayers) do
+                    if player.Name == selectedValue then
+                        stillExists = true
+                        break
+                    end
+                end
+
+                if not stillExists then
+                    selectedValue = nil
+                    DropdownStates[dropdownKey].Value = nil
+                    SelectedLabel.Text = "Selecionar..."
+                end
+            end
+        else
+            for _, option in ipairs(options) do
+                AddOption(option)
+            end
+        end
+    end
+
+    --==================================================
+    -- ATUALIZAÇÃO AUTOMÁTICA DE JOGADORES
+    --==================================================
+
+    if playerMode then
+        table.insert(
+            playerConnections,
+            Players.PlayerAdded:Connect(function()
+                task.defer(RefreshOptions)
+            end)
+        )
+
+        table.insert(
+            playerConnections,
+            Players.PlayerRemoving:Connect(function(leavingPlayer)
+                if selectedValue == leavingPlayer.Name then
+                    selectedValue = nil
+                    DropdownStates[dropdownKey].Value = nil
+                    SelectedLabel.Text = "Selecionar..."
+                end
+
+                task.defer(RefreshOptions)
+            end)
+        )
+    end
+
+    RefreshOptions()
+
+    --==================================================
+    -- VALOR INICIAL
+    --==================================================
+
+    if selectedValue then
+        SelectedLabel.Text = tostring(selectedValue)
+    elseif playerMode then
+        SelectedLabel.Text = "Selecionar jogador..."
+    else
+        SelectedLabel.Text = "Selecionar..."
+    end
+
+    --==================================================
+    -- FUNÇÕES DE CONTROLE
+    --==================================================
+
+    Container.Destroying:Connect(function()
+        ClearOptions()
+        DropdownStates[dropdownKey] = nil
+        DropdownCallbacks[dropdownKey] = nil
+    end)
+
+    return {
+        Frame = Container,
+
+        GetValue = function()
+            return selectedValue
+        end,
+
+        SetValue = function(newValue)
+            SelectOption(newValue)
+        end,
+
+        Refresh = function()
+            RefreshOptions()
+        end,
+
+        Open = function()
+            if not isOpen then
+                OpenPopup()
+            end
+        end,
+
+        Close = function()
+            if isOpen then
+                ClosePopup()
+            end
+        end
+    }
+end
+
+--==================================================
+-- EXEMPLO 1: LISTA NORMAL
+--==================================================
+
+local MinhaLista = CreateDropdown(
+    "Others",
+    "Selecionar objeto",
+    "Escolha um objeto da lista.",
+    {
+        "Objeto 1",
+        "Objeto 2",
+        "Objeto 3",
+        "Objeto 4"
+    },
+    "Objeto 1",
+    false,
+    function(valor)
+        print("Objeto selecionado:", valor)
+
+        -- Coloque aqui o código que usa o objeto escolhido.
+    end
+)
+
+--==================================================
+-- EXEMPLO 2: LISTA DE JOGADORES
+--==================================================
+
+local ListaJogadores = CreateDropdown(
+    "ESP",
+    "Selecionar jogador",
+    "Escolha um jogador da partida.",
+    {},
+    nil,
+    true,
+    function(nomeJogador)
+        print("Jogador selecionado:", nomeJogador)
+
+        -- Coloque aqui o código que usa o jogador escolhido.
+    end
+)
+
+--==================================================
 -- EXEMPLO DE USO
 --==================================================
 
 CreateSlider(
-    "Local player",
+    "ESP",
     "WalkSpeed",
     "Define a velocidade do jogador.",
     16,
