@@ -868,6 +868,445 @@ local function CreateToggle(
     }
 end
 
+--==================================================
+-- SISTEMA DE SLIDER - XYRON HUB
+--==================================================
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local SliderStates = {}
+local SliderCallbacks = {}
+
+local BLUE = Color3.fromRGB(40, 130, 255)
+local BLACK = Color3.fromRGB(5, 5, 5)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local GRAY = Color3.fromRGB(65, 65, 65)
+local DARK_GRAY = Color3.fromRGB(45, 45, 45)
+
+local function CreateSlider(
+    tabName,
+    sliderName,
+    description,
+    minimum,
+    maximum,
+    defaultValue,
+    callback
+)
+    local page = Pages[tabName]
+
+    if not page then
+        warn("A aba '" .. tabName .. "' não foi encontrada.")
+        return
+    end
+
+    minimum = tonumber(minimum) or 0
+    maximum = tonumber(maximum) or 100
+
+    if maximum < minimum then
+        minimum, maximum = maximum, minimum
+    end
+
+    minimum = math.floor(minimum)
+    maximum = math.floor(maximum)
+
+    defaultValue = math.clamp(
+        math.floor(tonumber(defaultValue) or minimum),
+        minimum,
+        maximum
+    )
+
+    local sliderKey = tabName .. "_" .. sliderName
+
+    if SliderStates[sliderKey] ~= nil then
+        warn("Já existe um slider com esse nome: " .. sliderKey)
+        return
+    end
+
+    local value = defaultValue
+
+    SliderStates[sliderKey] = value
+    SliderCallbacks[sliderKey] = callback
+
+    -- BASE RETANGULAR PRETA
+    local Container = Instance.new("Frame")
+    Container.Name = sliderName .. "_Slider"
+    Container.Size = UDim2.new(1, -4, 0, 88)
+    Container.BackgroundColor3 = BLACK
+    Container.BorderSizePixel = 0
+    Container.ClipsDescendants = false
+    Container.Parent = page
+
+    local ContainerCorner = Instance.new("UICorner")
+    ContainerCorner.CornerRadius = UDim.new(0, 7)
+    ContainerCorner.Parent = Container
+
+    -- BORDA BRANCA
+    local ContainerStroke = Instance.new("UIStroke")
+    ContainerStroke.Name = "WhiteBorder"
+    ContainerStroke.Color = WHITE
+    ContainerStroke.Thickness = 1
+    ContainerStroke.Transparency = 0
+    ContainerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    ContainerStroke.Parent = Container
+
+    -- TÍTULO
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.fromOffset(12, 7)
+    Title.Size = UDim2.new(1, -100, 0, 21)
+    Title.BackgroundTransparency = 1
+    Title.Text = sliderName
+    Title.TextColor3 = WHITE
+    Title.TextSize = 14
+    Title.Font = Enum.Font.Gotham
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextTruncate = Enum.TextTruncate.AtEnd
+    Title.Parent = Container
+
+    -- CAMPO NUMÉRICO CINZA
+    local ValueBox = Instance.new("TextBox")
+    ValueBox.Name = "ValueBox"
+    ValueBox.AnchorPoint = Vector2.new(1, 0)
+    ValueBox.Position = UDim2.new(1, -10, 0, 6)
+    ValueBox.Size = UDim2.fromOffset(54, 24)
+    ValueBox.BackgroundColor3 = GRAY
+    ValueBox.BorderSizePixel = 0
+    ValueBox.Text = tostring(value)
+    ValueBox.TextColor3 = WHITE
+    ValueBox.TextSize = 12
+    ValueBox.Font = Enum.Font.GothamMedium
+    ValueBox.ClearTextOnFocus = false
+    ValueBox.TextXAlignment = Enum.TextXAlignment.Center
+    ValueBox.TextYAlignment = Enum.TextYAlignment.Center
+    ValueBox.Parent = Container
+
+    local ValueCorner = Instance.new("UICorner")
+    ValueCorner.CornerRadius = UDim.new(0, 5)
+    ValueCorner.Parent = ValueBox
+
+    local ValueStroke = Instance.new("UIStroke")
+    ValueStroke.Color = Color3.fromRGB(100, 100, 100)
+    ValueStroke.Thickness = 1
+    ValueStroke.Parent = ValueBox
+
+    -- SUBTEXTO
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Position = UDim2.fromOffset(12, 29)
+    Description.Size = UDim2.new(1, -24, 0, 17)
+    Description.BackgroundTransparency = 1
+    Description.Text = description or ""
+    Description.TextColor3 = Color3.fromRGB(175, 175, 175)
+    Description.TextSize = 10
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextTruncate = Enum.TextTruncate.AtEnd
+    Description.Parent = Container
+
+    -- TRILHO DO SLIDER
+    local Track = Instance.new("Frame")
+    Track.Name = "Track"
+    Track.Position = UDim2.new(0, 12, 0, 62)
+    Track.Size = UDim2.new(1, -24, 0, 5)
+    Track.BackgroundColor3 = DARK_GRAY
+    Track.BorderSizePixel = 0
+    Track.Parent = Container
+
+    local TrackCorner = Instance.new("UICorner")
+    TrackCorner.CornerRadius = UDim.new(1, 0)
+    TrackCorner.Parent = Track
+
+    -- PARTE AZUL
+    local Fill = Instance.new("Frame")
+    Fill.Name = "Fill"
+    Fill.Size = UDim2.new(0, 0, 1, 0)
+    Fill.BackgroundColor3 = BLUE
+    Fill.BorderSizePixel = 0
+    Fill.Parent = Track
+
+    local FillCorner = Instance.new("UICorner")
+    FillCorner.CornerRadius = UDim.new(1, 0)
+    FillCorner.Parent = Fill
+
+    -- BOLINHA BRANCA
+    local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
+    Knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    Knob.Position = UDim2.new(0, 0, 0.5, 0)
+    Knob.Size = UDim2.fromOffset(14, 14)
+    Knob.BackgroundColor3 = WHITE
+    Knob.BorderSizePixel = 0
+    Knob.ZIndex = 3
+    Knob.Parent = Track
+
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
+
+    local KnobStroke = Instance.new("UIStroke")
+    KnobStroke.Color = Color3.fromRGB(220, 220, 220)
+    KnobStroke.Thickness = 1
+    KnobStroke.Parent = Knob
+
+    -- ATUALIZAR VALOR E VISUAL
+    local function UpdateSlider(newValue, instant, runCallback)
+        newValue = tonumber(newValue)
+
+        if not newValue then
+            return
+        end
+
+        value = math.clamp(
+            math.floor(newValue),
+            minimum,
+            maximum
+        )
+
+        SliderStates[sliderKey] = value
+        ValueBox.Text = tostring(value)
+
+        local range = maximum - minimum
+        local percent = range == 0
+            and 0
+            or (value - minimum) / range
+
+        local fillSize = UDim2.new(percent, 0, 1, 0)
+        local knobPosition = UDim2.new(percent, 0, 0.5, 0)
+
+        if instant then
+            Fill.Size = fillSize
+            Knob.Position = knobPosition
+        else
+            local info = TweenInfo.new(
+                0.16,
+                Enum.EasingStyle.Quart,
+                Enum.EasingDirection.Out
+            )
+
+            TweenService:Create(Fill, info, {
+                Size = fillSize
+            }):Play()
+
+            TweenService:Create(Knob, info, {
+                Position = knobPosition
+            }):Play()
+        end
+
+        if runCallback and SliderCallbacks[sliderKey] then
+            task.spawn(function()
+                local success, err = pcall(
+                    SliderCallbacks[sliderKey],
+                    value
+                )
+
+                if not success then
+                    warn(
+                        "Erro no slider '" ..
+                        sliderName .. "': " .. tostring(err)
+                    )
+                end
+            end)
+        end
+    end
+
+    -- ARRASTAR COM PROTEÇÃO CONTRA MÚLTIPLOS TOQUES
+    local dragging = false
+    local activeTouch = nil
+    local activeInputType = nil
+    local inputChangedConnection = nil
+    local inputEndedConnection = nil
+
+    local function SetFromPointer(inputX)
+        local trackStart = Track.AbsolutePosition.X
+        local trackWidth = Track.AbsoluteSize.X
+
+        if trackWidth <= 0 then
+            return
+        end
+
+        local percent = math.clamp(
+            (inputX - trackStart) / trackWidth,
+            0,
+            1
+        )
+
+        local newValue = minimum + percent * (maximum - minimum)
+        UpdateSlider(newValue, false, true)
+    end
+
+    local function StopDragging()
+        dragging = false
+        activeTouch = nil
+        activeInputType = nil
+
+        if inputChangedConnection then
+            inputChangedConnection:Disconnect()
+            inputChangedConnection = nil
+        end
+
+        if inputEndedConnection then
+            inputEndedConnection:Disconnect()
+            inputEndedConnection = nil
+        end
+    end
+
+    local DragButton = Instance.new("TextButton")
+    DragButton.Name = "DragButton"
+    DragButton.Size = UDim2.new(1, 0, 0, 25)
+    DragButton.Position = UDim2.new(0, 0, 0, -10)
+    DragButton.BackgroundTransparency = 1
+    DragButton.Text = ""
+    DragButton.AutoButtonColor = false
+    DragButton.Active = true
+    DragButton.ZIndex = 5
+    DragButton.Parent = Track
+
+    DragButton.InputBegan:Connect(function(input)
+        local inputType = input.UserInputType
+
+        if inputType ~= Enum.UserInputType.MouseButton1
+            and inputType ~= Enum.UserInputType.Touch then
+            return
+        end
+
+        if dragging then
+            return
+        end
+
+        dragging = true
+        activeTouch = input
+        activeInputType = inputType
+
+        SetFromPointer(input.Position.X)
+
+        inputChangedConnection = UserInputService.InputChanged:Connect(
+            function(changedInput)
+                if not dragging or not activeTouch then
+                    return
+                end
+
+                local isMouseMove =
+                    activeInputType == Enum.UserInputType.MouseButton1
+                    and changedInput.UserInputType
+                        == Enum.UserInputType.MouseMovement
+
+                local isTouchMove =
+                    activeInputType == Enum.UserInputType.Touch
+                    and changedInput == activeTouch
+
+                if isMouseMove or isTouchMove then
+                    SetFromPointer(changedInput.Position.X)
+                end
+            end
+        )
+
+        inputEndedConnection = UserInputService.InputEnded:Connect(
+            function(endedInput)
+                if not dragging or not activeTouch then
+                    return
+                end
+
+                local finished = false
+
+                if activeInputType == Enum.UserInputType.MouseButton1 then
+                    finished =
+                        endedInput.UserInputType
+                        == Enum.UserInputType.MouseButton1
+                elseif activeInputType == Enum.UserInputType.Touch then
+                    finished = endedInput == activeTouch
+                end
+
+                if finished then
+                    StopDragging()
+                end
+            end
+        )
+    end)
+
+    Container.Destroying:Connect(function()
+        StopDragging()
+    end)
+
+    -- CAMPO NUMÉRICO EDITÁVEL
+    local editing = false
+
+    ValueBox.Focused:Connect(function()
+        editing = true
+    end)
+
+    ValueBox:GetPropertyChangedSignal("Text"):Connect(function()
+        if not editing then
+            return
+        end
+
+        local clean = ValueBox.Text:gsub("%D", "")
+
+        if clean ~= ValueBox.Text then
+            local cursor = ValueBox.CursorPosition
+            ValueBox.Text = clean
+
+            if cursor >= 1 then
+                ValueBox.CursorPosition = math.min(
+                    cursor,
+                    #clean + 1
+                )
+            end
+        end
+    end)
+
+    local function CommitValue()
+        editing = false
+
+        local typedValue = tonumber(ValueBox.Text)
+
+        if not typedValue then
+            UpdateSlider(value, false, false)
+            return
+        end
+
+        UpdateSlider(typedValue, false, true)
+    end
+
+    ValueBox.FocusLost:Connect(function()
+        CommitValue()
+    end)
+
+    -- APLICAR VALOR INICIAL
+    UpdateSlider(value, true, true)
+
+    -- CONTROLES DO SLIDER
+    return {
+        Frame = Container,
+
+        GetValue = function()
+            return value
+        end,
+
+        SetValue = function(newValue)
+            UpdateSlider(newValue, false, true)
+        end
+    }
+end
+
+--==================================================
+-- EXEMPLO DE USO
+--==================================================
+
+CreateSlider(
+    "Local player",
+    "WalkSpeed",
+    "Define a velocidade do jogador.",
+    16,
+    100,
+    16,
+    function(valor)
+        print("WalkSpeed:", valor)
+
+        -- Coloque aqui o código que usa o valor.
+    end
+)
+
 --========================================================--
 --                     EXEMPLOS DE USO                    --
 --========================================================--
