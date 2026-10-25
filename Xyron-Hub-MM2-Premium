@@ -1868,6 +1868,350 @@ local MinhaLista = CreateDropdown(
 )
 
 --==================================================
+-- TOGGLE ESTILO WINDUI - XYRON HUB
+--==================================================
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local function CreateWindToggle(Parent, Config)
+    Config = Config or {}
+
+    local Title = Config.Title or "Exemplo de Toggle"
+    local Description = Config.Description or "Ative ou desative esta opção."
+    local Default = Config.Default or false
+    local Callback = Config.Callback or function() end
+
+    local Enabled = Default
+    local Dragging = false
+    local DragInput = nil
+    local DragStart = nil
+    local StartPosition = nil
+
+    local ToggleWidth = 48
+    local ToggleHeight = 26
+    local KnobSize = 20
+
+    -- CONTAINER
+    local Container = Instance.new("Frame")
+    Container.Name = "WindToggle"
+    Container.Size = UDim2.new(1, -10, 0, 64)
+    Container.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    Container.BorderSizePixel = 0
+    Container.Parent = Parent
+
+    local ContainerCorner = Instance.new("UICorner")
+    ContainerCorner.CornerRadius = UDim.new(0, 10)
+    ContainerCorner.Parent = Container
+
+    local ContainerStroke = Instance.new("UIStroke")
+    ContainerStroke.Color = Color3.fromRGB(38, 38, 38)
+    ContainerStroke.Thickness = 1
+    ContainerStroke.Parent = Container
+
+    -- TÍTULO
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Name = "Title"
+    TitleLabel.Position = UDim2.new(0, 12, 0, 10)
+    TitleLabel.Size = UDim2.new(1, -85, 0, 20)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = Title
+    TitleLabel.TextColor3 = Color3.fromRGB(245, 245, 245)
+    TitleLabel.TextSize = 13
+    TitleLabel.Font = Enum.Font.GothamMedium
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Parent = Container
+
+    -- DESCRIÇÃO
+    local DescriptionLabel = Instance.new("TextLabel")
+    DescriptionLabel.Name = "Description"
+    DescriptionLabel.Position = UDim2.new(0, 12, 0, 31)
+    DescriptionLabel.Size = UDim2.new(1, -85, 0, 18)
+    DescriptionLabel.BackgroundTransparency = 1
+    DescriptionLabel.Text = Description
+    DescriptionLabel.TextColor3 = Color3.fromRGB(135, 135, 135)
+    DescriptionLabel.TextSize = 10
+    DescriptionLabel.Font = Enum.Font.Gotham
+    DescriptionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DescriptionLabel.Parent = Container
+
+    -- FUNDO DO TOGGLE
+    local Switch = Instance.new("Frame")
+    Switch.Name = "Switch"
+    Switch.AnchorPoint = Vector2.new(1, 0.5)
+    Switch.Position = UDim2.new(1, -12, 0.5, 0)
+    Switch.Size = UDim2.fromOffset(ToggleWidth, ToggleHeight)
+    Switch.BackgroundColor3 = Color3.fromRGB(23, 23, 23)
+    Switch.BorderSizePixel = 0
+    Switch.ClipsDescendants = true
+    Switch.Parent = Container
+
+    local SwitchCorner = Instance.new("UICorner")
+    SwitchCorner.CornerRadius = UDim.new(1, 0)
+    SwitchCorner.Parent = Switch
+
+    local SwitchStroke = Instance.new("UIStroke")
+    SwitchStroke.Color = Color3.fromRGB(65, 65, 65)
+    SwitchStroke.Thickness = 1
+    SwitchStroke.Transparency = 0.15
+    SwitchStroke.Parent = Switch
+
+    -- BRILHO INTERNO
+    local Highlight = Instance.new("Frame")
+    Highlight.Name = "Highlight"
+    Highlight.Size = UDim2.fromScale(1, 1)
+    Highlight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Highlight.BackgroundTransparency = 0.96
+    Highlight.BorderSizePixel = 0
+    Highlight.Parent = Switch
+
+    local HighlightCorner = Instance.new("UICorner")
+    HighlightCorner.CornerRadius = UDim.new(1, 0)
+    HighlightCorner.Parent = Highlight
+
+    -- BOTÃO DESLIZANTE
+    local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
+    Knob.Position = UDim2.new(0, 3, 0.5, 0)
+    Knob.AnchorPoint = Vector2.new(0, 0.5)
+    Knob.Size = UDim2.fromOffset(KnobSize, KnobSize)
+    Knob.BackgroundColor3 = Color3.fromRGB(175, 175, 175)
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Switch
+
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
+
+    local KnobStroke = Instance.new("UIStroke")
+    KnobStroke.Color = Color3.fromRGB(255, 255, 255)
+    KnobStroke.Transparency = 0.72
+    KnobStroke.Thickness = 1
+    KnobStroke.Parent = Knob
+
+    -- EFEITO DE VIDRO
+    local Glass = Instance.new("Frame")
+    Glass.Name = "Glass"
+    Glass.Position = UDim2.new(0, 2, 0, 2)
+    Glass.Size = UDim2.new(1, -4, 1, -4)
+    Glass.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Glass.BackgroundTransparency = 0.94
+    Glass.BorderSizePixel = 0
+    Glass.ZIndex = Knob.ZIndex + 1
+    Glass.Parent = Switch
+
+    local GlassCorner = Instance.new("UICorner")
+    GlassCorner.CornerRadius = UDim.new(1, 0)
+    GlassCorner.Parent = Glass
+
+    -- ÁREA DE CLIQUE
+    local Hitbox = Instance.new("TextButton")
+    Hitbox.Name = "Hitbox"
+    Hitbox.Size = UDim2.fromScale(1, 1)
+    Hitbox.BackgroundTransparency = 1
+    Hitbox.Text = ""
+    Hitbox.AutoButtonColor = false
+    Hitbox.ZIndex = 10
+    Hitbox.Parent = Switch
+
+    local function Tween(Object, Properties, Duration, Style)
+        local Animation = TweenService:Create(
+            Object,
+            TweenInfo.new(
+                Duration or 0.22,
+                Style or Enum.EasingStyle.Quint,
+                Enum.EasingDirection.Out
+            ),
+            Properties
+        )
+
+        Animation:Play()
+        return Animation
+    end
+
+    local function Update(Value, FireCallback, Animate)
+        Enabled = Value
+
+        local Duration = Animate == false and 0 or 0.28
+
+        local KnobPosition
+        local KnobColor
+        local BackgroundColor
+        local StrokeColor
+        local GlassTransparency
+
+        if Enabled then
+            KnobPosition = UDim2.new(
+                1, -KnobSize - 3,
+                0.5, 0
+            )
+
+            KnobColor = Color3.fromRGB(250, 250, 250)
+            BackgroundColor = Color3.fromRGB(230, 230, 230)
+            StrokeColor = Color3.fromRGB(235, 235, 235)
+            GlassTransparency = 0.82
+        else
+            KnobPosition = UDim2.new(0, 3, 0.5, 0)
+
+            KnobColor = Color3.fromRGB(155, 155, 155)
+            BackgroundColor = Color3.fromRGB(23, 23, 23)
+            StrokeColor = Color3.fromRGB(65, 65, 65)
+            GlassTransparency = 0.94
+        end
+
+        Tween(
+            Knob,
+            {
+                Position = KnobPosition,
+                BackgroundColor3 = KnobColor
+            },
+            Duration,
+            Enum.EasingStyle.Back
+        )
+
+        Tween(
+            Switch,
+            {
+                BackgroundColor3 = BackgroundColor
+            },
+            Duration
+        )
+
+        Tween(
+            SwitchStroke,
+            {
+                Color = StrokeColor,
+                Transparency = Enabled and 0.05 or 0.15
+            },
+            Duration
+        )
+
+        Tween(
+            Glass,
+            {
+                BackgroundTransparency = GlassTransparency
+            },
+            Duration
+        )
+
+        Tween(
+            Highlight,
+            {
+                BackgroundTransparency = Enabled and 0.90 or 0.96
+            },
+            Duration
+        )
+
+        if FireCallback then
+            task.spawn(function()
+                local Success, ErrorMessage = pcall(Callback, Enabled)
+
+                if not Success then
+                    warn("[XYRON HUB Toggle] " .. tostring(ErrorMessage))
+                end
+            end)
+        end
+    end
+
+    -- CLIQUE OU TOQUE
+    Hitbox.Activated:Connect(function()
+        Update(not Enabled, true, true)
+    end)
+
+    -- ARRASTAR COM MOUSE OU DEDO
+    Hitbox.InputBegan:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseButton1
+        or Input.UserInputType == Enum.UserInputType.Touch then
+
+            Dragging = true
+            DragInput = Input
+            DragStart = Input.Position
+            StartPosition = Knob.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(Input)
+        if not Dragging then
+            return
+        end
+
+        if Input.UserInputType == Enum.UserInputType.MouseMovement
+        or Input.UserInputType == Enum.UserInputType.Touch then
+
+            local Delta = Input.Position.X - DragStart.X
+            local Maximum = ToggleWidth - KnobSize - 6
+
+            local Offset = math.clamp(
+                StartPosition.X.Offset + Delta,
+                3,
+                Maximum + 3
+            )
+
+            Knob.Position = UDim2.new(0, Offset, 0.5, 0)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(Input)
+        if not Dragging then
+            return
+        end
+
+        if Input.UserInputType == Enum.UserInputType.MouseButton1
+        or Input.UserInputType == Enum.UserInputType.Touch then
+
+            Dragging = false
+
+            local Center = Knob.AbsolutePosition.X
+                + Knob.AbsoluteSize.X / 2
+
+            local SwitchCenter = Switch.AbsolutePosition.X
+                + Switch.AbsoluteSize.X / 2
+
+            Update(Center >= SwitchCenter, true, true)
+        end
+    end)
+
+    -- ESTADO INICIAL
+    Update(Default, false, false)
+
+    -- CONTROLES DO TOGGLE
+    local ToggleAPI = {}
+
+    function ToggleAPI:Set(Value)
+        Update(Value, true, true)
+    end
+
+    function ToggleAPI:Get()
+        return Enabled
+    end
+
+    function ToggleAPI:Destroy()
+        Container:Destroy()
+    end
+
+    return ToggleAPI
+end
+
+--==================================================
+-- EXEMPLO DE USO NO XYRON HUB
+--==================================================
+
+-- Troque "Main" pelo nome exato da sua aba, se necessário.
+local MainPage = Pages["ESP"]
+
+if MainPage then
+    local ExampleToggle = CreateWindToggle(MainPage, {
+        Title = "Exemplo WindUI",
+        Description = "Teste a animação deste interruptor.",
+        Default = false,
+
+        Callback = function(Value)
+            print("Exemplo WindUI:", Value and "Ligado" or "Desligado")
+        end
+    })
+end
+
+--==================================================
 -- EXEMPLO 2: LISTA DE JOGADORES
 --==================================================
 
