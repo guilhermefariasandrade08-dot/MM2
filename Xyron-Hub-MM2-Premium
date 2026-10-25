@@ -700,11 +700,11 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     ToggleStates[toggleKey] = enabled
     ToggleCallbacks[toggleKey] = callback
 
-    -- CAIXA PRINCIPAL
+    -- BASE RETANGULAR
     local Container = Instance.new("TextButton")
     Container.Name = toggleName .. "_Toggle"
     Container.Size = UDim2.new(1, -10, 0, 64)
-    Container.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+    Container.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
     Container.BorderSizePixel = 0
     Container.Text = ""
     Container.AutoButtonColor = false
@@ -714,6 +714,7 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     ContainerCorner.CornerRadius = UDim.new(0, 6)
     ContainerCorner.Parent = Container
 
+    -- BORDA BRANCA
     local ContainerStroke = Instance.new("UIStroke")
     ContainerStroke.Color = Color3.fromRGB(245, 245, 245)
     ContainerStroke.Thickness = 1
@@ -723,7 +724,7 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
     Title.Position = UDim2.new(0, 12, 0, 8)
-    Title.Size = UDim2.new(1, -65, 0, 22)
+    Title.Size = UDim2.new(1, -75, 0, 22)
     Title.BackgroundTransparency = 1
     Title.Text = toggleName
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -738,10 +739,10 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     local Description = Instance.new("TextLabel")
     Description.Name = "Description"
     Description.Position = UDim2.new(0, 12, 0, 31)
-    Description.Size = UDim2.new(1, -65, 0, 23)
+    Description.Size = UDim2.new(1, -75, 0, 23)
     Description.BackgroundTransparency = 1
     Description.Text = description or ""
-    Description.TextColor3 = Color3.fromRGB(205, 205, 205)
+    Description.TextColor3 = Color3.fromRGB(175, 175, 175)
     Description.TextSize = 11
     Description.Font = Enum.Font.Gotham
     Description.TextXAlignment = Enum.TextXAlignment.Left
@@ -750,76 +751,67 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     Description.TextTruncate = Enum.TextTruncate.AtEnd
     Description.Parent = Container
 
-    -- QUADRADO DO TOGGLE
-    local CheckBox = Instance.new("Frame")
-    CheckBox.Name = "CheckBox"
-    CheckBox.AnchorPoint = Vector2.new(1, 0.5)
-    CheckBox.Position = UDim2.new(1, -14, 0.5, 0)
-    CheckBox.Size = UDim2.new(0, 22, 0, 22)
-    CheckBox.BackgroundColor3 = enabled
-        and Color3.fromRGB(255, 255, 255)
-        or Color3.fromRGB(35, 35, 35)
-    CheckBox.BorderSizePixel = 0
-    CheckBox.Parent = Container
+    -- FUNDO DO INTERRUPTOR
+    local Switch = Instance.new("Frame")
+    Switch.Name = "Switch"
+    Switch.AnchorPoint = Vector2.new(1, 0.5)
+    Switch.Position = UDim2.new(1, -12, 0.5, 0)
+    Switch.Size = UDim2.new(0, 38, 0, 21)
+    Switch.BackgroundColor3 = enabled
+        and Color3.fromRGB(40, 130, 255)
+        or Color3.fromRGB(55, 55, 55)
+    Switch.BorderSizePixel = 0
+    Switch.Parent = Container
 
-    local CheckCorner = Instance.new("UICorner")
-    CheckCorner.CornerRadius = UDim.new(0, 4)
-    CheckCorner.Parent = CheckBox
+    local SwitchCorner = Instance.new("UICorner")
+    SwitchCorner.CornerRadius = UDim.new(1, 0)
+    SwitchCorner.Parent = Switch
 
-    local CheckStroke = Instance.new("UIStroke")
-    CheckStroke.Color = Color3.fromRGB(255, 255, 255)
-    CheckStroke.Thickness = 1
-    CheckStroke.Parent = CheckBox
+    -- BOLINHA BRANCA
+    local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
+    Knob.AnchorPoint = Vector2.new(0, 0.5)
+    Knob.Position = enabled
+        and UDim2.new(1, -18, 0.5, 0)
+        or UDim2.new(0, 3, 0.5, 0)
+    Knob.Size = UDim2.new(0, 15, 0, 15)
+    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Switch
 
-    -- SÍMBOLO DE CONFIRMAÇÃO
-    local CheckMark = Instance.new("TextLabel")
-    CheckMark.Name = "CheckMark"
-    CheckMark.Size = UDim2.new(1, 0, 1, 0)
-    CheckMark.BackgroundTransparency = 1
-    CheckMark.Text = "✔"
-    CheckMark.TextColor3 = Color3.fromRGB(10, 10, 10)
-    CheckMark.TextSize = 15
-    CheckMark.Font = Enum.Font.GothamBold
-    CheckMark.TextTransparency = enabled and 0 or 1
-    CheckMark.Parent = CheckBox
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
 
-    -- ANIMAÇÃO E ATUALIZAÇÃO
+    -- ANIMAÇÃO E ATUALIZAÇÃO DO ESTADO
     local function SetState(state, instant)
         enabled = state == true
         ToggleStates[toggleKey] = enabled
 
-        local boxColor = enabled
-            and Color3.fromRGB(255, 255, 255)
-            or Color3.fromRGB(35, 35, 35)
+        local switchColor = enabled
+            and Color3.fromRGB(40, 130, 255)
+            or Color3.fromRGB(55, 55, 55)
 
-        local textTransparency = enabled and 0 or 1
+        local knobPosition = enabled
+            and UDim2.new(1, -18, 0.5, 0)
+            or UDim2.new(0, 3, 0.5, 0)
 
         if instant then
-            CheckBox.BackgroundColor3 = boxColor
-            CheckMark.TextTransparency = textTransparency
+            Switch.BackgroundColor3 = switchColor
+            Knob.Position = knobPosition
         else
             local info = TweenInfo.new(
-                0.18,
-                Enum.EasingStyle.Quad,
+                0.22,
+                Enum.EasingStyle.Quart,
                 Enum.EasingDirection.Out
             )
 
-            TweenService:Create(CheckBox, info, {
-                BackgroundColor3 = boxColor
+            TweenService:Create(Switch, info, {
+                BackgroundColor3 = switchColor
             }):Play()
 
-            TweenService:Create(CheckMark, info, {
-                TextTransparency = textTransparency
-            }):Play()
-
-            local targetSize = enabled
-                and UDim2.new(0, 22, 0, 22)
-                or UDim2.new(0, 19, 0, 19)
-
-            CheckBox.Size = UDim2.new(0, 19, 0, 19)
-
-            TweenService:Create(CheckBox, info, {
-                Size = targetSize
+            TweenService:Create(Knob, info, {
+                Position = knobPosition
             }):Play()
         end
 
@@ -831,13 +823,16 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
                 )
 
                 if not success then
-                    warn("Erro no toggle '" .. toggleName .. "': " .. tostring(err))
+                    warn(
+                        "Erro no toggle '" ..
+                        toggleName .. "': " .. tostring(err)
+                    )
                 end
             end)
         end
     end
 
-    -- CLIQUE NA CAIXA INTEIRA
+    -- CLIQUE NA BASE
     Container.Activated:Connect(function()
         SetState(not enabled, false)
     end)
@@ -845,7 +840,7 @@ local function CreateToggle(tabName, toggleName, description, defaultState, call
     -- APLICA O ESTADO INICIAL
     SetState(enabled, true)
 
-    -- RETORNA CONTROLES DO TOGGLE
+    -- CONTROLES DO TOGGLE
     return {
         Button = Container,
 
@@ -863,7 +858,7 @@ end
 -- EXEMPLOS DE USO
 --==================================================
 
--- Começa DESLIGADO
+-- COMEÇA DESLIGADO
 CreateToggle(
     "ESP",
     "Highlight player",
@@ -872,15 +867,15 @@ CreateToggle(
     function(ativo)
         if ativo then
             print("Highlight player ativado")
-            -- Coloque aqui o código para ativar o highlight.
+            -- Código para ativar o Highlight.
         else
             print("Highlight player desativado")
-            -- Coloque aqui o código para desativar o highlight.
+            -- Código para desativar o Highlight.
         end
     end
 )
 
--- Começa LIGADO
+-- COMEÇA LIGADO
 CreateToggle(
     "ESP",
     "Show Names",
@@ -888,7 +883,7 @@ CreateToggle(
     true,
     function(ativo)
         print("Show Names:", ativo)
-        -- Coloque aqui o código dessa função.
+        -- Código para mostrar ou esconder os nomes.
     end
 )
 
