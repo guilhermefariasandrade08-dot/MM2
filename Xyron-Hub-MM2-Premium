@@ -685,6 +685,216 @@ SelectTab("Informations")
 --                 SISTEMA DE TOGGLE                       --
 --========================================================--
 
+--==================================================
+-- XYRON HUB | WINDUI STYLE TOGGLE CORRIGIDO
+--==================================================
+
+local TweenService = game:GetService("TweenService")
+
+local function CreateWindToggle(Parent, Config)
+    Config = Config or {}
+
+    local Enabled = Config.Default == true
+    local Callback = Config.Callback or function() end
+    local Connections = {}
+
+    local function Connect(Signal, Function)
+        table.insert(Connections, Signal:Connect(Function))
+    end
+
+    local Container = Instance.new("Frame")
+    Container.Name = "WindToggle"
+    Container.Size = UDim2.new(1, -10, 0, 64)
+    Container.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    Container.BorderSizePixel = 0
+    Container.Parent = Parent
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = Container
+
+    local Border = Instance.new("UIStroke")
+    Border.Color = Color3.fromRGB(38, 38, 38)
+    Border.Thickness = 1
+    Border.Parent = Container
+
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.new(0, 12, 0, 9)
+    Title.Size = UDim2.new(1, -80, 0, 21)
+    Title.BackgroundTransparency = 1
+    Title.Text = Config.Title or "Exemplo WindUI"
+    Title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Title.TextSize = 13
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Container
+
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Position = UDim2.new(0, 12, 0, 31)
+    Description.Size = UDim2.new(1, -80, 0, 18)
+    Description.BackgroundTransparency = 1
+    Description.Text = Config.Description or "Ative ou desative esta opção."
+    Description.TextColor3 = Color3.fromRGB(135, 135, 135)
+    Description.TextSize = 10
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.Parent = Container
+
+    -- FUNDO DO INTERRUPTOR
+    local Switch = Instance.new("Frame")
+    Switch.Name = "Switch"
+    Switch.AnchorPoint = Vector2.new(1, 0.5)
+    Switch.Position = UDim2.new(1, -12, 0.5, 0)
+    Switch.Size = UDim2.fromOffset(48, 26)
+    Switch.BackgroundColor3 = Color3.fromRGB(23, 23, 23)
+    Switch.BorderSizePixel = 0
+    Switch.Parent = Container
+
+    local SwitchCorner = Instance.new("UICorner")
+    SwitchCorner.CornerRadius = UDim.new(1, 0)
+    SwitchCorner.Parent = Switch
+
+    local SwitchBorder = Instance.new("UIStroke")
+    SwitchBorder.Color = Color3.fromRGB(65, 65, 65)
+    SwitchBorder.Thickness = 1
+    SwitchBorder.Parent = Switch
+
+    -- BOTÃO MÓVEL
+    local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
+    Knob.AnchorPoint = Vector2.new(0, 0.5)
+    Knob.Position = UDim2.new(0, 3, 0.5, 0)
+    Knob.Size = UDim2.fromOffset(20, 20)
+    Knob.BackgroundColor3 = Color3.fromRGB(155, 155, 155)
+    Knob.BorderSizePixel = 0
+    Knob.ZIndex = 2
+    Knob.Parent = Switch
+
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
+
+    local KnobBorder = Instance.new("UIStroke")
+    KnobBorder.Color = Color3.fromRGB(255, 255, 255)
+    KnobBorder.Transparency = 0.7
+    KnobBorder.Parent = Knob
+
+    -- BOTÃO DE CLIQUE/TOQUE
+    local Hitbox = Instance.new("TextButton")
+    Hitbox.Name = "Hitbox"
+    Hitbox.Size = UDim2.fromScale(1, 1)
+    Hitbox.BackgroundTransparency = 1
+    Hitbox.Text = ""
+    Hitbox.AutoButtonColor = false
+    Hitbox.ZIndex = 5
+    Hitbox.Parent = Switch
+
+    local function Animate(Value)
+        local KnobPosition
+        local KnobColor
+        local SwitchColor
+        local BorderColor
+
+        if Value then
+            KnobPosition = UDim2.new(1, -23, 0.5, 0)
+            KnobColor = Color3.fromRGB(255, 255, 255)
+            SwitchColor = Color3.fromRGB(220, 220, 220)
+            BorderColor = Color3.fromRGB(240, 240, 240)
+        else
+            KnobPosition = UDim2.new(0, 3, 0.5, 0)
+            KnobColor = Color3.fromRGB(155, 155, 155)
+            SwitchColor = Color3.fromRGB(23, 23, 23)
+            BorderColor = Color3.fromRGB(65, 65, 65)
+        end
+
+        TweenService:Create(
+            Knob,
+            TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {
+                Position = KnobPosition,
+                BackgroundColor3 = KnobColor
+            }
+        ):Play()
+
+        TweenService:Create(
+            Switch,
+            TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {
+                BackgroundColor3 = SwitchColor
+            }
+        ):Play()
+
+        TweenService:Create(
+            SwitchBorder,
+            TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {
+                Color = BorderColor
+            }
+        ):Play()
+    end
+
+    local function Set(Value, FireCallback)
+        Enabled = Value == true
+        Animate(Enabled)
+
+        if FireCallback then
+            local Success, ErrorMessage = pcall(Callback, Enabled)
+
+            if not Success then
+                warn("[XYRON HUB] Erro no callback do toggle: " .. tostring(ErrorMessage))
+            end
+        end
+    end
+
+    Connect(Hitbox.Activated, function()
+        Set(not Enabled, true)
+    end)
+
+    -- API DO TOGGLE
+    local ToggleAPI = {}
+
+    function ToggleAPI:Set(Value)
+        Set(Value, true)
+    end
+
+    function ToggleAPI:Get()
+        return Enabled
+    end
+
+    function ToggleAPI:Destroy()
+        for _, Connection in ipairs(Connections) do
+            Connection:Disconnect()
+        end
+
+        Container:Destroy()
+    end
+
+    -- ESTADO INICIAL, SEM EXECUTAR CALLBACK
+    Animate(Enabled)
+
+    return ToggleAPI
+end
+
+--==================================================
+-- EXEMPLO DE USO NA ABA MAIN
+--==================================================
+
+local MainPage = Pages["Main"]
+
+if MainPage then
+    local ExampleToggle = CreateWindToggle(MainPage, {
+        Title = "Exemplo WindUI",
+        Description = "Teste ligar e desligar.",
+        Default = false,
+
+        Callback = function(Value)
+            -- Coloque aqui a ação que o toggle controla.
+            -- Não precisa imprimir nada no console.
+        end
+    })
+end
 
 --========================================================--
 --                 EXEMPLOS PARA OUTRAS ABAS              --
