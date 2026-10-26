@@ -671,7 +671,7 @@ SelectTab("Informations")
 --========================================================--
 
 --========================================================--
---                  SISTEMA DE TOGGLE                     --
+--                 SISTEMA DE TOGGLE                      --
 --========================================================--
 
 local function CreateToggle(tabName, title, description, default, callback)
@@ -682,83 +682,112 @@ local function CreateToggle(tabName, title, description, default, callback)
         return
     end
 
+    local hasDescription = description ~= nil
+        and tostring(description):match("%S") ~= nil
+
     local enabled = default == true
 
-    -- CONTAINER
+    -- CONTAINER PRINCIPAL
     local Toggle = Instance.new("Frame")
     Toggle.Name = "WindToggle"
-    Toggle.Size = UDim2.new(1, -4, 0, 58)
+    Toggle.Size = UDim2.new(1, -4, 0, 40)
+    Toggle.AutomaticSize = Enum.AutomaticSize.Y
     Toggle.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-    Toggle.BackgroundTransparency = 0
     Toggle.BorderSizePixel = 0
+    Toggle.ClipsDescendants = false
     Toggle.Parent = page
 
     Instance.new("UICorner", Toggle).CornerRadius =
         UDim.new(0, 10)
 
     local Stroke = Instance.new("UIStroke")
+    Stroke.Name = "Border"
     Stroke.Color = Color3.fromRGB(55, 55, 55)
     Stroke.Thickness = 1
     Stroke.Transparency = 0.15
     Stroke.Parent = Toggle
 
+    -- ESPAÇAMENTO INTERNO
+    local TogglePadding = Instance.new("UIPadding")
+    TogglePadding.PaddingTop = UDim.new(0, 8)
+    TogglePadding.PaddingBottom = UDim.new(0, 8)
+    TogglePadding.PaddingLeft = UDim.new(0, 13)
+    TogglePadding.PaddingRight = UDim.new(0, 45)
+    TogglePadding.Parent = Toggle
+
+    -- ORGANIZAÇÃO AUTOMÁTICA DO TEXTO
+    local ToggleLayout = Instance.new("UIListLayout")
+    ToggleLayout.FillDirection = Enum.FillDirection.Vertical
+    ToggleLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ToggleLayout.Padding = UDim.new(0, hasDescription and 3 or 0)
+    ToggleLayout.Parent = Toggle
+
     -- TÍTULO
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
-    Title.Position = UDim2.fromOffset(13, 8)
-    Title.Size = UDim2.new(1, -90, 0, 19)
+    Title.Size = UDim2.new(1, 0, 0, 18)
+    Title.AutomaticSize = Enum.AutomaticSize.Y
     Title.BackgroundTransparency = 1
-    Title.Text = title
+    Title.Text = tostring(title or "Toggle")
     Title.TextColor3 = Color3.fromRGB(245, 245, 245)
     Title.TextSize = 13
     Title.Font = Enum.Font.GothamMedium
     Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.TextTruncate = Enum.TextTruncate.AtEnd
+    Title.TextYAlignment = Enum.TextYAlignment.Center
+    Title.TextWrapped = true
+    Title.LayoutOrder = 1
     Title.Parent = Toggle
 
-    -- DESCRIÇÃO
+    -- DESCRIÇÃO OPCIONAL
     local Description = Instance.new("TextLabel")
     Description.Name = "Description"
-    Description.Position = UDim2.fromOffset(13, 29)
-    Description.Size = UDim2.new(1, -90, 0, 17)
+    Description.Size = UDim2.new(1, 0, 0, 0)
+    Description.AutomaticSize = Enum.AutomaticSize.Y
     Description.BackgroundTransparency = 1
-    Description.Text = description
+    Description.Text = hasDescription and tostring(description) or ""
     Description.TextColor3 = Color3.fromRGB(150, 150, 150)
     Description.TextSize = 10
     Description.Font = Enum.Font.Gotham
     Description.TextXAlignment = Enum.TextXAlignment.Left
-    Description.TextTruncate = Enum.TextTruncate.AtEnd
+    Description.TextYAlignment = Enum.TextYAlignment.Top
+    Description.TextWrapped = true
+    Description.Visible = hasDescription
+    Description.LayoutOrder = 2
     Description.Parent = Toggle
 
-    -- FUNDO DO SWITCH
+    -- QUADRADO DO TOGGLE
     local Switch = Instance.new("Frame")
     Switch.Name = "Switch"
-    Switch.Size = UDim2.fromOffset(43, 24)
+    Switch.Size = UDim2.fromOffset(22, 22)
     Switch.AnchorPoint = Vector2.new(1, 0.5)
     Switch.Position = UDim2.new(1, -12, 0.5, 0)
-    Switch.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Switch.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     Switch.BorderSizePixel = 0
+    Switch.ZIndex = 2
     Switch.Parent = Toggle
 
     Instance.new("UICorner", Switch).CornerRadius =
-        UDim.new(1, 0)
+        UDim.new(0, 5)
 
+    -- BORDA DO QUADRADO
     local SwitchStroke = Instance.new("UIStroke")
-    SwitchStroke.Color = Color3.fromRGB(75, 75, 75)
-    SwitchStroke.Thickness = 1
+    SwitchStroke.Name = "SwitchBorder"
+    SwitchStroke.Color = Color3.fromRGB(85, 85, 85)
+    SwitchStroke.Thickness = 1.2
     SwitchStroke.Parent = Switch
 
-    -- CÍRCULO
-    local Knob = Instance.new("Frame")
-    Knob.Name = "Knob"
-    Knob.Size = UDim2.fromOffset(16, 16)
-    Knob.Position = UDim2.fromOffset(4, 4)
-    Knob.BackgroundColor3 = Color3.fromRGB(185, 185, 185)
-    Knob.BorderSizePixel = 0
-    Knob.Parent = Switch
-
-    Instance.new("UICorner", Knob).CornerRadius =
-        UDim.new(1, 0)
+    -- MARCA DE CONFIRMAÇÃO
+    local Checkmark = Instance.new("TextLabel")
+    Checkmark.Name = "Checkmark"
+    Checkmark.Size = UDim2.new(1, 0, 1, 0)
+    Checkmark.BackgroundTransparency = 1
+    Checkmark.Text = "✔"
+    Checkmark.TextColor3 = Color3.fromRGB(0, 0, 0)
+    Checkmark.TextSize = 15
+    Checkmark.Font = Enum.Font.GothamBold
+    Checkmark.TextTransparency = enabled and 0 or 1
+    Checkmark.ZIndex = 3
+    Checkmark.Parent = Switch
 
     -- ÁREA CLICÁVEL
     local Hitbox = Instance.new("TextButton")
@@ -767,55 +796,51 @@ local function CreateToggle(tabName, title, description, default, callback)
     Hitbox.BackgroundTransparency = 1
     Hitbox.Text = ""
     Hitbox.AutoButtonColor = false
+    Hitbox.ZIndex = 4
     Hitbox.Parent = Switch
 
     -- ATUALIZAR VISUAL
     local function UpdateToggle(instant)
-        local switchColor = enabled
-            and Color3.fromRGB(0, 125, 255)
-            or Color3.fromRGB(35, 35, 35)
-
-        local knobColor = enabled
-            and Color3.fromRGB(255, 255, 255)
-            or Color3.fromRGB(185, 185, 185)
-
-        local knobPosition = enabled
-            and UDim2.fromOffset(23, 4)
-            or UDim2.fromOffset(4, 4)
-
-        local strokeColor = enabled
-            and Color3.fromRGB(70, 155, 255)
-            or Color3.fromRGB(75, 75, 75)
-
         local duration = instant and 0 or 0.2
+
+        local backgroundColor = enabled
+            and Color3.fromRGB(255, 255, 255)
+            or Color3.fromRGB(22, 22, 22)
+
+        local borderColor = enabled
+            and Color3.fromRGB(255, 255, 255)
+            or Color3.fromRGB(85, 85, 85)
+
+        local tweenInfo = TweenInfo.new(
+            duration,
+            Enum.EasingStyle.Quint,
+            Enum.EasingDirection.Out
+        )
 
         TweenService:Create(
             Switch,
-            TweenInfo.new(duration, Enum.EasingStyle.Quint),
-            {BackgroundColor3 = switchColor}
-        ):Play()
-
-        TweenService:Create(
-            Knob,
-            TweenInfo.new(duration, Enum.EasingStyle.Quint),
-            {
-                Position = knobPosition,
-                BackgroundColor3 = knobColor
-            }
+            tweenInfo,
+            {BackgroundColor3 = backgroundColor}
         ):Play()
 
         TweenService:Create(
             SwitchStroke,
-            TweenInfo.new(duration),
-            {Color = strokeColor}
+            tweenInfo,
+            {Color = borderColor}
+        ):Play()
+
+        TweenService:Create(
+            Checkmark,
+            tweenInfo,
+            {TextTransparency = enabled and 0 or 1}
         ):Play()
 
         TweenService:Create(
             Stroke,
-            TweenInfo.new(duration),
+            tweenInfo,
             {
                 Color = enabled
-                    and Color3.fromRGB(80, 110, 145)
+                    and Color3.fromRGB(255, 255, 255)
                     or Color3.fromRGB(55, 55, 55)
             }
         ):Play()
@@ -827,32 +852,49 @@ local function CreateToggle(tabName, title, description, default, callback)
         UpdateToggle(false)
 
         if callback then
-            local ok, err = pcall(callback, enabled)
+            local success, err = pcall(callback, enabled)
 
-            if not ok then
+            if not success then
                 warn("[Xyron Hub] Erro no toggle:", err)
             end
         end
     end)
 
+    -- ESTADO INICIAL
     UpdateToggle(true)
 
-    -- RETORNAR O CONTROLE
-    return {
-        Set = function(value)
-            enabled = value == true
-            UpdateToggle(false)
-        end,
+    -- CONTROLE EXTERNO
+    local Controller = {}
 
-        Get = function()
-            return enabled
+    function Controller:Set(value)
+        local newValue = value == true
+        local changed = enabled ~= newValue
+
+        enabled = newValue
+        UpdateToggle(false)
+
+        if changed and callback then
+            local success, err = pcall(callback, enabled)
+
+            if not success then
+                warn("[Xyron Hub] Erro no toggle:", err)
+            end
         end
-    }
+    end
+
+    function Controller:Get()
+        return enabled
+    end
+
+    function Controller:Destroy()
+        Toggle:Destroy()
+    end
+
+    return Controller
 end
 
-
 --========================================================--
---                    ABA MURDERER                        --
+--                    EXEMPLO DE USO                      --
 --========================================================--
 
 local TrowingKanifToggle = CreateToggle(
@@ -861,9 +903,27 @@ local TrowingKanifToggle = CreateToggle(
     "Joga a faca automaticamente no jogador mais próximo",
     false,
     function(state)
-        print("TrowingKanif:", state and "ATIVADO" or "DESATIVADO")
+        print(
+            "TrowingKanif:",
+            state and "ATIVADO" or "DESATIVADO"
+        )
     end
 )
+
+-- EXEMPLO SEM DESCRIÇÃO:
+--[[
+local MeuToggle = CreateToggle(
+    "Informations",
+    "Meu botão",
+    nil,
+    false,
+    function(state)
+        print(state)
+    end
+)
+]]
+
+
 
 --========================================================--
 --                    PESQUISA FUNCIONAL                  --
