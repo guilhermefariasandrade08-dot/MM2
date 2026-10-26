@@ -670,9 +670,200 @@ SelectTab("Informations")
 --                 SISTEMA DE TOGGLE                       --
 --========================================================--
 
+--========================================================--
+--                  SISTEMA DE TOGGLE                     --
+--========================================================--
+
+local function CreateToggle(tabName, title, description, default, callback)
+    local page = Pages[tabName]
+
+    if not page then
+        warn("[Xyron Hub] Aba não encontrada: " .. tostring(tabName))
+        return
+    end
+
+    local enabled = default == true
+
+    -- CONTAINER
+    local Toggle = Instance.new("Frame")
+    Toggle.Name = "WindToggle"
+    Toggle.Size = UDim2.new(1, -4, 0, 58)
+    Toggle.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Toggle.BackgroundTransparency = 0
+    Toggle.BorderSizePixel = 0
+    Toggle.Parent = page
+
+    Instance.new("UICorner", Toggle).CornerRadius =
+        UDim.new(0, 10)
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(55, 55, 55)
+    Stroke.Thickness = 1
+    Stroke.Transparency = 0.15
+    Stroke.Parent = Toggle
+
+    -- TÍTULO
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.fromOffset(13, 8)
+    Title.Size = UDim2.new(1, -90, 0, 19)
+    Title.BackgroundTransparency = 1
+    Title.Text = title
+    Title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Title.TextSize = 13
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextTruncate = Enum.TextTruncate.AtEnd
+    Title.Parent = Toggle
+
+    -- DESCRIÇÃO
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Position = UDim2.fromOffset(13, 29)
+    Description.Size = UDim2.new(1, -90, 0, 17)
+    Description.BackgroundTransparency = 1
+    Description.Text = description
+    Description.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Description.TextSize = 10
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextTruncate = Enum.TextTruncate.AtEnd
+    Description.Parent = Toggle
+
+    -- FUNDO DO SWITCH
+    local Switch = Instance.new("Frame")
+    Switch.Name = "Switch"
+    Switch.Size = UDim2.fromOffset(43, 24)
+    Switch.AnchorPoint = Vector2.new(1, 0.5)
+    Switch.Position = UDim2.new(1, -12, 0.5, 0)
+    Switch.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Switch.BorderSizePixel = 0
+    Switch.Parent = Toggle
+
+    Instance.new("UICorner", Switch).CornerRadius =
+        UDim.new(1, 0)
+
+    local SwitchStroke = Instance.new("UIStroke")
+    SwitchStroke.Color = Color3.fromRGB(75, 75, 75)
+    SwitchStroke.Thickness = 1
+    SwitchStroke.Parent = Switch
+
+    -- CÍRCULO
+    local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
+    Knob.Size = UDim2.fromOffset(16, 16)
+    Knob.Position = UDim2.fromOffset(4, 4)
+    Knob.BackgroundColor3 = Color3.fromRGB(185, 185, 185)
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Switch
+
+    Instance.new("UICorner", Knob).CornerRadius =
+        UDim.new(1, 0)
+
+    -- ÁREA CLICÁVEL
+    local Hitbox = Instance.new("TextButton")
+    Hitbox.Name = "Hitbox"
+    Hitbox.Size = UDim2.new(1, 0, 1, 0)
+    Hitbox.BackgroundTransparency = 1
+    Hitbox.Text = ""
+    Hitbox.AutoButtonColor = false
+    Hitbox.Parent = Switch
+
+    -- ATUALIZAR VISUAL
+    local function UpdateToggle(instant)
+        local switchColor = enabled
+            and Color3.fromRGB(0, 125, 255)
+            or Color3.fromRGB(35, 35, 35)
+
+        local knobColor = enabled
+            and Color3.fromRGB(255, 255, 255)
+            or Color3.fromRGB(185, 185, 185)
+
+        local knobPosition = enabled
+            and UDim2.fromOffset(23, 4)
+            or UDim2.fromOffset(4, 4)
+
+        local strokeColor = enabled
+            and Color3.fromRGB(70, 155, 255)
+            or Color3.fromRGB(75, 75, 75)
+
+        local duration = instant and 0 or 0.2
+
+        TweenService:Create(
+            Switch,
+            TweenInfo.new(duration, Enum.EasingStyle.Quint),
+            {BackgroundColor3 = switchColor}
+        ):Play()
+
+        TweenService:Create(
+            Knob,
+            TweenInfo.new(duration, Enum.EasingStyle.Quint),
+            {
+                Position = knobPosition,
+                BackgroundColor3 = knobColor
+            }
+        ):Play()
+
+        TweenService:Create(
+            SwitchStroke,
+            TweenInfo.new(duration),
+            {Color = strokeColor}
+        ):Play()
+
+        TweenService:Create(
+            Stroke,
+            TweenInfo.new(duration),
+            {
+                Color = enabled
+                    and Color3.fromRGB(80, 110, 145)
+                    or Color3.fromRGB(55, 55, 55)
+            }
+        ):Play()
+    end
+
+    -- CLIQUE
+    Hitbox.Activated:Connect(function()
+        enabled = not enabled
+        UpdateToggle(false)
+
+        if callback then
+            local ok, err = pcall(callback, enabled)
+
+            if not ok then
+                warn("[Xyron Hub] Erro no toggle:", err)
+            end
+        end
+    end)
+
+    UpdateToggle(true)
+
+    -- RETORNAR O CONTROLE
+    return {
+        Set = function(value)
+            enabled = value == true
+            UpdateToggle(false)
+        end,
+
+        Get = function()
+            return enabled
+        end
+    }
+end
 
 
+--========================================================--
+--                    ABA MURDERER                        --
+--========================================================--
 
+local TrowingKanifToggle = CreateToggle(
+    "Murderer",
+    "TrowingKanif",
+    "Joga a faca automaticamente no jogador mais próximo",
+    false,
+    function(state)
+        print("TrowingKanif:", state and "ATIVADO" or "DESATIVADO")
+    end
+)
 
 --========================================================--
 --                    PESQUISA FUNCIONAL                  --
