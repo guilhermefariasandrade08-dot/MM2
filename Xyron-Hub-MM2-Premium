@@ -712,7 +712,7 @@ local function CreateToggle(tabName, title, description, default, callback)
     TogglePadding.PaddingTop = UDim.new(0, 8)
     TogglePadding.PaddingBottom = UDim.new(0, 8)
     TogglePadding.PaddingLeft = UDim.new(0, 13)
-    TogglePadding.PaddingRight = UDim.new(0, 45)
+    TogglePadding.PaddingRight = UDim.new(0, 42)
     TogglePadding.Parent = Toggle
 
     -- ORGANIZAÇÃO AUTOMÁTICA DO TEXTO
@@ -755,49 +755,46 @@ local function CreateToggle(tabName, title, description, default, callback)
     Description.LayoutOrder = 2
     Description.Parent = Toggle
 
-    -- QUADRADO DO TOGGLE
-    local Switch = Instance.new("Frame")
-    Switch.Name = "Switch"
-    Switch.Size = UDim2.fromOffset(22, 22)
-    Switch.AnchorPoint = Vector2.new(1, 0.5)
-    Switch.Position = UDim2.new(1, -12, 0.5, 0)
-    Switch.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-    Switch.BorderSizePixel = 0
-    Switch.ZIndex = 2
-    Switch.Parent = Toggle
+-- QUADRADO DO TOGGLE — LADO DIREITO
+local Switch = Instance.new("Frame")
+Switch.Name = "Switch"
+Switch.Size = UDim2.fromOffset(22, 22)
+Switch.AnchorPoint = Vector2.new(1, 0.5)
+Switch.Position = UDim2.new(1, -12, 0.5, 0)
+Switch.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+Switch.BorderSizePixel = 0
+Switch.ZIndex = 5
+Switch.Parent = Toggle
 
-    Instance.new("UICorner", Switch).CornerRadius =
-        UDim.new(0, 5)
+Instance.new("UICorner", Switch).CornerRadius =
+    UDim.new(0, 5)
 
-    -- BORDA DO QUADRADO
-    local SwitchStroke = Instance.new("UIStroke")
-    SwitchStroke.Name = "SwitchBorder"
-    SwitchStroke.Color = Color3.fromRGB(85, 85, 85)
-    SwitchStroke.Thickness = 1.2
-    SwitchStroke.Parent = Switch
+local SwitchStroke = Instance.new("UIStroke")
+SwitchStroke.Name = "SwitchBorder"
+SwitchStroke.Color = Color3.fromRGB(85, 85, 85)
+SwitchStroke.Thickness = 1.2
+SwitchStroke.Parent = Switch
 
-    -- MARCA DE CONFIRMAÇÃO
-    local Checkmark = Instance.new("TextLabel")
-    Checkmark.Name = "Checkmark"
-    Checkmark.Size = UDim2.new(1, 0, 1, 0)
-    Checkmark.BackgroundTransparency = 1
-    Checkmark.Text = "✔"
-    Checkmark.TextColor3 = Color3.fromRGB(0, 0, 0)
-    Checkmark.TextSize = 15
-    Checkmark.Font = Enum.Font.GothamBold
-    Checkmark.TextTransparency = enabled and 0 or 1
-    Checkmark.ZIndex = 3
-    Checkmark.Parent = Switch
+local Checkmark = Instance.new("TextLabel")
+Checkmark.Name = "Checkmark"
+Checkmark.Size = UDim2.fromScale(1, 1)
+Checkmark.BackgroundTransparency = 1
+Checkmark.Text = "✔"
+Checkmark.TextColor3 = Color3.fromRGB(0, 0, 0)
+Checkmark.TextSize = 15
+Checkmark.Font = Enum.Font.GothamBold
+Checkmark.TextTransparency = enabled and 0 or 1
+Checkmark.ZIndex = 6
+Checkmark.Parent = Switch
 
-    -- ÁREA CLICÁVEL
-    local Hitbox = Instance.new("TextButton")
-    Hitbox.Name = "Hitbox"
-    Hitbox.Size = UDim2.new(1, 0, 1, 0)
-    Hitbox.BackgroundTransparency = 1
-    Hitbox.Text = ""
-    Hitbox.AutoButtonColor = false
-    Hitbox.ZIndex = 4
-    Hitbox.Parent = Switch
+local Hitbox = Instance.new("TextButton")
+Hitbox.Name = "Hitbox"
+Hitbox.Size = UDim2.fromScale(1, 1)
+Hitbox.BackgroundTransparency = 1
+Hitbox.Text = ""
+Hitbox.AutoButtonColor = false
+Hitbox.ZIndex = 7
+Hitbox.Parent = Switch
 
     -- ATUALIZAR VISUAL
     local function UpdateToggle(instant)
