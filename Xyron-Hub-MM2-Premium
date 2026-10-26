@@ -1225,7 +1225,541 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
     return Controller
 end
 
+--========================================================--
+--                  SISTEMA DE DROPDOWN                   --
+--========================================================--
 
+local function CreateDropdown(tabName, title, description, options, defaultValue, callback)
+    local page = Pages[tabName]
+
+    if not page then
+        warn("[Xyron Hub] Aba não encontrada: " .. tostring(tabName))
+        return
+    end
+
+    options = options or {}
+    callback = callback or function() end
+
+    local selectedValue = defaultValue
+    local isOpen = false
+    local optionButtons = {}
+
+    local ITEM_HEIGHT = 29
+    local MAX_LIST_HEIGHT = 200
+
+    local hasDescription = description ~= nil
+        and tostring(description):match("%S") ~= nil
+
+    --==================================================
+    -- CONTAINER PRINCIPAL
+    --==================================================
+
+    local Dropdown = Instance.new("Frame")
+    Dropdown.Name = "WindDropdown"
+    Dropdown.Size = UDim2.new(1, -4, 0, 48)
+    Dropdown.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Dropdown.BorderSizePixel = 0
+    Dropdown.ClipsDescendants = false
+    Dropdown.Parent = page
+    Dropdown.ZIndex = 2
+
+    Instance.new("UICorner", Dropdown).CornerRadius = UDim.new(0, 10)
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Name = "Border"
+    Stroke.Color = Color3.fromRGB(55, 55, 55)
+    Stroke.Thickness = 1
+    Stroke.Transparency = 0.15
+    Stroke.Parent = Dropdown
+
+    --==================================================
+    -- ÁREA DO TEXTO
+    --==================================================
+
+    local TextArea = Instance.new("Frame")
+    TextArea.Name = "TextArea"
+    TextArea.Position = UDim2.fromOffset(13, 10)
+    TextArea.Size = UDim2.new(1, -155, 0, 0)
+    TextArea.AutomaticSize = Enum.AutomaticSize.Y
+    TextArea.BackgroundTransparency = 1
+    TextArea.BorderSizePixel = 0
+    TextArea.Parent = Dropdown
+    TextArea.ZIndex = 3
+
+    local TextLayout = Instance.new("UIListLayout")
+    TextLayout.FillDirection = Enum.FillDirection.Vertical
+    TextLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TextLayout.Padding = UDim.new(0, 4)
+    TextLayout.Parent = TextArea
+
+    --==================================================
+    -- TÍTULO
+    --==================================================
+
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Size = UDim2.new(1, 0, 0, 18)
+    Title.AutomaticSize = Enum.AutomaticSize.Y
+    Title.BackgroundTransparency = 1
+    Title.Text = tostring(title or "Dropdown")
+    Title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Title.TextSize = 13
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextYAlignment = Enum.TextYAlignment.Center
+    Title.TextWrapped = true
+    Title.LayoutOrder = 1
+    Title.Parent = TextArea
+
+    --==================================================
+    -- DESCRIÇÃO
+    --==================================================
+
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Size = UDim2.new(1, 0, 0, 0)
+    Description.AutomaticSize = Enum.AutomaticSize.Y
+    Description.BackgroundTransparency = 1
+    Description.Text = hasDescription and tostring(description) or ""
+    Description.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Description.TextSize = 10
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextYAlignment = Enum.TextYAlignment.Top
+    Description.TextWrapped = true
+    Description.Visible = hasDescription
+    Description.LayoutOrder = 2
+    Description.Parent = TextArea
+
+    --==================================================
+    -- PÍLULA DE SELEÇÃO
+    --==================================================
+
+    local Pill = Instance.new("Frame")
+    Pill.Name = "Pill"
+    Pill.Size = UDim2.fromOffset(120, 28)
+    Pill.AnchorPoint = Vector2.new(1, 0.5)
+    Pill.Position = UDim2.new(1, -12, 0, 21)
+    Pill.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+    Pill.BorderSizePixel = 0
+    Pill.ZIndex = 4
+    Pill.Parent = Dropdown
+
+    Instance.new("UICorner", Pill).CornerRadius = UDim.new(1, 0)
+
+    local PillStroke = Instance.new("UIStroke")
+    PillStroke.Color = Color3.fromRGB(55, 55, 55)
+    PillStroke.Thickness = 1
+    PillStroke.Parent = Pill
+
+    -- TEXTO SELECIONADO
+
+    local SelectedText = Instance.new("TextLabel")
+    SelectedText.Name = "SelectedText"
+    SelectedText.Position = UDim2.new(0, 10, 0, 0)
+    SelectedText.Size = UDim2.new(1, -35, 1, 0)
+    SelectedText.BackgroundTransparency = 1
+    SelectedText.Text = selectedValue ~= nil
+        and tostring(selectedValue)
+        or "Selecionar"
+    SelectedText.TextColor3 = selectedValue ~= nil
+        and Color3.fromRGB(245, 245, 245)
+        or Color3.fromRGB(190, 190, 190)
+    SelectedText.TextSize = 11
+    SelectedText.Font = Enum.Font.Gotham
+    SelectedText.TextXAlignment = Enum.TextXAlignment.Left
+    SelectedText.TextTruncate = Enum.TextTruncate.AtEnd
+    SelectedText.ZIndex = 5
+    SelectedText.Parent = Pill
+
+    -- SETA
+
+    local Arrow = Instance.new("TextLabel")
+    Arrow.Name = "Arrow"
+    Arrow.AnchorPoint = Vector2.new(1, 0.5)
+    Arrow.Position = UDim2.new(1, -9, 0.5, 0)
+    Arrow.Size = UDim2.new(0, 14, 0, 18)
+    Arrow.BackgroundTransparency = 1
+    Arrow.Text = "›"
+    Arrow.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Arrow.TextSize = 21
+    Arrow.Font = Enum.Font.Gotham
+    Arrow.Rotation = 90
+    Arrow.ZIndex = 5
+    Arrow.Parent = Pill
+
+    -- BOTÃO DA PÍLULA
+
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Name = "ToggleButton"
+    ToggleButton.Size = UDim2.fromScale(1, 1)
+    ToggleButton.BackgroundTransparency = 1
+    ToggleButton.Text = ""
+    ToggleButton.AutoButtonColor = false
+    ToggleButton.ZIndex = 6
+    ToggleButton.Parent = Pill
+
+    --==================================================
+    -- LISTA ABAIXO DA PÍLULA
+    --==================================================
+
+    local ListContainer = Instance.new("Frame")
+    ListContainer.Name = "ListContainer"
+    ListContainer.AnchorPoint = Vector2.new(1, 0)
+    ListContainer.Position = UDim2.new(1, -12, 1, 5)
+    ListContainer.Size = UDim2.fromOffset(120, 0)
+    ListContainer.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    ListContainer.BorderSizePixel = 0
+    ListContainer.ClipsDescendants = true
+    ListContainer.Visible = false
+    ListContainer.ZIndex = 10
+    ListContainer.Parent = Dropdown
+
+    Instance.new("UICorner", ListContainer).CornerRadius = UDim.new(0, 8)
+
+    local ListStroke = Instance.new("UIStroke")
+    ListStroke.Color = Color3.fromRGB(55, 55, 55)
+    ListStroke.Thickness = 1
+    ListStroke.Parent = ListContainer
+
+    -- ÁREA COM ROLAGEM
+
+    local ScrollingFrame = Instance.new("ScrollingFrame")
+    ScrollingFrame.Name = "Options"
+    ScrollingFrame.Position = UDim2.new(0, 0, 0, 3)
+    ScrollingFrame.Size = UDim2.new(1, 0, 1, -6)
+    ScrollingFrame.BackgroundTransparency = 1
+    ScrollingFrame.BorderSizePixel = 0
+    ScrollingFrame.ScrollBarThickness = 0
+    ScrollingFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+    ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    ScrollingFrame.Active = true
+    ScrollingFrame.ZIndex = 11
+    ScrollingFrame.Parent = ListContainer
+
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ListLayout.Padding = UDim.new(0, 2)
+    ListLayout.Parent = ScrollingFrame
+
+    local ListPadding = Instance.new("UIPadding")
+    ListPadding.PaddingTop = UDim.new(0, 3)
+    ListPadding.PaddingBottom = UDim.new(0, 3)
+    ListPadding.PaddingLeft = UDim.new(0, 5)
+    ListPadding.PaddingRight = UDim.new(0, 5)
+    ListPadding.Parent = ScrollingFrame
+
+    --==================================================
+    -- ALTURA AUTOMÁTICA DA BASE
+    --==================================================
+
+    local function UpdateHeight()
+        task.defer(function()
+            if not Dropdown.Parent or not TextArea.Parent then
+                return
+            end
+
+            local textHeight = TextArea.AbsoluteSize.Y
+            local baseHeight = math.max(42, textHeight + 20)
+
+            Dropdown.Size = UDim2.new(1, -4, 0, baseHeight)
+            Pill.Position = UDim2.new(1, -12, 0, baseHeight / 2)
+        end)
+    end
+
+    TextArea:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateHeight)
+    Title:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
+    Description:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
+
+    --==================================================
+    -- ATUALIZAR TAMANHO DA LISTA
+    --==================================================
+
+    local function UpdateListSize()
+        local totalHeight = (#optionButtons * (ITEM_HEIGHT + 2)) + 8
+        local height = math.min(totalHeight, MAX_LIST_HEIGHT)
+
+        if isOpen then
+            TweenService:Create(
+                ListContainer,
+                TweenInfo.new(
+                    0.2,
+                    Enum.EasingStyle.Quart,
+                    Enum.EasingDirection.Out
+                ),
+                {
+                    Size = UDim2.fromOffset(120, height)
+                }
+            ):Play()
+        end
+    end
+
+    --==================================================
+    -- ABRIR / FECHAR
+    --==================================================
+
+    local function SetOpen(state)
+        isOpen = state
+
+        if isOpen then
+            ListContainer.Visible = true
+            UpdateListSize()
+
+            TweenService:Create(
+                Arrow,
+                TweenInfo.new(
+                    0.18,
+                    Enum.EasingStyle.Quad,
+                    Enum.EasingDirection.Out
+                ),
+                {Rotation = -90}
+            ):Play()
+        else
+            TweenService:Create(
+                ListContainer,
+                TweenInfo.new(
+                    0.18,
+                    Enum.EasingStyle.Quad,
+                    Enum.EasingDirection.Out
+                ),
+                {Size = UDim2.fromOffset(120, 0)}
+            ):Play()
+
+            TweenService:Create(
+                Arrow,
+                TweenInfo.new(
+                    0.18,
+                    Enum.EasingStyle.Quad,
+                    Enum.EasingDirection.Out
+                ),
+                {Rotation = 90}
+            ):Play()
+
+            task.delay(0.19, function()
+                if not isOpen and ListContainer.Parent then
+                    ListContainer.Visible = false
+                end
+            end)
+        end
+    end
+
+    ToggleButton.Activated:Connect(function()
+        SetOpen(not isOpen)
+    end)
+
+    --==================================================
+    -- CRIAR OPÇÕES
+    --==================================================
+
+    local function AddOption(optionName)
+        optionName = tostring(optionName)
+
+        local OptionButton = Instance.new("TextButton")
+        OptionButton.Name = "Option"
+        OptionButton.Size = UDim2.new(1, -2, 0, ITEM_HEIGHT)
+        OptionButton.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+        OptionButton.BackgroundTransparency = 1
+        OptionButton.BorderSizePixel = 0
+        OptionButton.Text = ""
+        OptionButton.AutoButtonColor = false
+        OptionButton.LayoutOrder = #optionButtons + 1
+        OptionButton.ZIndex = 12
+        OptionButton.Parent = ScrollingFrame
+
+        Instance.new("UICorner", OptionButton).CornerRadius = UDim.new(0, 5)
+
+        -- LINHA BRANCA
+
+        local Line = Instance.new("Frame")
+        Line.Name = "Line"
+        Line.Position = UDim2.new(0, 7, 0.5, -6)
+        Line.Size = UDim2.new(0, 1, 0, 12)
+        Line.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+        Line.BorderSizePixel = 0
+        Line.ZIndex = 13
+        Line.Parent = OptionButton
+
+        -- TEXTO DA OPÇÃO
+
+        local OptionText = Instance.new("TextLabel")
+        OptionText.Name = "OptionText"
+        OptionText.Position = UDim2.new(0, 16, 0, 0)
+        OptionText.Size = UDim2.new(1, -22, 1, 0)
+        OptionText.BackgroundTransparency = 1
+        OptionText.Text = optionName
+        OptionText.TextColor3 = Color3.fromRGB(190, 190, 190)
+        OptionText.TextSize = 11
+        OptionText.Font = Enum.Font.Gotham
+        OptionText.TextXAlignment = Enum.TextXAlignment.Left
+        OptionText.TextTruncate = Enum.TextTruncate.AtEnd
+        OptionText.ZIndex = 13
+        OptionText.Parent = OptionButton
+
+        OptionButton.MouseEnter:Connect(function()
+            TweenService:Create(
+                OptionButton,
+                TweenInfo.new(0.12),
+                {BackgroundTransparency = 0}
+            ):Play()
+
+            TweenService:Create(
+                OptionText,
+                TweenInfo.new(0.12),
+                {TextColor3 = Color3.fromRGB(245, 245, 245)}
+            ):Play()
+        end)
+
+        OptionButton.MouseLeave:Connect(function()
+            TweenService:Create(
+                OptionButton,
+                TweenInfo.new(0.12),
+                {BackgroundTransparency = 1}
+            ):Play()
+
+            if selectedValue ~= optionName then
+                TweenService:Create(
+                    OptionText,
+                    TweenInfo.new(0.12),
+                    {TextColor3 = Color3.fromRGB(190, 190, 190)}
+                ):Play()
+            end
+        end)
+
+        OptionButton.Activated:Connect(function()
+            selectedValue = optionName
+            SelectedText.Text = optionName
+            SelectedText.TextColor3 = Color3.fromRGB(245, 245, 245)
+
+            local success, err = pcall(callback, optionName)
+            if not success then
+                warn("[Xyron Hub] Erro no dropdown:", err)
+            end
+
+            SetOpen(false)
+        end)
+
+        table.insert(optionButtons, {
+            Name = optionName,
+            Button = OptionButton
+        })
+
+        UpdateListSize()
+        return OptionButton
+    end
+
+    --==================================================
+    -- OPÇÕES INICIAIS
+    --==================================================
+
+    for _, optionName in ipairs(options) do
+        AddOption(optionName)
+    end
+
+    --==================================================
+    -- CONTROLES EXTERNOS
+    --==================================================
+
+    local Controller = {}
+
+    function Controller:Add(optionName)
+        return AddOption(optionName)
+    end
+
+    function Controller:Get()
+        return selectedValue
+    end
+
+    function Controller:Set(value)
+        value = tostring(value)
+
+        for _, option in ipairs(optionButtons) do
+            if option.Name == value then
+                selectedValue = value
+                SelectedText.Text = value
+                SelectedText.TextColor3 = Color3.fromRGB(245, 245, 245)
+                return true
+            end
+        end
+
+        return false
+    end
+
+    function Controller:Clear()
+        for _, option in ipairs(optionButtons) do
+            option.Button:Destroy()
+        end
+
+        table.clear(optionButtons)
+
+        selectedValue = nil
+        SelectedText.Text = "Selecionar"
+        SelectedText.TextColor3 = Color3.fromRGB(190, 190, 190)
+
+        UpdateListSize()
+    end
+
+    function Controller:SetWidth(width)
+        Pill.Size = UDim2.fromOffset(width, 28)
+        ListContainer.Size = UDim2.fromOffset(width, ListContainer.Size.Y.Offset)
+    end
+
+    function Controller:Open()
+        SetOpen(true)
+    end
+
+    function Controller:Close()
+        SetOpen(false)
+    end
+
+    function Controller:Destroy()
+        Dropdown:Destroy()
+        table.clear(optionButtons)
+    end
+
+    UpdateHeight()
+
+    return Controller
+end
+
+--========================================================--
+--                       EXEMPLO                           --
+--========================================================--
+
+local MinhaLista = CreateDropdown(
+    "Local player",
+    "Estilo visual",
+    "Escolha uma opção disponível nesta lista.",
+    {
+        "Estilo 1",
+        "Estilo 2",
+        "Estilo 3",
+        "Estilo 4",
+        "Estilo 5",
+        "Estilo 6",
+        "Estilo 7",
+        "Estilo 8"
+    },
+    nil,
+    function(valor)
+        print("Opção selecionada:", valor)
+    end
+)
+
+-- Alterar a largura da pílula e da lista:
+-- MinhaLista:SetWidth(120)
+
+-- Adicionar opção:
+-- MinhaLista:Add("Estilo 9")
+
+-- Obter opção selecionada:
+-- print(MinhaLista:Get())
+
+-- Selecionar uma opção:
+-- MinhaLista:Set("Estilo 2")
+
+-- Limpar opções:
+-- MinhaLista:Clear()
 
 --========================================================--
 --                       EXEMPLO DE USO                   --
