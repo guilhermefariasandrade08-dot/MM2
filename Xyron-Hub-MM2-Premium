@@ -1226,6 +1226,189 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
 end
 
 --========================================================--
+--                    SISTEMA DE KEYBIND                 --
+--========================================================--
+
+local UserInputService = game:GetService("UserInputService")
+
+local function CreateKeybind(tabName, title, defaultKey, callback)
+    local page = Pages[tabName]
+
+    if not page then
+        warn("[Xyron Hub] Aba não encontrada: " .. tostring(tabName))
+        return
+    end
+
+    local currentKey = string.upper(tostring(defaultKey or "E")):sub(1, 1)
+    local listening = false
+
+    if not currentKey:match("%a") then
+        currentKey = "E"
+    end
+
+    callback = callback or function() end
+
+    -- CONTAINER
+    local Keybind = Instance.new("Frame")
+    Keybind.Name = "WindKeybind"
+    Keybind.Size = UDim2.new(1, -4, 0, 48)
+    Keybind.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Keybind.BorderSizePixel = 0
+    Keybind.Parent = page
+
+    Instance.new("UICorner", Keybind).CornerRadius =
+        UDim.new(0, 10)
+
+    local Border = Instance.new("UIStroke")
+    Border.Name = "Border"
+    Border.Color = Color3.fromRGB(55, 55, 55)
+    Border.Thickness = 1
+    Border.Transparency = 0.15
+    Border.Parent = Keybind
+
+    -- TÍTULO
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.fromOffset(13, 0)
+    Title.Size = UDim2.new(1, -100, 1, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = tostring(title or "Keybind")
+    Title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Title.TextSize = 13
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextTruncate = Enum.TextTruncate.AtEnd
+    Title.Parent = Keybind
+
+    -- CAIXA EM FORMATO DE PÍLULA À DIREITA
+    local KeyBox = Instance.new("TextButton")
+    KeyBox.Name = "KeyBox"
+    KeyBox.AnchorPoint = Vector2.new(1, 0.5)
+    KeyBox.Position = UDim2.new(1, -12, 0.5, 0)
+    KeyBox.Size = UDim2.fromOffset(43, 27)
+    KeyBox.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+    KeyBox.BorderSizePixel = 0
+    KeyBox.Text = currentKey
+    KeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    KeyBox.TextSize = 12
+    KeyBox.Font = Enum.Font.GothamMedium
+    KeyBox.AutoButtonColor = false
+    KeyBox.Parent = Keybind
+
+    Instance.new("UICorner", KeyBox).CornerRadius =
+        UDim.new(1, 0)
+
+    local KeyBorder = Instance.new("UIStroke")
+    KeyBorder.Name = "KeyBorder"
+    KeyBorder.Color = Color3.fromRGB(75, 75, 75)
+    KeyBorder.Thickness = 1
+    KeyBorder.Parent = KeyBox
+
+    -- CLICAR PARA ESCOLHER UMA LETRA
+    KeyBox.Activated:Connect(function()
+        if listening then
+            return
+        end
+
+        listening = true
+        KeyBox.Text = "..."
+
+        KeyBorder.Color = Color3.fromRGB(255, 255, 255)
+    end)
+
+    -- ACEITAR APENAS LETRAS A-Z
+    local inputConnection
+
+    inputConnection = UserInputService.InputBegan:Connect(function(input, processed)
+        if not listening then
+            return
+        end
+
+        if input.UserInputType ~= Enum.UserInputType.Keyboard then
+            return
+        end
+
+        local keyName = input.KeyCode.Name
+
+        if #keyName == 1 and keyName:match("^[A-Z]$") then
+            currentKey = keyName
+            KeyBox.Text = currentKey
+            listening = false
+
+            KeyBorder.Color = Color3.fromRGB(75, 75, 75)
+        elseif keyName == "Escape" then
+            listening = false
+            KeyBox.Text = currentKey
+
+            KeyBorder.Color = Color3.fromRGB(75, 75, 75)
+        end
+    end)
+
+    -- EXECUTAR CALLBACK AO PRESSIONAR A LETRA
+    local triggerConnection
+
+    triggerConnection = UserInputService.InputBegan:Connect(function(input, processed)
+        if processed or listening then
+            return
+        end
+
+        if input.UserInputType ~= Enum.UserInputType.Keyboard then
+            return
+        end
+
+        if input.KeyCode.Name == currentKey then
+            local success, err = pcall(callback)
+
+            if not success then
+                warn("[Xyron Hub] Erro no keybind:", err)
+            end
+        end
+    end)
+
+    -- CONTROLE EXTERNO
+    local Controller = {}
+
+    function Controller:Get()
+        return currentKey
+    end
+
+    function Controller:Set(newKey)
+        if typeof(newKey) ~= "string" then
+            return
+        end
+
+        newKey = newKey:upper()
+
+        if #newKey == 1 and newKey:match("^[A-Z]$") then
+            currentKey = newKey
+            KeyBox.Text = currentKey
+        end
+    end
+
+    function Controller:Destroy()
+        listening = false
+        inputConnection:Disconnect()
+        triggerConnection:Disconnect()
+        Keybind:Destroy()
+    end
+
+    return Controller
+end
+
+--========================================================--
+--                     EXEMPLO DE USO                     --
+--========================================================--
+
+local MeuKeybind = CreateKeybind(
+    "Local player",
+    "Atalho do PC",
+    "E",
+    function()
+        print("A tecla configurada foi pressionada!")
+    end
+)
+
+--========================================================--
 --                       EXEMPLO DE USO                   --
 --========================================================--
 
