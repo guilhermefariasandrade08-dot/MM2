@@ -898,6 +898,8 @@ end
 --                    SISTEMA DE SLIDER                   --
 --========================================================--
 
+local UserInputService = game:GetService("UserInputService")
+
 local function CreateSlider(tabName, title, description, minValue, maxValue, defaultValue, callback)
     local page = Pages[tabName]
 
@@ -908,6 +910,11 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
 
     minValue = tonumber(minValue) or 0
     maxValue = tonumber(maxValue) or 100
+
+    if maxValue < minValue then
+        maxValue, minValue = minValue, maxValue
+    end
+
     defaultValue = math.clamp(
         tonumber(defaultValue) or minValue,
         minValue,
@@ -979,23 +986,8 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
     ValueBorder.Thickness = 1
     ValueBorder.Parent = ValueBox
 
-    -- DESCRIÇÃO
-    local Description = Instance.new("TextLabel")
-    Description.Name = "Description"
-    Description.Position = UDim2.fromOffset(13, 29)
-    Description.Size = UDim2.new(1, -26, 0, 14)
-    Description.BackgroundTransparency = 1
-    Description.Text = hasDescription and tostring(description) or ""
-    Description.TextColor3 = Color3.fromRGB(150, 150, 150)
-    Description.TextSize = 10
-    Description.Font = Enum.Font.Gotham
-    Description.TextXAlignment = Enum.TextXAlignment.Left
-    Description.TextTruncate = Enum.TextTruncate.AtEnd
-    Description.Visible = hasDescription
-    Description.Parent = Slider
-
     -- POSIÇÃO DA BARRA
-    local barY = hasDescription and 57 or 40
+    local barY = 39
 
     -- FUNDO DA BARRA
     local Bar = Instance.new("Frame")
@@ -1010,38 +1002,58 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
     Instance.new("UICorner", Bar).CornerRadius =
         UDim.new(1, 0)
 
-    -- PROGRESSO
+    -- PROGRESSO DA BARRA
     local Fill = Instance.new("Frame")
     Fill.Name = "Fill"
     Fill.Size = UDim2.new(0, 0, 1, 0)
     Fill.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
     Fill.BorderSizePixel = 0
     Fill.Active = false
+    Fill.ZIndex = 2
     Fill.Parent = Bar
 
     Instance.new("UICorner", Fill).CornerRadius =
         UDim.new(1, 0)
 
-    -- BOTÃO CIRCULAR
+    -- BOLINHA PRETA COM CONTORNO BRANCO FINO
     local Knob = Instance.new("Frame")
     Knob.Name = "Knob"
     Knob.Size = UDim2.fromOffset(14, 14)
     Knob.AnchorPoint = Vector2.new(0.5, 0.5)
     Knob.Position = UDim2.new(0, 0, 0.5, 0)
-    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Knob.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     Knob.BorderSizePixel = 0
     Knob.Active = false
+    Knob.ZIndex = 3
     Knob.Parent = Bar
 
     Instance.new("UICorner", Knob).CornerRadius =
         UDim.new(1, 0)
 
     local KnobBorder = Instance.new("UIStroke")
-    KnobBorder.Color = Color3.fromRGB(190, 190, 190)
+    KnobBorder.Name = "KnobBorder"
+    KnobBorder.Color = Color3.fromRGB(255, 255, 255)
     KnobBorder.Thickness = 1
+    KnobBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     KnobBorder.Parent = Knob
 
-    -- ÁREA DE TOQUE EXCLUSIVA DO SLIDER
+    -- DESCRIÇÃO ABAIXO DA LINHA
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Position = UDim2.fromOffset(13, 51)
+    Description.Size = UDim2.new(1, -26, 0, 20)
+    Description.BackgroundTransparency = 1
+    Description.Text = hasDescription and tostring(description) or ""
+    Description.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Description.TextSize = 10
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextYAlignment = Enum.TextYAlignment.Top
+    Description.TextTruncate = Enum.TextTruncate.AtEnd
+    Description.Visible = hasDescription
+    Description.Parent = Slider
+
+    -- ÁREA DE TOQUE DO SLIDER
     local Hitbox = Instance.new("TextButton")
     Hitbox.Name = "SliderHitbox"
     Hitbox.Position = UDim2.new(0, -8, 0, -12)
@@ -1050,6 +1062,7 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
     Hitbox.Text = ""
     Hitbox.AutoButtonColor = false
     Hitbox.Active = true
+    Hitbox.ZIndex = 4
     Hitbox.Parent = Bar
 
     -- ATUALIZAR VALOR E VISUAL
@@ -1079,7 +1092,7 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
         end
     end
 
-    -- CALCULAR VALOR PELA POSIÇÃO DO DEDO/MOUSE
+    -- CALCULAR VALOR PELA POSIÇÃO DO DEDO OU MOUSE
     local function UpdateFromPosition(screenX)
         local barLeft = Bar.AbsolutePosition.X
         local barWidth = Bar.AbsoluteSize.X
@@ -1117,7 +1130,7 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
         end
     end
 
-    -- INICIAR ARRASTO COM UM ÚNICO DEDO
+    -- INICIAR ARRASTO
     Hitbox.InputBegan:Connect(function(input)
         if dragging then
             return
@@ -1143,12 +1156,10 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
                 end
 
                 if activeInputType == Enum.UserInputType.Touch then
-                    -- Só aceita o dedo que iniciou o arrasto.
                     if changedInput ~= activeTouch then
                         return
                     end
                 else
-                    -- Com mouse, acompanha somente o movimento do mouse.
                     if changedInput.UserInputType
                         ~= Enum.UserInputType.MouseMovement then
                         return
@@ -1177,7 +1188,7 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
         )
     end)
 
-    -- PERMITE DIGITAR O VALOR MANUALMENTE
+    -- PERMITIR DIGITAR O VALOR MANUALMENTE
     ValueBox.FocusLost:Connect(function()
         local typedValue = tonumber(ValueBox.Text)
 
@@ -1188,7 +1199,7 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
         end
     end)
 
-    -- ESTADO INICIAL
+    -- VALOR INICIAL
     UpdateSlider(defaultValue, false)
 
     -- CONTROLE EXTERNO
@@ -1215,7 +1226,7 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
 end
 
 --========================================================--
---                    EXEMPLO DE USO                      --
+--                       EXEMPLO DE USO                   --
 --========================================================--
 
 local WalkSpeedSlider = CreateSlider(
