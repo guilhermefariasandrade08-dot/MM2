@@ -679,11 +679,10 @@ local function CreateToggle(tabName, title, description, default, callback)
     end
 
     local enabled = default == true
-
     local hasDescription = description ~= nil
         and tostring(description):match("%S") ~= nil
 
-    -- CONTAINER PRINCIPAL
+    -- CONTAINER
     local Toggle = Instance.new("Frame")
     Toggle.Name = "WindToggle"
     Toggle.Size = UDim2.new(1, -4, 0, 48)
@@ -693,8 +692,7 @@ local function CreateToggle(tabName, title, description, default, callback)
     Toggle.ClipsDescendants = false
     Toggle.Parent = page
 
-    Instance.new("UICorner", Toggle).CornerRadius =
-        UDim.new(0, 10)
+    Instance.new("UICorner", Toggle).CornerRadius = UDim.new(0, 10)
 
     local Stroke = Instance.new("UIStroke")
     Stroke.Name = "Border"
@@ -703,21 +701,21 @@ local function CreateToggle(tabName, title, description, default, callback)
     Stroke.Transparency = 0.15
     Stroke.Parent = Toggle
 
-    -- ESPAÇAMENTO INTERNO
-    local TogglePadding = Instance.new("UIPadding")
-    TogglePadding.PaddingTop = UDim.new(0, 10)
-    TogglePadding.PaddingBottom = UDim.new(0, 10)
-    TogglePadding.PaddingLeft = UDim.new(0, 13)
-    TogglePadding.PaddingRight = UDim.new(0, 48)
-    TogglePadding.Parent = Toggle
+    -- ÁREA DO TEXTO: RESERVA ESPAÇO À DIREITA
+    local TextArea = Instance.new("Frame")
+    TextArea.Name = "TextArea"
+    TextArea.Position = UDim2.fromOffset(13, 10)
+    TextArea.Size = UDim2.new(1, -65, 0, 0)
+    TextArea.AutomaticSize = Enum.AutomaticSize.Y
+    TextArea.BackgroundTransparency = 1
+    TextArea.BorderSizePixel = 0
+    TextArea.Parent = Toggle
 
-    -- ORGANIZAÇÃO DO TEXTO
-    local ToggleLayout = Instance.new("UIListLayout")
-    ToggleLayout.FillDirection = Enum.FillDirection.Vertical
-    ToggleLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ToggleLayout.Padding = UDim.new(0, 4)
-    ToggleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    ToggleLayout.Parent = Toggle
+    local TextLayout = Instance.new("UIListLayout")
+    TextLayout.FillDirection = Enum.FillDirection.Vertical
+    TextLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TextLayout.Padding = UDim.new(0, 4)
+    TextLayout.Parent = TextArea
 
     -- TÍTULO
     local Title = Instance.new("TextLabel")
@@ -733,7 +731,7 @@ local function CreateToggle(tabName, title, description, default, callback)
     Title.TextYAlignment = Enum.TextYAlignment.Center
     Title.TextWrapped = true
     Title.LayoutOrder = 1
-    Title.Parent = Toggle
+    Title.Parent = TextArea
 
     -- DESCRIÇÃO
     local Description = Instance.new("TextLabel")
@@ -750,41 +748,32 @@ local function CreateToggle(tabName, title, description, default, callback)
     Description.TextWrapped = true
     Description.Visible = hasDescription
     Description.LayoutOrder = 2
-    Description.Parent = Toggle
+    Description.Parent = TextArea
 
-    -- ÁREA EXCLUSIVA DO TOGGLE À DIREITA
-    local SwitchArea = Instance.new("Frame")
-    SwitchArea.Name = "SwitchArea"
-    SwitchArea.Size = UDim2.new(0, 30, 1, 0)
-    SwitchArea.AnchorPoint = Vector2.new(1, 0)
-    SwitchArea.Position = UDim2.new(1, -10, 0, 0)
-    SwitchArea.BackgroundTransparency = 1
-    SwitchArea.BorderSizePixel = 0
-    SwitchArea.ZIndex = 5
-    SwitchArea.Parent = Toggle
-
-    -- QUADRADO DO TOGGLE
+    -- QUADRADO: FILHO DIRETO, PRESO À DIREITA DO TOGGLE
     local Switch = Instance.new("Frame")
     Switch.Name = "Switch"
     Switch.Size = UDim2.fromOffset(22, 22)
     Switch.AnchorPoint = Vector2.new(1, 0.5)
-    Switch.Position = UDim2.new(1, 0, 0.5, 0)
-    Switch.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Switch.Position = UDim2.new(1, -12, 0.5, 0)
+    Switch.BackgroundColor3 = enabled
+        and Color3.fromRGB(255, 255, 255)
+        or Color3.fromRGB(22, 22, 22)
     Switch.BorderSizePixel = 0
-    Switch.ZIndex = 6
-    Switch.Parent = SwitchArea
+    Switch.ZIndex = 5
+    Switch.Parent = Toggle
 
-    Instance.new("UICorner", Switch).CornerRadius =
-        UDim.new(0, 5)
+    Instance.new("UICorner", Switch).CornerRadius = UDim.new(0, 5)
 
-    -- BORDA DO QUADRADO
     local SwitchStroke = Instance.new("UIStroke")
     SwitchStroke.Name = "SwitchBorder"
-    SwitchStroke.Color = Color3.fromRGB(85, 85, 85)
+    SwitchStroke.Color = enabled
+        and Color3.fromRGB(255, 255, 255)
+        or Color3.fromRGB(85, 85, 85)
     SwitchStroke.Thickness = 1.2
     SwitchStroke.Parent = Switch
 
-    -- MARCA DE CONFIRMAÇÃO
+    -- MARCA
     local Checkmark = Instance.new("TextLabel")
     Checkmark.Name = "Checkmark"
     Checkmark.Size = UDim2.fromScale(1, 1)
@@ -794,70 +783,73 @@ local function CreateToggle(tabName, title, description, default, callback)
     Checkmark.TextSize = 15
     Checkmark.Font = Enum.Font.GothamBold
     Checkmark.TextTransparency = enabled and 0 or 1
-    Checkmark.ZIndex = 7
+    Checkmark.ZIndex = 6
     Checkmark.Parent = Switch
 
-    -- ÁREA CLICÁVEL
+    -- BOTÃO CLICÁVEL
     local Hitbox = Instance.new("TextButton")
     Hitbox.Name = "Hitbox"
     Hitbox.Size = UDim2.fromScale(1, 1)
     Hitbox.BackgroundTransparency = 1
     Hitbox.Text = ""
     Hitbox.AutoButtonColor = false
-    Hitbox.ZIndex = 8
+    Hitbox.ZIndex = 7
     Hitbox.Parent = Switch
 
-    -- ATUALIZAR VISUAL
+    -- AJUSTAR ALTURA DO CONTAINER AO TEXTO
+    local function UpdateHeight()
+        task.defer(function()
+            if not Toggle.Parent or not TextArea.Parent then
+                return
+            end
+
+            Toggle.Size = UDim2.new(
+                1, -4,
+                0, math.max(42, TextArea.AbsoluteSize.Y + 20)
+            )
+        end)
+    end
+
+    TextArea:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateHeight)
+    Title:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
+    Description:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
+
+    -- VISUAL DO ESTADO
     local function UpdateToggle(instant)
         local duration = instant and 0 or 0.2
 
-        local backgroundColor = enabled
-            and Color3.fromRGB(255, 255, 255)
-            or Color3.fromRGB(22, 22, 22)
-
-        local borderColor = enabled
-            and Color3.fromRGB(255, 255, 255)
-            or Color3.fromRGB(85, 85, 85)
-
-        local tweenInfo = TweenInfo.new(
+        local info = TweenInfo.new(
             duration,
             Enum.EasingStyle.Quint,
             Enum.EasingDirection.Out
         )
 
-        TweenService:Create(
-            Switch,
-            tweenInfo,
-            {BackgroundColor3 = backgroundColor}
-        ):Play()
+        TweenService:Create(Switch, info, {
+            BackgroundColor3 = enabled
+                and Color3.fromRGB(255, 255, 255)
+                or Color3.fromRGB(22, 22, 22)
+        }):Play()
 
-        TweenService:Create(
-            SwitchStroke,
-            tweenInfo,
-            {Color = borderColor}
-        ):Play()
+        TweenService:Create(SwitchStroke, info, {
+            Color = enabled
+                and Color3.fromRGB(255, 255, 255)
+                or Color3.fromRGB(85, 85, 85)
+        }):Play()
 
-        TweenService:Create(
-            Checkmark,
-            tweenInfo,
-            {TextTransparency = enabled and 0 or 1}
-        ):Play()
+        TweenService:Create(Checkmark, info, {
+            TextTransparency = enabled and 0 or 1
+        }):Play()
 
-        TweenService:Create(
-            Stroke,
-            tweenInfo,
-            {
-                Color = enabled
-                    and Color3.fromRGB(255, 255, 255)
-                    or Color3.fromRGB(55, 55, 55)
-            }
-        ):Play()
+        TweenService:Create(Stroke, info, {
+            Color = enabled
+                and Color3.fromRGB(255, 255, 255)
+                or Color3.fromRGB(55, 55, 55)
+        }):Play()
     end
 
     -- CLIQUE
     Hitbox.Activated:Connect(function()
         enabled = not enabled
-
         UpdateToggle(false)
 
         if callback then
@@ -869,7 +861,7 @@ local function CreateToggle(tabName, title, description, default, callback)
         end
     end)
 
-    -- ESTADO INICIAL
+    UpdateHeight()
     UpdateToggle(true)
 
     -- CONTROLE EXTERNO
@@ -918,6 +910,10 @@ local TrowingKanifToggle = CreateToggle(
         )
     end
 )
+
+
+
+
 
 --========================================================--
 --                    PESQUISA FUNCIONAL                  --
