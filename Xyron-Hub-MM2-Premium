@@ -670,6 +670,113 @@ SelectTab("Informations")
 --                 SISTEMA DE TOGGLE                       --
 --========================================================--
 
+--========================================================--
+--               SISTEMA DE TOGGLE (MODERNO)              --
+--========================================================--
+
+local function CreateToggle(parent, titleText, descText, defaultState, callback)
+    local state = defaultState == true
+
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Name = "WindToggle"
+    toggleFrame.Size = UDim2.new(1, 0, 0, 46)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.Parent = parent
+
+    Instance.new("UICorner", toggleFrame).CornerRadius = UDim.new(0, 10)
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(40, 40, 40)
+    stroke.Thickness = 1
+    stroke.Parent = toggleFrame
+
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, -70, 0, 20)
+    title.Position = UDim2.fromOffset(12, 6)
+    title.BackgroundTransparency = 1
+    title.Text = titleText
+    title.TextColor3 = WHITE
+    title.TextSize = 13
+    title.Font = Enum.Font.GothamSemibold
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = toggleFrame
+
+    local desc = Instance.new("TextLabel")
+    desc.Name = "Description"
+    desc.Size = UDim2.new(1, -70, 0, 16)
+    desc.Position = UDim2.fromOffset(12, 24)
+    desc.BackgroundTransparency = 1
+    desc.Text = descText or ""
+    desc.TextColor3 = GRAY
+    desc.TextSize = 10
+    desc.Font = Enum.Font.Gotham
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.Parent = toggleFrame
+
+    local switch = Instance.new("Frame")
+    switch.Name = "Switch"
+    switch.Size = UDim2.fromOffset(40, 22)
+    switch.AnchorPoint = Vector2.new(1, 0.5)
+    switch.Position = UDim2.new(1, -12, 0.5, 0)
+    switch.BackgroundColor3 = state and BLUE or Color3.fromRGB(35, 35, 35)
+    switch.BorderSizePixel = 0
+    switch.Parent = toggleFrame
+
+    Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
+
+    local knob = Instance.new("Frame")
+    knob.Name = "Knob"
+    knob.Size = UDim2.fromOffset(16, 16)
+    knob.AnchorPoint = Vector2.new(0, 0.5)
+    knob.Position = state and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+    knob.BackgroundColor3 = WHITE
+    knob.BorderSizePixel = 0
+    knob.Parent = switch
+
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+    local hitbox = Instance.new("TextButton")
+    hitbox.Name = "Hitbox"
+    hitbox.Size = UDim2.Scale(1, 1)
+    hitbox.BackgroundTransparency = 1
+    hitbox.Text = ""
+    hitbox.Parent = switch
+
+    local function UpdateVisual(instant)
+        local targetColor = state and BLUE or Color3.fromRGB(35, 35, 35)
+        local targetPos = state and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+
+        if instant then
+            switch.BackgroundColor3 = targetColor
+            knob.Position = targetPos
+        else
+            TweenService:Create(switch, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundColor3 = targetColor}):Play()
+            TweenService:Create(knob, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = targetPos}):Play()
+        end
+    end
+
+    hitbox.Activated:Connect(function()
+        state = not state
+        UpdateVisual(false)
+        if callback then
+            task.spawn(callback, state)
+        end
+    end)
+
+    UpdateVisual(true)
+    return toggleFrame
+end
+
+
+
+
+
+
+CreateToggle(Pages["Murderer"], "Ativar Kill Aura", "Ataca automaticamente jogadores próximos", false, function(state)
+    print("Kill Aura:", state)
+end)
 
 
 
