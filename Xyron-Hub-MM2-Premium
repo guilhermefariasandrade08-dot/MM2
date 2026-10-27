@@ -896,6 +896,380 @@ local function CreateToggle(tabName, title, description, default, callback)
 end
 
 --========================================================--
+--                    SISTEMA DE SLIDER                   --
+--========================================================--
+
+local UserInputService = game:GetService("UserInputService")
+
+local function CreateSlider(tabName, title, description, minValue, maxValue, defaultValue, callback)
+    local page = Pages[tabName]
+
+    if not page then
+        warn("[Xyron Hub] Aba não encontrada: " .. tostring(tabName))
+        return
+    end
+
+    minValue = tonumber(minValue) or 0
+    maxValue = tonumber(maxValue) or 100
+
+    if maxValue < minValue then
+        maxValue, minValue = minValue, maxValue
+    end
+
+    defaultValue = math.clamp(
+        tonumber(defaultValue) or minValue,
+        minValue,
+        maxValue
+    )
+
+    local value = defaultValue
+    local dragging = false
+    local activeTouch = nil
+    local activeInputType = nil
+    local moveConnection
+    local endConnection
+    local editingValue = false
+
+    local hasDescription = description ~= nil
+        and tostring(description):match("%S") ~= nil
+
+    -- CONTAINER
+    local Slider = Instance.new("Frame")
+    Slider.Name = "WindSlider"
+    Slider.Size = UDim2.new(1, -4, 0, hasDescription and 82 or 64)
+    Slider.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Slider.BorderSizePixel = 0
+    Slider.Parent = page
+
+    Instance.new("UICorner", Slider).CornerRadius =
+        UDim.new(0, 10)
+
+    -- BORDA DA BASE
+    local Border = Instance.new("UIStroke")
+    Border.Name = "Border"
+    Border.Color = Color3.fromRGB(55, 55, 55)
+    Border.Thickness = 1
+    Border.Transparency = 0.15
+    Border.Parent = Slider
+
+    -- TÍTULO
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Position = UDim2.fromOffset(13, 8)
+    Title.Size = UDim2.new(1, -90, 0, 19)
+    Title.BackgroundTransparency = 1
+    Title.Text = tostring(title or "Slider")
+    Title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Title.TextSize = 13
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextTruncate = Enum.TextTruncate.AtEnd
+    Title.Parent = Slider
+
+    -- CAIXA NUMÉRICA
+    local ValueBox = Instance.new("TextBox")
+    ValueBox.Name = "Value"
+    ValueBox.Size = UDim2.fromOffset(58, 25)
+    ValueBox.Position = UDim2.new(1, -69, 0, 5)
+    ValueBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    ValueBox.BorderSizePixel = 0
+    ValueBox.Text = tostring(value)
+    ValueBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ValueBox.TextSize = 12
+    ValueBox.Font = Enum.Font.GothamMedium
+    ValueBox.ClearTextOnFocus = false
+    ValueBox.TextEditable = true
+    ValueBox.MultiLine = false
+    ValueBox.Parent = Slider
+
+    Instance.new("UICorner", ValueBox).CornerRadius =
+        UDim.new(0, 6)
+
+    -- BORDA DA CAIXA: MESMA COR DA BORDA DA BASE
+    local ValueBorder = Instance.new("UIStroke")
+    ValueBorder.Name = "ValueBorder"
+    ValueBorder.Color = Color3.fromRGB(55, 55, 55)
+    ValueBorder.Thickness = 1
+    ValueBorder.Transparency = 0.15
+    ValueBorder.Parent = ValueBox
+
+    -- POSIÇÃO DA BARRA
+    local barY = 39
+
+    -- FUNDO DA BARRA
+    local Bar = Instance.new("Frame")
+    Bar.Name = "SliderBar"
+    Bar.Position = UDim2.new(0, 13, 0, barY)
+    Bar.Size = UDim2.new(1, -26, 0, 4)
+    Bar.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+    Bar.BorderSizePixel = 0
+    Bar.Active = false
+    Bar.Parent = Slider
+
+    Instance.new("UICorner", Bar).CornerRadius =
+        UDim.new(1, 0)
+
+    -- PROGRESSO DA LINHA
+    local Fill = Instance.new("Frame")
+    Fill.Name = "Fill"
+    Fill.Size = UDim2.new(0, 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+    Fill.BorderSizePixel = 0
+    Fill.Active = false
+    Fill.ZIndex = 2
+    Fill.Parent = Bar
+
+    Instance.new("UICorner", Fill).CornerRadius =
+        UDim.new(1, 0)
+
+    -- DESCRIÇÃO
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Position = UDim2.fromOffset(13, 51)
+    Description.Size = UDim2.new(1, -26, 0, 20)
+    Description.BackgroundTransparency = 1
+    Description.Text = hasDescription and tostring(description) or ""
+    Description.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Description.TextSize = 10
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextYAlignment = Enum.TextYAlignment.Top
+    Description.TextTruncate = Enum.TextTruncate.AtEnd
+    Description.Visible = hasDescription
+    Description.Parent = Slider
+
+    -- ÁREA DE TOQUE DA LINHA
+    local Hitbox = Instance.new("TextButton")
+    Hitbox.Name = "SliderHitbox"
+    Hitbox.Position = UDim2.new(0, -8, 0, -12)
+    Hitbox.Size = UDim2.new(1, 16, 0, 28)
+    Hitbox.BackgroundTransparency = 1
+    Hitbox.Text = ""
+    Hitbox.AutoButtonColor = false
+    Hitbox.Active = true
+    Hitbox.ZIndex = 4
+    Hitbox.Parent = Bar
+
+    -- ATUALIZAR VALOR E VISUAL
+    local function UpdateSlider(newValue, callCallback)
+        newValue = tonumber(newValue)
+
+        if not newValue then
+            return
+        end
+
+        value = math.clamp(
+            math.floor(newValue + 0.5),
+            minValue,
+            maxValue
+        )
+
+        local percent = 0
+
+        if maxValue > minValue then
+            percent = (value - minValue) / (maxValue - minValue)
+        end
+
+        Fill.Size = UDim2.new(percent, 0, 1, 0)
+
+        -- NÃO EXISTE BOLINHA; SOMENTE A LINHA
+        if not editingValue then
+            ValueBox.Text = tostring(value)
+        end
+
+        if callCallback and callback then
+            local success, err = pcall(callback, value)
+
+            if not success then
+                warn("[Xyron Hub] Erro no slider:", err)
+            end
+        end
+    end
+
+    -- CALCULAR VALOR PELA POSIÇÃO DO DEDO OU MOUSE
+    local function UpdateFromPosition(screenX)
+        local barLeft = Bar.AbsolutePosition.X
+        local barWidth = Bar.AbsoluteSize.X
+
+        if barWidth <= 0 then
+            return
+        end
+
+        local percent = math.clamp(
+            (screenX - barLeft) / barWidth,
+            0,
+            1
+        )
+
+        UpdateSlider(
+            minValue + (maxValue - minValue) * percent,
+            true
+        )
+    end
+
+    -- ENCERRAR ARRASTO
+    local function StopDragging()
+        dragging = false
+        activeTouch = nil
+        activeInputType = nil
+
+        if moveConnection then
+            moveConnection:Disconnect()
+            moveConnection = nil
+        end
+
+        if endConnection then
+            endConnection:Disconnect()
+            endConnection = nil
+        end
+    end
+
+    -- INICIAR ARRASTO
+    Hitbox.InputBegan:Connect(function(input)
+        if dragging then
+            return
+        end
+
+        local inputType = input.UserInputType
+
+        if inputType ~= Enum.UserInputType.Touch
+            and inputType ~= Enum.UserInputType.MouseButton1 then
+            return
+        end
+
+        dragging = true
+        activeTouch = input
+        activeInputType = inputType
+
+        UpdateFromPosition(input.Position.X)
+
+        moveConnection = UserInputService.InputChanged:Connect(
+            function(changedInput)
+                if not dragging then
+                    return
+                end
+
+                if activeInputType == Enum.UserInputType.Touch then
+                    if changedInput ~= activeTouch then
+                        return
+                    end
+                else
+                    if changedInput.UserInputType
+                        ~= Enum.UserInputType.MouseMovement then
+                        return
+                    end
+                end
+
+                UpdateFromPosition(changedInput.Position.X)
+            end
+        )
+
+        endConnection = UserInputService.InputEnded:Connect(
+            function(endedInput)
+                if not dragging then
+                    return
+                end
+
+                if activeInputType == Enum.UserInputType.Touch then
+                    if endedInput == activeTouch then
+                        StopDragging()
+                    end
+                elseif endedInput.UserInputType
+                    == Enum.UserInputType.MouseButton1 then
+                    StopDragging()
+                end
+            end
+        )
+    end)
+
+    -- PERMITIR SOMENTE NÚMEROS NA CAIXA
+    ValueBox:GetPropertyChangedSignal("Text"):Connect(function()
+        if not ValueBox:IsFocused() then
+            return
+        end
+
+        local oldText = ValueBox.Text
+        local filteredText = oldText:gsub("%D", "")
+
+        if oldText ~= filteredText then
+            local cursorPosition = ValueBox.CursorPosition
+            ValueBox.Text = filteredText
+
+            if cursorPosition >= 1 then
+                ValueBox.CursorPosition = math.clamp(
+                    cursorPosition - ( #oldText - #filteredText ),
+                    1,
+                    #filteredText + 1
+                )
+            end
+        end
+
+        -- LIMITAR IMEDIATAMENTE AO MÁXIMO OU MÍNIMO
+        local typedValue = tonumber(ValueBox.Text)
+
+        if typedValue then
+            local clampedValue = math.clamp(
+                typedValue,
+                minValue,
+                maxValue
+            )
+
+            if typedValue > maxValue or typedValue < minValue then
+                ValueBox.Text = tostring(clampedValue)
+                ValueBox.CursorPosition = #ValueBox.Text + 1
+            end
+
+            UpdateSlider(clampedValue, true)
+        end
+    end)
+
+    -- FINALIZAR E VALIDAR O VALOR DIGITADO
+    ValueBox.Focused:Connect(function()
+        editingValue = true
+    end)
+
+    ValueBox.FocusLost:Connect(function()
+        editingValue = false
+
+        local typedValue = tonumber(ValueBox.Text)
+
+        if typedValue then
+            UpdateSlider(typedValue, true)
+        else
+            UpdateSlider(value, false)
+        end
+
+        ValueBox.Text = tostring(value)
+    end)
+
+    -- VALOR INICIAL
+    UpdateSlider(defaultValue, false)
+
+    -- CONTROLE EXTERNO
+    local Controller = {}
+
+    function Controller:Set(newValue)
+        local numericValue = tonumber(newValue)
+
+        if numericValue then
+            UpdateSlider(numericValue, true)
+        end
+    end
+
+    function Controller:Get()
+        return value
+    end
+
+    function Controller:Destroy()
+        StopDragging()
+        Slider:Destroy()
+    end
+
+    return Controller
+end
+
+
+--========================================================--
 --                  SISTEMA DE DROPDOWN                   --
 --========================================================--
 
