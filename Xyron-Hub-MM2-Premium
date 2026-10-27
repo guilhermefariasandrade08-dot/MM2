@@ -987,13 +987,20 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
     ValueCorner.CornerRadius = UDim.new(1, 0)
     ValueCorner.Parent = ValueBox
 
-    -- LINHA CINZA AO REDOR DA CAIXA
-    local ValueBorder = Instance.new("UIStroke")
-    ValueBorder.Name = "ValueBorder"
-    ValueBorder.Color = Color3.fromRGB(55, 55, 55)
-    ValueBorder.Thickness = 1
-    ValueBorder.Transparency = 0.15
-    ValueBorder.Parent = ValueBox
+-- LINHA CINZA AO REDOR DA CAIXA
+local ValueBorder = Instance.new("UIStroke")
+ValueBorder.Name = "ValueBorder"
+ValueBorder.Color = Color3.fromRGB(55, 55, 55)
+ValueBorder.Thickness = 1
+ValueBorder.Transparency = 0
+ValueBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+ValueBorder.LineJoinMode = Enum.LineJoinMode.Round
+ValueBorder.Parent = ValueBox
+
+-- GARANTIR QUE A BORDA FIQUE VISÍVEL
+ValueBox.BorderSizePixel = 0
+ValueBox.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+ValueCorner.CornerRadius = UDim.new(1, 0)
 
     -- POSIÇÃO DA BARRA
     local barY = 39
