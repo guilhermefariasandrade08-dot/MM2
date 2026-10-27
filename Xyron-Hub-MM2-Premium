@@ -694,6 +694,7 @@ local function CreateToggle(tabName, title, description, default, callback)
 
     Instance.new("UICorner", Toggle).CornerRadius = UDim.new(0, 10)
 
+    -- BORDA DA BASE: PERMANECE CINZA
     local Stroke = Instance.new("UIStroke")
     Stroke.Name = "Border"
     Stroke.Color = Color3.fromRGB(55, 55, 55)
@@ -701,7 +702,7 @@ local function CreateToggle(tabName, title, description, default, callback)
     Stroke.Transparency = 0.15
     Stroke.Parent = Toggle
 
-    -- ÁREA DO TEXTO: RESERVA ESPAÇO À DIREITA
+    -- ÁREA DO TEXTO
     local TextArea = Instance.new("Frame")
     TextArea.Name = "TextArea"
     TextArea.Position = UDim2.fromOffset(13, 10)
@@ -750,7 +751,7 @@ local function CreateToggle(tabName, title, description, default, callback)
     Description.LayoutOrder = 2
     Description.Parent = TextArea
 
-    -- QUADRADO: FILHO DIRETO, PRESO À DIREITA DO TOGGLE
+    -- QUADRADO DO TOGGLE
     local Switch = Instance.new("Frame")
     Switch.Name = "Switch"
     Switch.Size = UDim2.fromOffset(22, 22)
@@ -773,7 +774,7 @@ local function CreateToggle(tabName, title, description, default, callback)
     SwitchStroke.Thickness = 1.2
     SwitchStroke.Parent = Switch
 
-    -- MARCA
+    -- MARCA DE ATIVAÇÃO
     local Checkmark = Instance.new("TextLabel")
     Checkmark.Name = "Checkmark"
     Checkmark.Size = UDim2.fromScale(1, 1)
@@ -796,7 +797,7 @@ local function CreateToggle(tabName, title, description, default, callback)
     Hitbox.ZIndex = 7
     Hitbox.Parent = Switch
 
-    -- AJUSTAR ALTURA DO CONTAINER AO TEXTO
+    -- AJUSTAR ALTURA DO CONTAINER
     local function UpdateHeight()
         task.defer(function()
             if not Toggle.Parent or not TextArea.Parent then
@@ -814,7 +815,7 @@ local function CreateToggle(tabName, title, description, default, callback)
     Title:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
     Description:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
 
-    -- VISUAL DO ESTADO
+    -- ATUALIZAR VISUAL DO TOGGLE
     local function UpdateToggle(instant)
         local duration = instant and 0 or 0.2
 
@@ -824,27 +825,27 @@ local function CreateToggle(tabName, title, description, default, callback)
             Enum.EasingDirection.Out
         )
 
+        -- FUNDO DO QUADRADO
         TweenService:Create(Switch, info, {
             BackgroundColor3 = enabled
                 and Color3.fromRGB(255, 255, 255)
                 or Color3.fromRGB(22, 22, 22)
         }):Play()
 
+        -- BORDA DO QUADRADO
         TweenService:Create(SwitchStroke, info, {
             Color = enabled
                 and Color3.fromRGB(255, 255, 255)
                 or Color3.fromRGB(85, 85, 85)
         }):Play()
 
+        -- SÍMBOLO DE CONFIRMAÇÃO
         TweenService:Create(Checkmark, info, {
             TextTransparency = enabled and 0 or 1
         }):Play()
 
-        TweenService:Create(Stroke, info, {
-            Color = enabled
-                and Color3.fromRGB(255, 255, 255)
-                or Color3.fromRGB(55, 55, 55)
-        }):Play()
+        -- A BORDA DA BASE NÃO É ALTERADA
+        -- CONTINUA CINZA, ATIVADO OU DESATIVADO
     end
 
     -- CLIQUE
