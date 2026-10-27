@@ -966,26 +966,28 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
     Title.TextTruncate = Enum.TextTruncate.AtEnd
     Title.Parent = Slider
 
-    -- CAIXA NUMÉRICA
+    -- CAIXA NUMÉRICA EM FORMATO DE PÍLULA
     local ValueBox = Instance.new("TextBox")
     ValueBox.Name = "Value"
     ValueBox.Size = UDim2.fromOffset(58, 25)
     ValueBox.Position = UDim2.new(1, -69, 0, 5)
-    ValueBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    ValueBox.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
     ValueBox.BorderSizePixel = 0
     ValueBox.Text = tostring(value)
-    ValueBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ValueBox.TextSize = 12
-    ValueBox.Font = Enum.Font.GothamMedium
+    ValueBox.TextColor3 = Color3.fromRGB(245, 245, 245)
+    ValueBox.TextSize = 11
+    ValueBox.Font = Enum.Font.Gotham
     ValueBox.ClearTextOnFocus = false
     ValueBox.TextEditable = true
     ValueBox.MultiLine = false
     ValueBox.Parent = Slider
 
-    Instance.new("UICorner", ValueBox).CornerRadius =
-        UDim.new(0, 6)
+    -- BORDAS TOTALMENTE ARREDONDADAS
+    local ValueCorner = Instance.new("UICorner")
+    ValueCorner.CornerRadius = UDim.new(1, 0)
+    ValueCorner.Parent = ValueBox
 
-    -- BORDA DA CAIXA: MESMA COR DA BORDA DA BASE
+    -- LINHA CINZA AO REDOR DA CAIXA
     local ValueBorder = Instance.new("UIStroke")
     ValueBorder.Name = "ValueBorder"
     ValueBorder.Color = Color3.fromRGB(55, 55, 55)
