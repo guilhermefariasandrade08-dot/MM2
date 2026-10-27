@@ -1270,7 +1270,6 @@ local function CreateSlider(tabName, title, description, minValue, maxValue, def
     return Controller
 end
 
-
 --========================================================--
 --                  SISTEMA DE DROPDOWN                   --
 --========================================================--
@@ -1296,10 +1295,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     local hasDescription = description ~= nil
         and tostring(description):match("%S") ~= nil
 
-    --==================================================
     -- CONTAINER PRINCIPAL
-    --==================================================
-
     local Dropdown = Instance.new("Frame")
     Dropdown.Name = "WindDropdown"
     Dropdown.Size = UDim2.new(1, -4, 0, 48)
@@ -1318,10 +1314,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     Stroke.Transparency = 0.15
     Stroke.Parent = Dropdown
 
-    --==================================================
     -- ÁREA DO TEXTO
-    --==================================================
-
     local TextArea = Instance.new("Frame")
     TextArea.Name = "TextArea"
     TextArea.Position = UDim2.fromOffset(13, 10)
@@ -1338,10 +1331,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     TextLayout.Padding = UDim.new(0, 4)
     TextLayout.Parent = TextArea
 
-    --==================================================
     -- TÍTULO
-    --==================================================
-
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
     Title.Size = UDim2.new(1, 0, 0, 18)
@@ -1357,10 +1347,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     Title.LayoutOrder = 1
     Title.Parent = TextArea
 
-    --==================================================
     -- DESCRIÇÃO
-    --==================================================
-
     local Description = Instance.new("TextLabel")
     Description.Name = "Description"
     Description.Size = UDim2.new(1, 0, 0, 0)
@@ -1377,10 +1364,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     Description.LayoutOrder = 2
     Description.Parent = TextArea
 
-    --==================================================
     -- PÍLULA DE SELEÇÃO
-    --==================================================
-
     local Pill = Instance.new("Frame")
     Pill.Name = "Pill"
     Pill.Size = UDim2.fromOffset(120, 28)
@@ -1399,7 +1383,6 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     PillStroke.Parent = Pill
 
     -- TEXTO SELECIONADO
-
     local SelectedText = Instance.new("TextLabel")
     SelectedText.Name = "SelectedText"
     SelectedText.Position = UDim2.new(0, 10, 0, 0)
@@ -1419,7 +1402,6 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     SelectedText.Parent = Pill
 
     -- SETA
-
     local Arrow = Instance.new("TextLabel")
     Arrow.Name = "Arrow"
     Arrow.AnchorPoint = Vector2.new(1, 0.5)
@@ -1435,7 +1417,6 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     Arrow.Parent = Pill
 
     -- BOTÃO DA PÍLULA
-
     local ToggleButton = Instance.new("TextButton")
     ToggleButton.Name = "ToggleButton"
     ToggleButton.Size = UDim2.fromScale(1, 1)
@@ -1445,10 +1426,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     ToggleButton.ZIndex = 6
     ToggleButton.Parent = Pill
 
-    --==================================================
     -- LISTA ABAIXO DA PÍLULA
-    --==================================================
-
     local ListContainer = Instance.new("Frame")
     ListContainer.Name = "ListContainer"
     ListContainer.AnchorPoint = Vector2.new(1, 0)
@@ -1469,7 +1447,6 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     ListStroke.Parent = ListContainer
 
     -- ÁREA COM ROLAGEM
-
     local ScrollingFrame = Instance.new("ScrollingFrame")
     ScrollingFrame.Name = "Options"
     ScrollingFrame.Position = UDim2.new(0, 0, 0, 3)
@@ -1496,10 +1473,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     ListPadding.PaddingRight = UDim.new(0, 5)
     ListPadding.Parent = ScrollingFrame
 
-    --==================================================
-    -- ALTURA AUTOMÁTICA DA BASE
-    --==================================================
-
+    -- ATUALIZAR ALTURA DA BASE
     local function UpdateHeight()
         task.defer(function()
             if not Dropdown.Parent or not TextArea.Parent then
@@ -1518,10 +1492,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
     Title:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
     Description:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
 
-    --==================================================
     -- ATUALIZAR TAMANHO DA LISTA
-    --==================================================
-
     local function UpdateListSize()
         local totalHeight = (#optionButtons * (ITEM_HEIGHT + 2)) + 8
         local height = math.min(totalHeight, MAX_LIST_HEIGHT)
@@ -1541,10 +1512,21 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
         end
     end
 
-    --==================================================
-    -- ABRIR / FECHAR
-    --==================================================
+    -- ATUALIZAR CORES DAS OPÇÕES
+    local function UpdateOptionColors()
+        for _, option in ipairs(optionButtons) do
+            local optionText = option.Button:FindFirstChild("OptionText")
 
+            if optionText then
+                optionText.TextColor3 =
+                    option.Name == selectedValue
+                    and Color3.fromRGB(245, 245, 245)
+                    or Color3.fromRGB(190, 190, 190)
+            end
+        end
+    end
+
+    -- ABRIR / FECHAR
     local function SetOpen(state)
         isOpen = state
 
@@ -1594,10 +1576,7 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
         SetOpen(not isOpen)
     end)
 
-    --==================================================
     -- CRIAR OPÇÕES
-    --==================================================
-
     local function AddOption(optionName)
         optionName = tostring(optionName)
 
@@ -1613,10 +1592,10 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
         OptionButton.ZIndex = 12
         OptionButton.Parent = ScrollingFrame
 
-        Instance.new("UICorner", OptionButton).CornerRadius = UDim.new(0, 5)
+        Instance.new("UICorner", OptionButton).CornerRadius =
+            UDim.new(0, 5)
 
         -- LINHA BRANCA
-
         local Line = Instance.new("Frame")
         Line.Name = "Line"
         Line.Position = UDim2.new(0, 7, 0.5, -6)
@@ -1627,14 +1606,16 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
         Line.Parent = OptionButton
 
         -- TEXTO DA OPÇÃO
-
         local OptionText = Instance.new("TextLabel")
         OptionText.Name = "OptionText"
         OptionText.Position = UDim2.new(0, 16, 0, 0)
         OptionText.Size = UDim2.new(1, -22, 1, 0)
         OptionText.BackgroundTransparency = 1
         OptionText.Text = optionName
-        OptionText.TextColor3 = Color3.fromRGB(190, 190, 190)
+        OptionText.TextColor3 =
+            optionName == selectedValue
+            and Color3.fromRGB(245, 245, 245)
+            or Color3.fromRGB(190, 190, 190)
         OptionText.TextSize = 11
         OptionText.Font = Enum.Font.Gotham
         OptionText.TextXAlignment = Enum.TextXAlignment.Left
@@ -1642,42 +1623,26 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
         OptionText.ZIndex = 13
         OptionText.Parent = OptionButton
 
+        -- NÃO ALTERAR A COR AO PASSAR O MOUSE
         OptionButton.MouseEnter:Connect(function()
-            TweenService:Create(
-                OptionButton,
-                TweenInfo.new(0.12),
-                {BackgroundTransparency = 0}
-            ):Play()
-
-            TweenService:Create(
-                OptionText,
-                TweenInfo.new(0.12),
-                {TextColor3 = Color3.fromRGB(245, 245, 245)}
-            ):Play()
+            -- A cor depende somente da seleção.
         end)
 
         OptionButton.MouseLeave:Connect(function()
-            TweenService:Create(
-                OptionButton,
-                TweenInfo.new(0.12),
-                {BackgroundTransparency = 1}
-            ):Play()
-
-            if selectedValue ~= optionName then
-                TweenService:Create(
-                    OptionText,
-                    TweenInfo.new(0.12),
-                    {TextColor3 = Color3.fromRGB(190, 190, 190)}
-                ):Play()
-            end
+            UpdateOptionColors()
         end)
 
+        -- SELECIONAR OPÇÃO
         OptionButton.Activated:Connect(function()
             selectedValue = optionName
+
             SelectedText.Text = optionName
             SelectedText.TextColor3 = Color3.fromRGB(245, 245, 245)
 
+            UpdateOptionColors()
+
             local success, err = pcall(callback, optionName)
+
             if not success then
                 warn("[Xyron Hub] Erro no dropdown:", err)
             end
@@ -1690,22 +1655,18 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
             Button = OptionButton
         })
 
+        UpdateOptionColors()
         UpdateListSize()
+
         return OptionButton
     end
 
-    --==================================================
     -- OPÇÕES INICIAIS
-    --==================================================
-
     for _, optionName in ipairs(options) do
         AddOption(optionName)
     end
 
-    --==================================================
     -- CONTROLES EXTERNOS
-    --==================================================
-
     local Controller = {}
 
     function Controller:Add(optionName)
@@ -1724,6 +1685,8 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
                 selectedValue = value
                 SelectedText.Text = value
                 SelectedText.TextColor3 = Color3.fromRGB(245, 245, 245)
+
+                UpdateOptionColors()
                 return true
             end
         end
@@ -1747,7 +1710,10 @@ local function CreateDropdown(tabName, title, description, options, defaultValue
 
     function Controller:SetWidth(width)
         Pill.Size = UDim2.fromOffset(width, 28)
-        ListContainer.Size = UDim2.fromOffset(width, ListContainer.Size.Y.Offset)
+        ListContainer.Size = UDim2.fromOffset(
+            width,
+            ListContainer.Size.Y.Offset
+        )
     end
 
     function Controller:Open()
