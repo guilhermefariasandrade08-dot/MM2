@@ -896,6 +896,226 @@ local function CreateToggle(tabName, title, description, default, callback)
 end
 
 --========================================================--
+--                    SISTEMA DE CLICK BUTTON              --
+--========================================================--
+
+local function CreateButton(tabName, title, description, callback)
+    local page = Pages[tabName]
+
+    if not page then
+        warn("[Xyron Hub] Aba não encontrada: " .. tostring(tabName))
+        return
+    end
+
+    local hasDescription = description ~= nil
+        and tostring(description):match("%S") ~= nil
+
+    -- CONTAINER
+    local ButtonFrame = Instance.new("Frame")
+    ButtonFrame.Name = "WindButton"
+    ButtonFrame.Size = UDim2.new(1, -4, 0, 48)
+    ButtonFrame.AutomaticSize = Enum.AutomaticSize.Y
+    ButtonFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    ButtonFrame.BorderSizePixel = 0
+    ButtonFrame.ClipsDescendants = false
+    ButtonFrame.Parent = page
+
+    Instance.new("UICorner", ButtonFrame).CornerRadius =
+        UDim.new(0, 10)
+
+    -- BORDA DA BASE
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Name = "Border"
+    Stroke.Color = Color3.fromRGB(55, 55, 55)
+    Stroke.Thickness = 1
+    Stroke.Transparency = 0.15
+    Stroke.Parent = ButtonFrame
+
+    -- ÁREA DO TEXTO
+    local TextArea = Instance.new("Frame")
+    TextArea.Name = "TextArea"
+    TextArea.Position = UDim2.fromOffset(13, 10)
+    TextArea.Size = UDim2.new(1, -65, 0, 0)
+    TextArea.AutomaticSize = Enum.AutomaticSize.Y
+    TextArea.BackgroundTransparency = 1
+    TextArea.BorderSizePixel = 0
+    TextArea.Parent = ButtonFrame
+
+    local TextLayout = Instance.new("UIListLayout")
+    TextLayout.FillDirection = Enum.FillDirection.Vertical
+    TextLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TextLayout.Padding = UDim.new(0, 4)
+    TextLayout.Parent = TextArea
+
+    -- TÍTULO
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Size = UDim2.new(1, 0, 0, 18)
+    Title.AutomaticSize = Enum.AutomaticSize.Y
+    Title.BackgroundTransparency = 1
+    Title.Text = tostring(title or "Button")
+    Title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    Title.TextSize = 13
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextYAlignment = Enum.TextYAlignment.Center
+    Title.TextWrapped = true
+    Title.LayoutOrder = 1
+    Title.Parent = TextArea
+
+    -- DESCRIÇÃO
+    local Description = Instance.new("TextLabel")
+    Description.Name = "Description"
+    Description.Size = UDim2.new(1, 0, 0, 0)
+    Description.AutomaticSize = Enum.AutomaticSize.Y
+    Description.BackgroundTransparency = 1
+    Description.Text = hasDescription and tostring(description) or ""
+    Description.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Description.TextSize = 10
+    Description.Font = Enum.Font.Gotham
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextYAlignment = Enum.TextYAlignment.Top
+    Description.TextWrapped = true
+    Description.Visible = hasDescription
+    Description.LayoutOrder = 2
+    Description.Parent = TextArea
+
+    -- QUADRADO DO CLICK BUTTON
+    local ClickBox = Instance.new("Frame")
+    ClickBox.Name = "ClickBox"
+    ClickBox.Size = UDim2.fromOffset(22, 22)
+    ClickBox.AnchorPoint = Vector2.new(1, 0.5)
+    ClickBox.Position = UDim2.new(1, -12, 0.5, 0)
+    ClickBox.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    ClickBox.BorderSizePixel = 0
+    ClickBox.ZIndex = 5
+    ClickBox.Parent = ButtonFrame
+
+    Instance.new("UICorner", ClickBox).CornerRadius =
+        UDim.new(0, 5)
+
+    -- BORDA DO QUADRADO
+    local BoxStroke = Instance.new("UIStroke")
+    BoxStroke.Name = "ClickBoxBorder"
+    BoxStroke.Color = Color3.fromRGB(85, 85, 85)
+    BoxStroke.Thickness = 1.2
+    BoxStroke.Parent = ClickBox
+
+    -- ÍCONE DO CURSOR
+    local MouseIcon = Instance.new("ImageLabel")
+    MouseIcon.Name = "MouseIcon"
+    MouseIcon.Size = UDim2.fromOffset(14, 14)
+    MouseIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    MouseIcon.Position = UDim2.fromScale(0.5, 0.5)
+    MouseIcon.BackgroundTransparency = 1
+    MouseIcon.ImageColor3 = Color3.fromRGB(245, 245, 245)
+    MouseIcon.ZIndex = 6
+    MouseIcon.Parent = ClickBox
+
+    -- CARREGAR ÍCONE FOOTAGESUS
+    task.spawn(function()
+        local timeout = os.clock() + 15
+
+        repeat
+            task.wait(0.1)
+        until IconsReady or os.clock() >= timeout
+
+        if IconsReady then
+            ApplyIcon(MouseIcon, "mouse-pointer-click")
+        end
+    end)
+
+    -- ÁREA CLICÁVEL
+    local Hitbox = Instance.new("TextButton")
+    Hitbox.Name = "Hitbox"
+    Hitbox.Size = UDim2.fromScale(1, 1)
+    Hitbox.BackgroundTransparency = 1
+    Hitbox.Text = ""
+    Hitbox.AutoButtonColor = false
+    Hitbox.ZIndex = 7
+    Hitbox.Parent = ClickBox
+
+    -- ANIMAR AO CLICAR
+    local function PlayClickAnimation()
+        TweenService:Create(
+            ClickBox,
+            TweenInfo.new(0.08, Enum.EasingStyle.Quad),
+            {
+                BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+            }
+        ):Play()
+
+        task.delay(0.09, function()
+            if ClickBox.Parent then
+                TweenService:Create(
+                    ClickBox,
+                    TweenInfo.new(0.15, Enum.EasingStyle.Quint),
+                    {
+                        BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+                    }
+                ):Play()
+            end
+        end)
+    end
+
+    -- AJUSTAR ALTURA
+    local function UpdateHeight()
+        task.defer(function()
+            if not ButtonFrame.Parent or not TextArea.Parent then
+                return
+            end
+
+            ButtonFrame.Size = UDim2.new(
+                1,
+                -4,
+                0,
+                math.max(42, TextArea.AbsoluteSize.Y + 20)
+            )
+        end)
+    end
+
+    TextArea:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateHeight)
+    Title:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
+    Description:GetPropertyChangedSignal("Text"):Connect(UpdateHeight)
+
+    -- CLIQUE
+    Hitbox.Activated:Connect(function()
+        PlayClickAnimation()
+
+        if callback then
+            local success, err = pcall(callback)
+
+            if not success then
+                warn("[Xyron Hub] Erro no click button:", err)
+            end
+        end
+    end)
+
+    UpdateHeight()
+
+    -- CONTROLE EXTERNO
+    local Controller = {}
+
+    function Controller:Click()
+        PlayClickAnimation()
+
+        if callback then
+            local success, err = pcall(callback)
+
+            if not success then
+                warn("[Xyron Hub] Erro no click button:", err)
+            end
+        end
+    end
+
+    function Controller:Destroy()
+        ButtonFrame:Destroy()
+    end
+
+    return Controller
+end
+
+--========================================================--
 --                    SISTEMA DE SLIDER                   --
 --========================================================--
 
@@ -1745,6 +1965,23 @@ end
 --                       EXEMPLO                           --
 --========================================================--
 
+local TrowingKanifToggle = CreateToggle(
+    "Local Player",
+    "TrowingKanif",
+    "Joga a faca automaticamente no jogador mais próximo",
+    false,
+    function(state)
+        print(
+            "TrowingKanif:",
+            state and "ATIVADO" or "DESATIVADO"
+        )
+    end
+)
+
+CreateButton("Local Player", "Meu botão", "Executa uma ação ao clicar.", function()
+    print("Botão clicado!")
+end)
+
 local MinhaLista = CreateDropdown(
     "Local player",
     "Estilo visual",
@@ -1800,18 +2037,7 @@ local WalkSpeedSlider = CreateSlider(
 --                    EXEMPLO DE USO                      --
 --========================================================--
 
-local TrowingKanifToggle = CreateToggle(
-    "Murderer",
-    "TrowingKanif",
-    "Joga a faca automaticamente no jogador mais próximo",
-    false,
-    function(state)
-        print(
-            "TrowingKanif:",
-            state and "ATIVADO" or "DESATIVADO"
-        )
-    end
-)
+
 
 
 
