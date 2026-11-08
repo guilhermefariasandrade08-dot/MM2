@@ -921,6 +921,118 @@ end)
 
 
 
+-- =========================================================================
+-- 🌪️ SISTEMA — FLING INTELIGENTE (Atualizado)
+-- =========================================================================
+
+local isFlinging = false
+local SelectedFlingTarget = nil
+
+-- Função auxiliar: pegar lista de jogadores atualizada
+local function GetPlayerList()
+    local list = {}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            table.insert(list, plr.Name)
+        end
+    end
+    table.sort(list)
+    return list
+end
+
+-- Sistema principal que você mandou
+local function executeCustomFling(targetPlr)
+    if isFlinging then return end
+    if not targetPlr or not targetPlr.Character then return end
+    
+    local char = LocalPlayer.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    if not root or not hum then return end
+    
+    local targetRoot = targetPlr.Character:FindFirstChild("HumanoidRootPart")
+    local targetHum = targetPlr.Character:FindFirstChild("Humanoid")
+    if not targetRoot then return end
+
+    isFlinging = true
+    local oldCFrame = root.CFrame
+
+    hum.PlatformStand = true
+
+    local noclipConnection
+    noclipConnection = RunService.Stepped:Connect(function()
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+
+    local spin = Instance.new("BodyAngularVelocity")
+    spin.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    spin.AngularVelocity = Vector3.new(120000, 120000, 120000)
+    spin.P = math.huge
+    spin.Parent = root
+
+    local startTime = tick()
+    local flingConnection
+
+    flingConnection = RunService.Heartbeat:Connect(function()
+        local elapsed = tick() - startTime
+        
+        if targetRoot and root then
+            local isTargetStandingStill = false
+            if targetHum and targetHum.MoveDirection.Magnitude < 0.05 and targetRoot.Velocity.Magnitude < 0.5 then
+                isTargetStandingStill = true
+            end
+
+            local angle = elapsed * 60
+            local offsetX, offsetY, offsetZ = 0, 0, 0
+
+            if isTargetStandingStill then
+                offsetX = 0
+                offsetY = 0
+                offsetZ = 0
+            else
+                offsetX = math.sin(angle * 1.5) * 2.5
+                offsetY = math.cos(angle * 2) * 2.5
+                offsetZ = -3 + (math.sin(angle * 1.2) * 2.5)
+            end
+            
+            root.CFrame = targetRoot.CFrame * CFrame.new(offsetX, offsetY, offsetZ) * targetRoot.CFrame.Rotation * CFrame.Angles(elapsed * 60, elapsed * 70, elapsed * 65)
+            root.Velocity = Vector3.new(120000, 120000, 120000)
+        end
+    end)
+
+    task.wait(3)
+
+    if flingConnection then flingConnection:Disconnect() end
+    if spin then spin:Destroy() end
+
+    root.Velocity = Vector3.zero
+    root.RotVelocity = Vector3.zero
+    root.CFrame = oldCFrame + Vector3.new(0, 5, 0)
+    
+    local holdConnection
+    holdConnection = RunService.Heartbeat:Connect(function()
+        if root then
+            root.Velocity = Vector3.zero
+            root.RotVelocity = Vector3.zero
+            root.CFrame = oldCFrame + Vector3.new(0, 5, 0)
+        end
+    end)
+
+    task.wait(0.5)
+
+    if holdConnection then holdConnection:Disconnect() end
+    if noclipConnection then noclipConnection:Disconnect() end
+    
+    hum.PlatformStand = false
+    isFlinging = false
+end
 
 
 --==================================================
@@ -951,6 +1063,71 @@ end)
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA TELEPORT
 
 
+-- =========================================================================
+-- 🌀 ABA FLING (Interface Atualizada)
+-- =========================================================================
+
+local FlingSection = Tabs.Fling:Section({
+    Title = "Fling System",
+    Desc = "Sistema inteligente — lista atualizada em tempo real.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+-- Dropdown de jogadores
+local PlayerDropdown = FlingSection:Dropdown({
+    Title = "Selecionar Alvo",
+    Desc = "Escolha o jogador.",
+    Values = GetPlayerList(),
+    Value = "",
+    Callback = function(value)
+        SelectedFlingTarget = Players:FindFirstChild(value)
+    end,
+})
+
+-- Botões
+FlingSection:Button({
+    Title = "🔄 Atualizar Lista",
+    Desc = "Recarrega manualmente a lista de jogadores.",
+    Icon = "refresh-cw",
+    Callback = function()
+        PlayerDropdown:SetValues(GetPlayerList())
+        Notify("Fling", "Lista atualizada!", "check")
+    end,
+})
+
+FlingSection:Button({
+    Title = "🌪️ Executar Fling",
+    Desc = "Inicia o efeito no jogador selecionado.",
+    Icon = "wind",
+    Callback = function()
+        if not SelectedFlingTarget then
+            Notify("Fling", "Selecione um jogador primeiro!", "alert-circle")
+            return
+        end
+        if isFlinging then
+            Notify("Fling", "Aguarde... já está em execução!", "clock")
+            return
+        end
+        Notify("Fling", "Iniciando em " .. SelectedFlingTarget.Name .. "...", "wind")
+        executeCustomFling(SelectedFlingTarget)
+    end,
+})
+
+-- Atualização automática da lista — IMEDIATA, sem delay!
+local function RefreshPlayerList()
+    task.wait(0.1) -- pequeno delay pra garantir que o jogador foi carregado
+    PlayerDropdown:SetValues(GetPlayerList())
+    
+    -- Limpa seleção se o jogador saiu
+    if SelectedFlingTarget and not Players:FindFirstChild(SelectedFlingTarget.Name) then
+        SelectedFlingTarget = nil
+    end
+end
+
+Players.PlayerAdded:Connect(RefreshPlayerList)
+Players.PlayerRemoving:Connect(RefreshPlayerList)
 
 
 
