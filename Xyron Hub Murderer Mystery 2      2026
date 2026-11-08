@@ -5,7 +5,7 @@
 
 
 --==================================================
--- 01. INTERFACE
+-- 01. CARREGAMENTO DA BIBLIOTECA
 --==================================================
 
 local Version = "1.6.66"
@@ -15,17 +15,19 @@ local WindUI = loadstring(game:HttpGet(
     .. Version .. "/main.lua"
 ))()
 
--- SERVICES
+
+--==================================================
+-- 02. SERVIÇOS E CONFIGURAÇÕES
+--==================================================
 
 local Players = game:GetService("Players")
 local Stats = game:GetService("Stats")
 local RunService = game:GetService("RunService")
 local LogService = game:GetService("LogService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
-
--- CONFIGURATION
 
 local HUB_NAME = "Xyron Hub"
 local HUB_VERSION = "1.0.0"
@@ -35,7 +37,7 @@ local WINDOW_WIDTH = 600
 local WINDOW_HEIGHT = 480
 local SIDEBAR_WIDTH = 158
 
-local ButtonScale = 0.55
+local ButtonScale = 1
 local NotificationDuration = 4
 
 local NotificationsEnabled = true
@@ -53,8 +55,23 @@ local SessionStart = os.clock()
 local PendingWindowScale = 1
 local ScaleChangePending = false
 
--- BACKGROUND IMAGES
--- ADICIONE MAIS IMAGENS AQUI
+local FloatingButtonTheme = "Dark"
+
+
+--==================================================
+-- 03. CORES E IMAGENS
+--==================================================
+
+local WHITE = Color3.fromRGB(255,255,255)
+local BLACK = Color3.fromRGB(0,0,0)
+
+local FloatingButtonColors = {
+    Dark = Color3.fromRGB(255,255,255),
+    Red = Color3.fromRGB(255,45,45),
+    Blue = Color3.fromRGB(55,145,255),
+    Purple = Color3.fromRGB(185,90,255),
+    Green = Color3.fromRGB(50,230,120),
+}
 
 local BackgroundImages = {
     ["None"] = nil,
@@ -65,14 +82,14 @@ local BackgroundImages = {
     ["Imagem 3"] = "rbxassetid://89179755130648",
     ["Imagem 4"] = "rbxassetid://129579114713968",
     ["Imagem 5"] = "rbxassetid://95753350199160",
-
-    -- ADICIONE MAIS IMAGENS AQUI:
-    -- ["Imagem 6"] = "rbxassetid://ID_DA_IMAGEM",
 }
 
 local SelectedBackground = "Xyron Hub"
 
--- THEMES
+
+--==================================================
+-- 04. TEMAS DA INTERFACE
+--==================================================
 
 local Themes = {
     {
@@ -80,7 +97,7 @@ local Themes = {
         Accent = Color3.fromRGB(255,45,45),
         Background = Color3.fromRGB(35,8,8),
         Outline = Color3.fromRGB(130,25,25),
-        Text = Color3.fromRGB(255,255,255),
+        Text = WHITE,
         Placeholder = Color3.fromRGB(180,130,130),
         Button = Color3.fromRGB(75,15,15),
         Icon = Color3.fromRGB(255,55,55),
@@ -91,7 +108,7 @@ local Themes = {
         Accent = Color3.fromRGB(55,145,255),
         Background = Color3.fromRGB(5,20,55),
         Outline = Color3.fromRGB(25,85,170),
-        Text = Color3.fromRGB(255,255,255),
+        Text = WHITE,
         Placeholder = Color3.fromRGB(135,165,205),
         Button = Color3.fromRGB(10,45,100),
         Icon = Color3.fromRGB(70,155,255),
@@ -102,7 +119,7 @@ local Themes = {
         Accent = Color3.fromRGB(185,90,255),
         Background = Color3.fromRGB(35,10,60),
         Outline = Color3.fromRGB(105,35,165),
-        Text = Color3.fromRGB(255,255,255),
+        Text = WHITE,
         Placeholder = Color3.fromRGB(175,140,200),
         Button = Color3.fromRGB(65,20,100),
         Icon = Color3.fromRGB(185,90,255),
@@ -113,7 +130,7 @@ local Themes = {
         Accent = Color3.fromRGB(50,230,120),
         Background = Color3.fromRGB(5,40,20),
         Outline = Color3.fromRGB(25,120,60),
-        Text = Color3.fromRGB(255,255,255),
+        Text = WHITE,
         Placeholder = Color3.fromRGB(140,190,155),
         Button = Color3.fromRGB(10,75,35),
         Icon = Color3.fromRGB(50,230,120),
@@ -121,13 +138,13 @@ local Themes = {
 
     {
         Name = "White",
-        Accent = Color3.fromRGB(255,255,255),
+        Accent = WHITE,
         Background = Color3.fromRGB(65,65,65),
         Outline = Color3.fromRGB(150,150,150),
-        Text = Color3.fromRGB(255,255,255),
+        Text = WHITE,
         Placeholder = Color3.fromRGB(190,190,190),
         Button = Color3.fromRGB(95,95,95),
-        Icon = Color3.fromRGB(255,255,255),
+        Icon = WHITE,
     },
 }
 
@@ -135,7 +152,10 @@ for _, theme in ipairs(Themes) do
     WindUI:AddTheme(theme)
 end
 
--- WINDOW
+
+--==================================================
+-- 05. CRIAÇÃO DA JANELA
+--==================================================
 
 local Window = WindUI:CreateWindow({
     Title = HUB_NAME,
@@ -157,7 +177,7 @@ local Window = WindUI:CreateWindow({
     Theme = "Dark",
     Transparent = true,
 
-    Background = BackgroundImages["Xyron Hub"],
+    Background = BackgroundImages[SelectedBackground],
     BackgroundImageTransparency = IMAGE_TRANSPARENCY,
     HidePanelBackground = false,
 
@@ -172,16 +192,133 @@ local Window = WindUI:CreateWindow({
     },
 
     OpenButton = {
-        Title = "Open UI",
-        Icon = "layout-dashboard",
+        Title = "Xyron Hub",
+        Icon = "orbit",
+
         Enabled = true,
         Draggable = true,
         OnlyMobile = false,
+
         Scale = ButtonScale,
-        CornerRadius = UDim.new(0,12),
+        CornerRadius = UDim.new(0,8),
         StrokeThickness = 2,
+
+        Color = ColorSequence.new(
+            FloatingButtonColors.Dark,
+            BLACK
+        ),
     },
 })
+
+
+--==================================================
+-- 06. BOTÃO NATIVO E ANIMAÇÃO
+--==================================================
+
+local function GetNativeButtonGradient()
+
+    local success, gradient = pcall(function()
+
+        local button = Window.OpenButtonMain.Button
+        local stroke = button:FindFirstChild("UIStroke")
+
+        if not stroke then
+            return nil
+        end
+
+        return stroke:FindFirstChild("UIGradient")
+
+    end)
+
+    if success then
+        return gradient
+    end
+
+    return nil
+end
+
+local function ApplyFloatingButtonStyle()
+
+    local selectedColor =
+        FloatingButtonColors[FloatingButtonTheme]
+
+    if not selectedColor then
+        return
+    end
+
+    local colorSequence = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, selectedColor),
+        ColorSequenceKeypoint.new(0.5, BLACK),
+        ColorSequenceKeypoint.new(1, selectedColor),
+    })
+
+    pcall(function()
+
+        Window:EditOpenButton({
+            Title = "Xyron Hub",
+            Icon = "orbit",
+
+            Enabled = true,
+            Draggable = true,
+            OnlyMobile = false,
+
+            Scale = ButtonScale,
+            CornerRadius = UDim.new(0,8),
+            StrokeThickness = 2,
+
+            Color = colorSequence,
+        })
+
+    end)
+
+    local gradient = GetNativeButtonGradient()
+
+    if gradient then
+        gradient.Color = colorSequence
+    end
+end
+
+task.spawn(function()
+
+    local gradient
+
+    repeat
+        task.wait(0.25)
+        gradient = GetNativeButtonGradient()
+    until gradient or not Window
+
+    if not gradient then
+        return
+    end
+
+    while gradient.Parent do
+
+        gradient.Offset = Vector2.new(-1,0)
+
+        local tween = TweenService:Create(
+            gradient,
+
+            TweenInfo.new(
+                2.5,
+                Enum.EasingStyle.Linear,
+                Enum.EasingDirection.InOut
+            ),
+
+            {
+                Offset = Vector2.new(1,0)
+            }
+        )
+
+        tween:Play()
+        tween.Completed:Wait()
+
+    end
+end)
+
+
+--==================================================
+-- 07. IDENTIFICAÇÃO DA JANELA
+--==================================================
 
 Window:Tag({
     Title = HUB_VERSION,
@@ -199,7 +336,7 @@ Window:Tag({
 
 
 --==================================================
--- 02. ABAS
+-- 08. CRIAÇÃO DAS ABAS
 --==================================================
 
 local Tabs = {}
@@ -251,19 +388,34 @@ Tabs.Settings = Window:Tab({
 
 
 --==================================================
--- 03. SISTEMAS
+-- 09. VARIÁVEIS GLOBAIS DO HUB
 --==================================================
 
--- VARIABLES DOS SISTEMAS
-
 local ThemeDropdown
+local UpdatingThemeDropdown = false
+
+local ConsoleSection
+local EmptyConsole
+
+local FPSInfo
+local PingInfo
+local ReceiveInfo
+local SendInfo
+
+local ServerPlayers
+local SessionInfo
+
 local ConsoleItems = {}
 local FrameCount = 0
 local NotificationControls = {}
 
--- NOTIFICATIONS
+
+--==================================================
+-- 10. SISTEMA DE NOTIFICAÇÕES
+--==================================================
 
 local function Notify(title, content, icon)
+
     if not NotificationsEnabled then
         return
     end
@@ -277,114 +429,138 @@ local function Notify(title, content, icon)
 end
 
 local function SetControlLocked(control, locked)
+
     if not control then
         return
     end
 
     pcall(function()
+
         if locked then
             control:Lock()
         else
             control:Unlock()
         end
+
     end)
 end
 
 local function UpdateNotificationControls()
+
     for _, control in ipairs(NotificationControls) do
         SetControlLocked(control, not NotificationsEnabled)
     end
 end
 
--- BACKGROUND TRANSPARENCY
+
+--==================================================
+-- 11. SISTEMA DE FUNDO
+--==================================================
 
 local function ApplyBackgroundTransparency()
+
     local transparency = 0
 
     if InterfaceTransparency then
         transparency = IMAGE_TRANSPARENCY
     end
 
-    local success, err = pcall(function()
+    pcall(function()
         Window:SetBackgroundImageTransparency(transparency)
     end)
-
-    if not success then
-        warn("Background transparency error: " .. tostring(err))
-    end
 end
 
--- BACKGROUND IMAGE
-
 local function ApplyBackgroundImage(imageName)
+
+    if not BackgroundImages[imageName]
+    and imageName ~= "None" then
+        return
+    end
+
     SelectedBackground = imageName
 
     local selectedImage = BackgroundImages[imageName]
 
     if selectedImage then
-        WindUI:SetTheme("Dark")
+
+        pcall(function()
+            WindUI:SetTheme("Dark")
+        end)
 
         if ThemeDropdown then
-            pcall(function()
-                ThemeDropdown:Select("Dark")
-            end)
 
-            pcall(function()
-                ThemeDropdown:Lock()
-            end)
+            SetControlLocked(ThemeDropdown, true)
+
+            if not UpdatingThemeDropdown then
+
+                UpdatingThemeDropdown = true
+
+                pcall(function()
+                    ThemeDropdown:Select("Dark")
+                end)
+
+                UpdatingThemeDropdown = false
+
+            end
         end
 
         local success, err = pcall(function()
+
             Window:SetBackgroundImage(selectedImage)
             ApplyBackgroundTransparency()
+
         end)
 
         if success then
+
             Notify(
                 "Background Applied",
                 imageName .. " selecionada!",
                 "image"
             )
+
         else
+
             warn("Background error: " .. tostring(err))
 
-            Notify(
-                "Background Error",
-                "Não foi possível aplicar a imagem.",
-                "alert-circle"
-            )
         end
+
     else
+
         pcall(function()
             Window:SetBackgroundImage("")
         end)
 
-        if ThemeDropdown then
-            pcall(function()
-                ThemeDropdown:Unlock()
-            end)
-        end
+        SetControlLocked(ThemeDropdown, false)
 
         Notify(
             "Background Removed",
             "Theme selection unlocked.",
             "image-off"
         )
+
     end
 end
 
--- CONSOLE
+
+--==================================================
+-- 12. SISTEMA DO CONSOLE
+--==================================================
 
 local function ClearConsole()
+
     for _, paragraph in ipairs(ConsoleItems) do
+
         pcall(function()
             paragraph:Destroy()
         end)
+
     end
 
     table.clear(ConsoleItems)
 
     if EmptyConsole then
+
         pcall(function()
             EmptyConsole:Destroy()
         end)
@@ -392,18 +568,24 @@ local function ClearConsole()
         EmptyConsole = nil
     end
 
-    EmptyConsole = ConsoleSection:Paragraph({
-        Title = "Console Empty",
-        Desc = "Aguardando mensagens...",
-    })
+    if ConsoleSection then
+
+        EmptyConsole = ConsoleSection:Paragraph({
+            Title = "Console Empty",
+            Desc = "Aguardando mensagens...",
+        })
+
+    end
 end
 
 local function AddConsoleMessage(message, messageType)
+
     if not ConsoleSection then
         return
     end
 
     if EmptyConsole then
+
         pcall(function()
             EmptyConsole:Destroy()
         end)
@@ -429,11 +611,13 @@ local function AddConsoleMessage(message, messageType)
     table.insert(ConsoleItems, newMessage)
 
     if typeName == "ERROR" and ErrorNotifications then
+
         Notify(
             "Console Error",
             tostring(message),
             "alert-circle"
         )
+
     end
 
     if AutoClearConsole
@@ -442,13 +626,19 @@ local function AddConsoleMessage(message, messageType)
     end
 end
 
--- PERFORMANCE
+
+--==================================================
+-- 13. MONITORAMENTO DE DESEMPENHO
+--==================================================
 
 local function GetPing()
+
     local success, result = pcall(function()
+
         return Stats.Network
             .ServerStatsItem["Data Ping"]
             :GetValueString()
+
     end)
 
     if success and result then
@@ -462,40 +652,56 @@ RunService.RenderStepped:Connect(function()
     FrameCount += 1
 end)
 
--- PLAYER MONITORING
+
+--==================================================
+-- 14. MONITORAMENTO DE JOGADORES
+--==================================================
 
 Players.PlayerAdded:Connect(function(player)
+
     if PlayerNotifications then
+
         Notify(
             "Player Joined",
             player.Name .. " entrou no servidor.",
             "user-plus"
         )
+
     end
 end)
 
 Players.PlayerRemoving:Connect(function(player)
+
     if PlayerNotifications then
+
         Notify(
             "Player Left",
             player.Name .. " saiu do servidor.",
             "user-minus"
         )
+
     end
 end)
 
--- INFORMATION UPDATE
+
+--==================================================
+-- 15. ATUALIZAÇÃO DAS INFORMAÇÕES
+--==================================================
 
 task.spawn(function()
+
     while task.wait(1) do
+
         local currentFPS = FrameCount
         FrameCount = 0
 
-        FPSInfo:SetDesc(
-            tostring(currentFPS) .. " FPS"
-        )
+        if FPSInfo then
+            FPSInfo:SetDesc(tostring(currentFPS) .. " FPS")
+        end
 
-        PingInfo:SetDesc(GetPing())
+        if PingInfo then
+            PingInfo:SetDesc(GetPing())
+        end
 
         local receiveSuccess, receive = pcall(function()
             return Stats.DataReceiveKbps
@@ -505,23 +711,35 @@ task.spawn(function()
             return Stats.DataSendKbps
         end)
 
-        ReceiveInfo:SetDesc(
-            receiveSuccess
-            and string.format("%.1f KB/s", receive)
-            or "Unavailable"
-        )
+        if ReceiveInfo then
 
-        SendInfo:SetDesc(
-            sendSuccess
-            and string.format("%.1f KB/s", send)
-            or "Unavailable"
-        )
+            ReceiveInfo:SetDesc(
+                receiveSuccess
+                and string.format("%.1f KB/s", receive)
+                or "Unavailable"
+            )
 
-        ServerPlayers:SetDesc(
-            #Players:GetPlayers()
-            .. " / "
-            .. Players.MaxPlayers
-        )
+        end
+
+        if SendInfo then
+
+            SendInfo:SetDesc(
+                sendSuccess
+                and string.format("%.1f KB/s", send)
+                or "Unavailable"
+            )
+
+        end
+
+        if ServerPlayers then
+
+            ServerPlayers:SetDesc(
+                #Players:GetPlayers()
+                .. " / "
+                .. Players.MaxPlayers
+            )
+
+        end
 
         local elapsed = math.floor(os.clock() - SessionStart)
 
@@ -529,26 +747,24 @@ task.spawn(function()
         local minutes = math.floor((elapsed % 3600) / 60)
         local seconds = elapsed % 60
 
-        SessionInfo:SetDesc(
-            string.format(
-                "%02d:%02d:%02d",
-                hours,
-                minutes,
-                seconds
+        if SessionInfo then
+
+            SessionInfo:SetDesc(
+                string.format(
+                    "%02d:%02d:%02d",
+                    hours,
+                    minutes,
+                    seconds
+                )
             )
-        )
+
+        end
     end
 end)
 
 
 --==================================================
--- 04. FUNÇÕES E CONTROLES DAS ABAS
---==================================================
-
-
---==================================================
--- ABA: INFORMATION
--- ADICIONE AS FUNÇÕES DE INFORMATION AQUI
+-- 16. ABA INFORMATION
 --==================================================
 
 local HubInfo = Tabs.Informations:Section({
@@ -588,10 +804,15 @@ HubInfo:Paragraph({
     Desc = tostring(LocalPlayer.UserId),
 })
 
-local SessionInfo = HubInfo:Paragraph({
+SessionInfo = HubInfo:Paragraph({
     Title = "Session Time",
     Desc = "00:00:00",
 })
+
+
+--==================================================
+-- ABA INFORMATION: SERVER
+--==================================================
 
 local ServerInfo = Tabs.Informations:Section({
     Title = "Server",
@@ -600,7 +821,7 @@ local ServerInfo = Tabs.Informations:Section({
     Opened = true,
 })
 
-local ServerPlayers = ServerInfo:Paragraph({
+ServerPlayers = ServerInfo:Paragraph({
     Title = "Players",
     Desc = "Loading...",
 })
@@ -615,6 +836,11 @@ ServerInfo:Paragraph({
     Desc = game.JobId ~= "" and game.JobId or "Unavailable",
 })
 
+
+--==================================================
+-- ABA INFORMATION: PERFORMANCE
+--==================================================
+
 local Performance = Tabs.Informations:Section({
     Title = "Performance",
     Desc = "Monitoramento em tempo real.",
@@ -623,27 +849,32 @@ local Performance = Tabs.Informations:Section({
     Opened = true,
 })
 
-local FPSInfo = Performance:Paragraph({
+FPSInfo = Performance:Paragraph({
     Title = "FPS",
     Desc = "Calculando...",
 })
 
-local PingInfo = Performance:Paragraph({
+PingInfo = Performance:Paragraph({
     Title = "Ping",
     Desc = "Calculando...",
 })
 
-local ReceiveInfo = Performance:Paragraph({
+ReceiveInfo = Performance:Paragraph({
     Title = "Download",
     Desc = "Calculando...",
 })
 
-local SendInfo = Performance:Paragraph({
+SendInfo = Performance:Paragraph({
     Title = "Upload",
     Desc = "Calculando...",
 })
 
-local ConsoleSection = Tabs.Informations:Section({
+
+--==================================================
+-- ABA INFORMATION: CONSOLE
+--==================================================
+
+ConsoleSection = Tabs.Informations:Section({
     Title = "Console",
     Desc = "Mensagens que aparecem durante a execução.",
     Box = true,
@@ -651,79 +882,50 @@ local ConsoleSection = Tabs.Informations:Section({
     Opened = true,
 })
 
-local EmptyConsole = ConsoleSection:Paragraph({
+EmptyConsole = ConsoleSection:Paragraph({
     Title = "Console Empty",
     Desc = "Aguardando mensagens...",
 })
 
--- CONEXÃO DO CONSOLE
-
-local ConsoleConnection = LogService.MessageOut:Connect(
-    function(message, messageType)
-        AddConsoleMessage(message, messageType)
-    end
-)
+LogService.MessageOut:Connect(function(message, messageType)
+    AddConsoleMessage(message, messageType)
+end)
 
 
 --==================================================
--- ABA: MURDERER
--- ADICIONE AS FUNÇÕES DE MURDERER AQUI
+-- 17. ABAS DE SISTEMAS
 --==================================================
 
+-- MURDERER
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA MURDERER
 
 
---==================================================
--- ABA: SHERIFF
--- ADICIONE AS FUNÇÕES DE SHERIFF AQUI
---==================================================
-
+-- SHERIFF
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA SHERIFF
 
 
---==================================================
--- ABA: ESP
--- ADICIONE AS FUNÇÕES DE ESP AQUI
---==================================================
-
+-- ESP
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA ESP
 
 
---==================================================
--- ABA: AUTO FARM
--- ADICIONE AS FUNÇÕES DE AUTO FARM AQUI
---==================================================
-
+-- AUTO FARM
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA AUTO FARM
 
 
---==================================================
--- ABA: PLAYER
--- ADICIONE AS FUNÇÕES DE PLAYER AQUI
---==================================================
-
+-- PLAYER
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA PLAYER
 
 
---==================================================
--- ABA: TELEPORT
--- ADICIONE AS FUNÇÕES DE TELEPORT AQUI
---==================================================
-
+-- TELEPORT
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA TELEPORT
 
 
---==================================================
--- ABA: FLING
--- ADICIONE AS FUNÇÕES DE FLING AQUI
---==================================================
-
+-- FLING
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA FLING
 
 
 --==================================================
--- ABA: SETTINGS
--- ADICIONE AS FUNÇÕES DE SETTINGS AQUI
+-- 18. ABA SETTINGS
 --==================================================
 
 local Appearance = Tabs.Settings:Section({
@@ -736,7 +938,7 @@ local Appearance = Tabs.Settings:Section({
 
 local ButtonSettings = Tabs.Settings:Section({
     Title = "Floating Button",
-    Desc = "Configurações do botão Open UI.",
+    Desc = "Configurações do botão nativo da WindUI.",
     Box = true,
     BoxBorder = true,
     Opened = false,
@@ -752,7 +954,7 @@ local NotificationSettings = Tabs.Settings:Section({
 
 
 --==================================================
--- CONTROLES DA ABA SETTINGS
+-- SETTINGS: APARÊNCIA
 --==================================================
 
 Appearance:Slider({
@@ -771,12 +973,15 @@ Appearance:Slider({
     IsTextbox = true,
 
     Callback = function(value)
+
         PendingWindowScale = value
         ScaleChangePending = true
+
     end,
 })
 
 UserInputService.InputEnded:Connect(function(input)
+
     if not ScaleChangePending then
         return
     end
@@ -786,22 +991,28 @@ UserInputService.InputEnded:Connect(function(input)
 
         ScaleChangePending = false
 
-        Window:SetSize(
-            UDim2.fromOffset(
-                WINDOW_WIDTH * PendingWindowScale,
-                WINDOW_HEIGHT * PendingWindowScale
+        pcall(function()
+
+            Window:SetSize(
+                UDim2.fromOffset(
+                    WINDOW_WIDTH * PendingWindowScale,
+                    WINDOW_HEIGHT * PendingWindowScale
+                )
             )
-        )
+
+        end)
+
     end
 end)
 
 Appearance:Toggle({
     Title = "Transparency",
-    Desc = "Ativa ou desativa a transparência da interface e da imagem.",
+    Desc = "Ativa ou desativa a transparência da interface.",
 
     Value = true,
 
     Callback = function(value)
+
         InterfaceTransparency = value
 
         pcall(function()
@@ -809,6 +1020,7 @@ Appearance:Toggle({
         end)
 
         ApplyBackgroundTransparency()
+
     end,
 })
 
@@ -819,11 +1031,13 @@ Appearance:Keybind({
     Value = "RightControl",
 
     Callback = function(value)
+
         local key = Enum.KeyCode[value]
 
         if key then
             Window:SetToggleKey(key)
         end
+
     end,
 })
 
@@ -843,23 +1057,42 @@ ThemeDropdown = Appearance:Dropdown({
     Value = "Dark",
 
     Callback = function(value)
+
+        if UpdatingThemeDropdown then
+            return
+        end
+
         if SelectedBackground ~= "None" then
-            WindUI:SetTheme("Dark")
 
             pcall(function()
-                ThemeDropdown:Select("Dark")
+                WindUI:SetTheme("Dark")
             end)
+
+            if value ~= "Dark" then
+
+                UpdatingThemeDropdown = true
+
+                pcall(function()
+                    ThemeDropdown:Select("Dark")
+                end)
+
+                UpdatingThemeDropdown = false
+
+            end
 
             return
         end
 
-        WindUI:SetTheme(value)
+        pcall(function()
+            WindUI:SetTheme(value)
+        end)
 
         Notify(
             "Theme Changed",
             "Selected theme: " .. value,
             "palette"
         )
+
     end,
 })
 
@@ -877,59 +1110,91 @@ Appearance:Dropdown({
         "Imagem 5",
     },
 
-    Value = "None",
+    Value = SelectedBackground,
 
     Callback = function(value)
         ApplyBackgroundImage(value)
     end,
 })
 
--- CONFIGURAÇÃO INICIAL DO BACKGROUND
-
 if SelectedBackground ~= "None" then
-    WindUI:SetTheme("Dark")
 
     pcall(function()
-        ThemeDropdown:Select("Dark")
-        ThemeDropdown:Lock()
+        WindUI:SetTheme("Dark")
     end)
 
-    pcall(function()
-        Window:SetBackgroundImage(
-            BackgroundImages[SelectedBackground]
-        )
+    SetControlLocked(ThemeDropdown, true)
+    ApplyBackgroundTransparency()
 
-        ApplyBackgroundTransparency()
-    end)
 end
 
--- BOTÃO FLUTUANTE
+
+--==================================================
+-- SETTINGS: BOTÃO FLUTUANTE
+--==================================================
+
+local FloatingButtonThemeDropdown = ButtonSettings:Dropdown({
+    Title = "Floating Button Theme",
+    Desc = "Escolha a cor do degradê da borda.",
+
+    Values = {
+        "Dark",
+        "Red",
+        "Blue",
+        "Purple",
+        "Green",
+    },
+
+    Value = "Dark",
+
+    Callback = function(value)
+
+        if not FloatingButtonColors[value] then
+            return
+        end
+
+        FloatingButtonTheme = value
+
+        ApplyFloatingButtonStyle()
+
+        Notify(
+            "Floating Button",
+            "Cor selecionada: " .. value,
+            "palette"
+        )
+
+    end,
+})
 
 ButtonSettings:Slider({
     Title = "Open Button Size",
-    Desc = "Altera o tamanho do botão flutuante.",
+    Desc = "Aumenta ou diminui o botão nativo.",
 
     Step = 0.05,
 
     Value = {
-        Min = 0.3,
+        Min = 0.5,
         Max = 2.5,
-        Default = 0.55,
+        Default = 1,
     },
 
     IsTooltip = true,
     IsTextbox = true,
 
     Callback = function(value)
-        ButtonScale = value
 
-        Window:EditOpenButton({
-            Scale = value,
-        })
+        ButtonScale = value
+        ApplyFloatingButtonStyle()
+
     end,
 })
 
--- NOTIFICAÇÕES
+ApplyFloatingButtonStyle()
+
+
+--==================================================
+-- SETTINGS: NOTIFICAÇÕES
+--==================================================
 
 local MasterNotificationToggle = NotificationSettings:Toggle({
     Title = "Enable Notifications",
@@ -938,8 +1203,10 @@ local MasterNotificationToggle = NotificationSettings:Toggle({
     Value = true,
 
     Callback = function(value)
+
         NotificationsEnabled = value
         UpdateNotificationControls()
+
     end,
 })
 
@@ -990,11 +1257,13 @@ local TestNotificationButton = NotificationSettings:Button({
     Icon = "bell-ring",
 
     Callback = function()
+
         Notify(
             "Test",
             "Notifications are working!",
             "check-circle"
         )
+
     end,
 })
 
@@ -1009,22 +1278,24 @@ UpdateNotificationControls()
 
 
 --==================================================
--- CONTROLES DA ABA INFORMATION
+-- 19. CONTROLES DO CONSOLE
 --==================================================
 
 ConsoleSection:Toggle({
     Title = "Auto Clear",
-    Desc = "Limpa imediatamente se houver 10 ou mais mensagens.",
+    Desc = "Limpa automaticamente ao chegar a 10 mensagens.",
 
     Value = false,
 
     Callback = function(value)
+
         AutoClearConsole = value
 
         if AutoClearConsole
         and #ConsoleItems >= MAX_CONSOLE_MESSAGES then
             ClearConsole()
         end
+
     end,
 })
 
@@ -1033,6 +1304,7 @@ ConsoleSection:Button({
     Icon = "trash-2",
 
     Callback = function()
+
         ClearConsole()
 
         Notify(
@@ -1040,12 +1312,13 @@ ConsoleSection:Button({
             "All messages have been cleared.",
             "check"
         )
+
     end,
 })
 
 
 --==================================================
--- 05. FINALIZAÇÃO
+-- 20. FINALIZAÇÃO
 --==================================================
 
 Notify(
