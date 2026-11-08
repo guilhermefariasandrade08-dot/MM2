@@ -8,10 +8,6 @@
 -- 01. INTERFACE
 --==================================================
 
---==================================================
--- 01.1 LIBRARY
---==================================================
-
 local Version = "1.6.66"
 
 local WindUI = loadstring(game:HttpGet(
@@ -19,10 +15,7 @@ local WindUI = loadstring(game:HttpGet(
     .. Version .. "/main.lua"
 ))()
 
-
---==================================================
--- 01.2 SERVICES
---==================================================
+-- SERVICES
 
 local Players = game:GetService("Players")
 local Stats = game:GetService("Stats")
@@ -32,10 +25,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 
-
---==================================================
--- 01.3 CONFIGURATION
---==================================================
+-- CONFIGURATION
 
 local HUB_NAME = "Xyron Hub"
 local HUB_VERSION = "1.0.0"
@@ -63,42 +53,28 @@ local SessionStart = os.clock()
 local PendingWindowScale = 1
 local ScaleChangePending = false
 
-
---==================================================
--- 01.4 BACKGROUND IMAGES
+-- BACKGROUND IMAGES
 -- ADICIONE MAIS IMAGENS AQUI
---==================================================
 
 local BackgroundImages = {
-
     ["None"] = nil,
 
     ["Xyron Hub"] = "rbxassetid://104841770128527",
-
     ["Imagem 1"] = "rbxassetid://108415753563589",
-
     ["Imagem 2"] = "rbxassetid://85221317864464",
-
     ["Imagem 3"] = "rbxassetid://89179755130648",
-
     ["Imagem 4"] = "rbxassetid://129579114713968",
-
     ["Imagem 5"] = "rbxassetid://95753350199160",
 
     -- ADICIONE MAIS IMAGENS AQUI:
     -- ["Imagem 6"] = "rbxassetid://ID_DA_IMAGEM",
-
 }
 
 local SelectedBackground = "Xyron Hub"
 
-
---==================================================
--- 01.5 THEMES
---==================================================
+-- THEMES
 
 local Themes = {
-
     {
         Name = "Red",
         Accent = Color3.fromRGB(255,45,45),
@@ -153,20 +129,15 @@ local Themes = {
         Button = Color3.fromRGB(95,95,95),
         Icon = Color3.fromRGB(255,255,255),
     },
-
 }
 
 for _, theme in ipairs(Themes) do
     WindUI:AddTheme(theme)
 end
 
-
---==================================================
--- 01.6 WINDOW CREATION
---==================================================
+-- WINDOW
 
 local Window = WindUI:CreateWindow({
-
     Title = HUB_NAME,
     Author = "Footagesus",
     Icon = "orbit",
@@ -210,13 +181,7 @@ local Window = WindUI:CreateWindow({
         CornerRadius = UDim.new(0,12),
         StrokeThickness = 2,
     },
-
 })
-
-
---==================================================
--- 01.7 WINDOW TAGS
---==================================================
 
 Window:Tag({
     Title = HUB_VERSION,
@@ -235,10 +200,6 @@ Window:Tag({
 
 --==================================================
 -- 02. ABAS
---==================================================
-
---==================================================
--- 02.1 TAB CREATION
 --==================================================
 
 local Tabs = {}
@@ -290,180 +251,19 @@ Tabs.Settings = Window:Tab({
 
 
 --==================================================
--- 02.2 INFORMATION TAB
---==================================================
-
-local HubInfo = Tabs.Informations:Section({
-    Title = "Hub Information",
-    Box = true,
-    BoxBorder = true,
-    Opened = true,
-})
-
-HubInfo:Paragraph({
-    Title = "Hub Name",
-    Desc = HUB_NAME,
-})
-
-HubInfo:Paragraph({
-    Title = "Version",
-    Desc = HUB_VERSION,
-})
-
-HubInfo:Paragraph({
-    Title = "Game",
-    Desc = GAME_NAME,
-})
-
-HubInfo:Paragraph({
-    Title = "Library",
-    Desc = "Footagesus WindUI " .. Version,
-})
-
-HubInfo:Paragraph({
-    Title = "Player",
-    Desc = LocalPlayer.Name,
-})
-
-HubInfo:Paragraph({
-    Title = "User ID",
-    Desc = tostring(LocalPlayer.UserId),
-})
-
-local SessionInfo = HubInfo:Paragraph({
-    Title = "Session Time",
-    Desc = "00:00:00",
-})
-
-
---==================================================
--- 02.3 SERVER SECTION
---==================================================
-
-local ServerInfo = Tabs.Informations:Section({
-    Title = "Server",
-    Box = true,
-    BoxBorder = true,
-    Opened = true,
-})
-
-local ServerPlayers = ServerInfo:Paragraph({
-    Title = "Players",
-    Desc = "Loading...",
-})
-
-ServerInfo:Paragraph({
-    Title = "Place ID",
-    Desc = tostring(game.PlaceId),
-})
-
-ServerInfo:Paragraph({
-    Title = "Job ID",
-    Desc = game.JobId ~= "" and game.JobId or "Unavailable",
-})
-
-
---==================================================
--- 02.4 PERFORMANCE SECTION
---==================================================
-
-local Performance = Tabs.Informations:Section({
-    Title = "Performance",
-    Desc = "Monitoramento em tempo real.",
-    Box = true,
-    BoxBorder = true,
-    Opened = true,
-})
-
-local FPSInfo = Performance:Paragraph({
-    Title = "FPS",
-    Desc = "Calculando...",
-})
-
-local PingInfo = Performance:Paragraph({
-    Title = "Ping",
-    Desc = "Calculando...",
-})
-
-local ReceiveInfo = Performance:Paragraph({
-    Title = "Download",
-    Desc = "Calculando...",
-})
-
-local SendInfo = Performance:Paragraph({
-    Title = "Upload",
-    Desc = "Calculando...",
-})
-
-
---==================================================
--- 02.5 CONSOLE SECTION
---==================================================
-
-local ConsoleSection = Tabs.Informations:Section({
-    Title = "Console",
-    Desc = "Mensagens que aparecem durante a execução.",
-    Box = true,
-    BoxBorder = true,
-    Opened = true,
-})
-
-local EmptyConsole = ConsoleSection:Paragraph({
-    Title = "Console Empty",
-    Desc = "Aguardando mensagens...",
-})
-
-
---==================================================
--- 02.6 SETTINGS SECTIONS
---==================================================
-
-local Appearance = Tabs.Settings:Section({
-    Title = "Interface Settings",
-    Desc = "Personalize a aparência da interface.",
-    Box = true,
-    BoxBorder = true,
-    Opened = true,
-})
-
-local ButtonSettings = Tabs.Settings:Section({
-    Title = "Floating Button",
-    Desc = "Configurações do botão Open UI.",
-    Box = true,
-    BoxBorder = true,
-    Opened = false,
-})
-
-local NotificationSettings = Tabs.Settings:Section({
-    Title = "Notifications",
-    Desc = "Personalize os avisos do Hub.",
-    Box = true,
-    BoxBorder = true,
-    Opened = false,
-})
-
-
---==================================================
 -- 03. SISTEMAS
 --==================================================
 
---==================================================
--- 03.1 SYSTEM VARIABLES
---==================================================
+-- VARIABLES DOS SISTEMAS
 
 local ThemeDropdown
 local ConsoleItems = {}
 local FrameCount = 0
-
 local NotificationControls = {}
 
-
---==================================================
--- 03.2 NOTIFICATION SYSTEM
---==================================================
+-- NOTIFICATIONS
 
 local function Notify(title, content, icon)
-
     if not NotificationsEnabled then
         return
     end
@@ -474,48 +274,31 @@ local function Notify(title, content, icon)
         Icon = icon or "bell",
         Duration = NotificationDuration,
     })
-
 end
 
-
---==================================================
--- 03.3 NOTIFICATION LOCK SYSTEM
---==================================================
-
 local function SetControlLocked(control, locked)
-
     if not control then
         return
     end
 
     pcall(function()
-
         if locked then
             control:Lock()
         else
             control:Unlock()
         end
-
     end)
-
 end
 
-
 local function UpdateNotificationControls()
-
     for _, control in ipairs(NotificationControls) do
         SetControlLocked(control, not NotificationsEnabled)
     end
-
 end
 
-
---==================================================
--- 03.4 BACKGROUND TRANSPARENCY SYSTEM
---==================================================
+-- BACKGROUND TRANSPARENCY
 
 local function ApplyBackgroundTransparency()
-
     local transparency = 0
 
     if InterfaceTransparency then
@@ -523,37 +306,25 @@ local function ApplyBackgroundTransparency()
     end
 
     local success, err = pcall(function()
-
         Window:SetBackgroundImageTransparency(transparency)
-
     end)
 
     if not success then
         warn("Background transparency error: " .. tostring(err))
     end
-
 end
 
-
---==================================================
--- 03.5 BACKGROUND IMAGE SYSTEM
---==================================================
+-- BACKGROUND IMAGE
 
 local function ApplyBackgroundImage(imageName)
-
     SelectedBackground = imageName
 
     local selectedImage = BackgroundImages[imageName]
 
     if selectedImage then
-
-        -- IMAGEM SELECIONADA:
-        -- FORÇA O TEMA DARK
-
         WindUI:SetTheme("Dark")
 
         if ThemeDropdown then
-
             pcall(function()
                 ThemeDropdown:Select("Dark")
             end)
@@ -561,27 +332,20 @@ local function ApplyBackgroundImage(imageName)
             pcall(function()
                 ThemeDropdown:Lock()
             end)
-
         end
 
         local success, err = pcall(function()
-
             Window:SetBackgroundImage(selectedImage)
-
             ApplyBackgroundTransparency()
-
         end)
 
         if success then
-
             Notify(
                 "Background Applied",
                 imageName .. " selecionada!",
                 "image"
             )
-
         else
-
             warn("Background error: " .. tostring(err))
 
             Notify(
@@ -589,24 +353,16 @@ local function ApplyBackgroundImage(imageName)
                 "Não foi possível aplicar a imagem.",
                 "alert-circle"
             )
-
         end
-
     else
-
-        -- NONE:
-        -- REMOVE A IMAGEM E LIBERA O TEMA
-
         pcall(function()
             Window:SetBackgroundImage("")
         end)
 
         if ThemeDropdown then
-
             pcall(function()
                 ThemeDropdown:Unlock()
             end)
-
         end
 
         Notify(
@@ -614,76 +370,55 @@ local function ApplyBackgroundImage(imageName)
             "Theme selection unlocked.",
             "image-off"
         )
-
     end
-
 end
 
-
---==================================================
--- 03.6 CONSOLE SYSTEM
---==================================================
+-- CONSOLE
 
 local function ClearConsole()
-
     for _, paragraph in ipairs(ConsoleItems) do
-
         pcall(function()
             paragraph:Destroy()
         end)
-
     end
 
     table.clear(ConsoleItems)
 
     if EmptyConsole then
-
         pcall(function()
             EmptyConsole:Destroy()
         end)
 
         EmptyConsole = nil
-
     end
 
     EmptyConsole = ConsoleSection:Paragraph({
         Title = "Console Empty",
         Desc = "Aguardando mensagens...",
     })
-
 end
 
-
 local function AddConsoleMessage(message, messageType)
-
     if not ConsoleSection then
         return
     end
 
     if EmptyConsole then
-
         pcall(function()
             EmptyConsole:Destroy()
         end)
 
         EmptyConsole = nil
-
     end
 
     local typeName = tostring(messageType)
 
     if typeName:find("MessageError") then
-
         typeName = "ERROR"
-
     elseif typeName:find("MessageWarning") then
-
         typeName = "WARNING"
-
     else
-
         typeName = "INFO"
-
     end
 
     local newMessage = ConsoleSection:Paragraph({
@@ -694,39 +429,26 @@ local function AddConsoleMessage(message, messageType)
     table.insert(ConsoleItems, newMessage)
 
     if typeName == "ERROR" and ErrorNotifications then
-
         Notify(
             "Console Error",
             tostring(message),
             "alert-circle"
         )
-
     end
-
-    -- LIMPA AO ATINGIR 10 MENSAGENS
 
     if AutoClearConsole
     and #ConsoleItems >= MAX_CONSOLE_MESSAGES then
-
         ClearConsole()
-
     end
-
 end
 
-
---==================================================
--- 03.7 PERFORMANCE SYSTEM
---==================================================
+-- PERFORMANCE
 
 local function GetPing()
-
     local success, result = pcall(function()
-
         return Stats.Network
             .ServerStatsItem["Data Ping"]
             :GetValueString()
-
     end)
 
     if success and result then
@@ -734,63 +456,38 @@ local function GetPing()
     end
 
     return "Unavailable"
-
 end
 
-
---==================================================
--- 03.8 FPS COUNTER
---==================================================
-
 RunService.RenderStepped:Connect(function()
-
     FrameCount += 1
-
 end)
 
-
---==================================================
--- 03.9 PLAYER MONITORING
---==================================================
+-- PLAYER MONITORING
 
 Players.PlayerAdded:Connect(function(player)
-
     if PlayerNotifications then
-
         Notify(
             "Player Joined",
             player.Name .. " entrou no servidor.",
             "user-plus"
         )
-
     end
-
 end)
 
-
 Players.PlayerRemoving:Connect(function(player)
-
     if PlayerNotifications then
-
         Notify(
             "Player Left",
             player.Name .. " saiu do servidor.",
             "user-minus"
         )
-
     end
-
 end)
 
-
---==================================================
--- 03.10 INFORMATION UPDATE SYSTEM
---==================================================
+-- INFORMATION UPDATE
 
 task.spawn(function()
-
     while task.wait(1) do
-
         local currentFPS = FrameCount
         FrameCount = 0
 
@@ -840,35 +537,225 @@ task.spawn(function()
                 seconds
             )
         )
-
     end
-
 end)
 
 
 --==================================================
--- 03.11 CONSOLE CONNECTION
+-- 04. FUNÇÕES E CONTROLES DAS ABAS
 --==================================================
+
+
+--==================================================
+-- ABA: INFORMATION
+-- ADICIONE AS FUNÇÕES DE INFORMATION AQUI
+--==================================================
+
+local HubInfo = Tabs.Informations:Section({
+    Title = "Hub Information",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+HubInfo:Paragraph({
+    Title = "Hub Name",
+    Desc = HUB_NAME,
+})
+
+HubInfo:Paragraph({
+    Title = "Version",
+    Desc = HUB_VERSION,
+})
+
+HubInfo:Paragraph({
+    Title = "Game",
+    Desc = GAME_NAME,
+})
+
+HubInfo:Paragraph({
+    Title = "Library",
+    Desc = "Footagesus WindUI " .. Version,
+})
+
+HubInfo:Paragraph({
+    Title = "Player",
+    Desc = LocalPlayer.Name,
+})
+
+HubInfo:Paragraph({
+    Title = "User ID",
+    Desc = tostring(LocalPlayer.UserId),
+})
+
+local SessionInfo = HubInfo:Paragraph({
+    Title = "Session Time",
+    Desc = "00:00:00",
+})
+
+local ServerInfo = Tabs.Informations:Section({
+    Title = "Server",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+local ServerPlayers = ServerInfo:Paragraph({
+    Title = "Players",
+    Desc = "Loading...",
+})
+
+ServerInfo:Paragraph({
+    Title = "Place ID",
+    Desc = tostring(game.PlaceId),
+})
+
+ServerInfo:Paragraph({
+    Title = "Job ID",
+    Desc = game.JobId ~= "" and game.JobId or "Unavailable",
+})
+
+local Performance = Tabs.Informations:Section({
+    Title = "Performance",
+    Desc = "Monitoramento em tempo real.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+local FPSInfo = Performance:Paragraph({
+    Title = "FPS",
+    Desc = "Calculando...",
+})
+
+local PingInfo = Performance:Paragraph({
+    Title = "Ping",
+    Desc = "Calculando...",
+})
+
+local ReceiveInfo = Performance:Paragraph({
+    Title = "Download",
+    Desc = "Calculando...",
+})
+
+local SendInfo = Performance:Paragraph({
+    Title = "Upload",
+    Desc = "Calculando...",
+})
+
+local ConsoleSection = Tabs.Informations:Section({
+    Title = "Console",
+    Desc = "Mensagens que aparecem durante a execução.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+local EmptyConsole = ConsoleSection:Paragraph({
+    Title = "Console Empty",
+    Desc = "Aguardando mensagens...",
+})
+
+-- CONEXÃO DO CONSOLE
 
 local ConsoleConnection = LogService.MessageOut:Connect(
     function(message, messageType)
-
         AddConsoleMessage(message, messageType)
-
     end
 )
 
 
 --==================================================
--- 04. BOTÕES
+-- ABA: MURDERER
+-- ADICIONE AS FUNÇÕES DE MURDERER AQUI
 --==================================================
 
+-- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA MURDERER
+
+
 --==================================================
--- 04.1 INTERFACE SCALE
+-- ABA: SHERIFF
+-- ADICIONE AS FUNÇÕES DE SHERIFF AQUI
+--==================================================
+
+-- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA SHERIFF
+
+
+--==================================================
+-- ABA: ESP
+-- ADICIONE AS FUNÇÕES DE ESP AQUI
+--==================================================
+
+-- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA ESP
+
+
+--==================================================
+-- ABA: AUTO FARM
+-- ADICIONE AS FUNÇÕES DE AUTO FARM AQUI
+--==================================================
+
+-- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA AUTO FARM
+
+
+--==================================================
+-- ABA: PLAYER
+-- ADICIONE AS FUNÇÕES DE PLAYER AQUI
+--==================================================
+
+-- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA PLAYER
+
+
+--==================================================
+-- ABA: TELEPORT
+-- ADICIONE AS FUNÇÕES DE TELEPORT AQUI
+--==================================================
+
+-- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA TELEPORT
+
+
+--==================================================
+-- ABA: FLING
+-- ADICIONE AS FUNÇÕES DE FLING AQUI
+--==================================================
+
+-- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA FLING
+
+
+--==================================================
+-- ABA: SETTINGS
+-- ADICIONE AS FUNÇÕES DE SETTINGS AQUI
+--==================================================
+
+local Appearance = Tabs.Settings:Section({
+    Title = "Interface Settings",
+    Desc = "Personalize a aparência da interface.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+local ButtonSettings = Tabs.Settings:Section({
+    Title = "Floating Button",
+    Desc = "Configurações do botão Open UI.",
+    Box = true,
+    BoxBorder = true,
+    Opened = false,
+})
+
+local NotificationSettings = Tabs.Settings:Section({
+    Title = "Notifications",
+    Desc = "Personalize os avisos do Hub.",
+    Box = true,
+    BoxBorder = true,
+    Opened = false,
+})
+
+
+--==================================================
+-- CONTROLES DA ABA SETTINGS
 --==================================================
 
 Appearance:Slider({
-
     Title = "Interface Scale",
     Desc = "Altera o tamanho da janela ao soltar o slider.",
 
@@ -884,21 +771,12 @@ Appearance:Slider({
     IsTextbox = true,
 
     Callback = function(value)
-
         PendingWindowScale = value
         ScaleChangePending = true
-
     end,
-
 })
 
-
---==================================================
--- 04.2 INTERFACE SCALE INPUT
---==================================================
-
 UserInputService.InputEnded:Connect(function(input)
-
     if not ScaleChangePending then
         return
     end
@@ -914,72 +792,42 @@ UserInputService.InputEnded:Connect(function(input)
                 WINDOW_HEIGHT * PendingWindowScale
             )
         )
-
     end
-
 end)
 
-
---==================================================
--- 04.3 TRANSPARENCY TOGGLE
---==================================================
-
 Appearance:Toggle({
-
     Title = "Transparency",
     Desc = "Ativa ou desativa a transparência da interface e da imagem.",
 
     Value = true,
 
     Callback = function(value)
-
         InterfaceTransparency = value
-
-        -- TRANSPARÊNCIA DOS PAINÉIS
 
         pcall(function()
             Window:ToggleTransparency(value)
         end)
 
-        -- TRANSPARÊNCIA DA IMAGEM DE FUNDO
-
         ApplyBackgroundTransparency()
-
     end,
-
 })
 
-
---==================================================
--- 04.4 TOGGLE KEY
---==================================================
-
 Appearance:Keybind({
-
     Title = "Toggle Key",
     Desc = "Escolha a tecla para abrir ou fechar a interface.",
 
     Value = "RightControl",
 
     Callback = function(value)
-
         local key = Enum.KeyCode[value]
 
         if key then
             Window:SetToggleKey(key)
         end
-
     end,
-
 })
 
-
---==================================================
--- 04.5 THEME SELECTOR
---==================================================
-
 ThemeDropdown = Appearance:Dropdown({
-
     Title = "Interface Theme",
     Desc = "Escolha a cor do painel da interface.",
 
@@ -995,11 +843,7 @@ ThemeDropdown = Appearance:Dropdown({
     Value = "Dark",
 
     Callback = function(value)
-
-        -- COM IMAGEM SELECIONADA, MANTÉM DARK
-
         if SelectedBackground ~= "None" then
-
             WindUI:SetTheme("Dark")
 
             pcall(function()
@@ -1007,7 +851,6 @@ ThemeDropdown = Appearance:Dropdown({
             end)
 
             return
-
         end
 
         WindUI:SetTheme(value)
@@ -1017,18 +860,10 @@ ThemeDropdown = Appearance:Dropdown({
             "Selected theme: " .. value,
             "palette"
         )
-
     end,
-
 })
 
-
---==================================================
--- 04.6 BACKGROUND IMAGE SELECTOR
---==================================================
-
-local BackgroundDropdown = Appearance:Dropdown({
-
+Appearance:Dropdown({
     Title = "Background Image",
     Desc = "Escolha uma imagem para o fundo da interface.",
 
@@ -1042,51 +877,35 @@ local BackgroundDropdown = Appearance:Dropdown({
         "Imagem 5",
     },
 
-    Value = "Xyron Hub",
+    Value = "None",
 
     Callback = function(value)
-
         ApplyBackgroundImage(value)
-
     end,
-
 })
 
-
---==================================================
--- 04.7 INITIAL BACKGROUND CONFIGURATION
---==================================================
+-- CONFIGURAÇÃO INICIAL DO BACKGROUND
 
 if SelectedBackground ~= "None" then
-
     WindUI:SetTheme("Dark")
 
     pcall(function()
-
         ThemeDropdown:Select("Dark")
         ThemeDropdown:Lock()
-
     end)
 
     pcall(function()
-
         Window:SetBackgroundImage(
             BackgroundImages[SelectedBackground]
         )
 
         ApplyBackgroundTransparency()
-
     end)
-
 end
 
-
---==================================================
--- 04.8 FLOATING BUTTON SIZE
---==================================================
+-- BOTÃO FLUTUANTE
 
 ButtonSettings:Slider({
-
     Title = "Open Button Size",
     Desc = "Altera o tamanho do botão flutuante.",
 
@@ -1102,46 +921,29 @@ ButtonSettings:Slider({
     IsTextbox = true,
 
     Callback = function(value)
-
         ButtonScale = value
 
         Window:EditOpenButton({
             Scale = value,
         })
-
     end,
-
 })
 
-
---==================================================
--- 04.9 MASTER NOTIFICATION TOGGLE
---==================================================
+-- NOTIFICAÇÕES
 
 local MasterNotificationToggle = NotificationSettings:Toggle({
-
     Title = "Enable Notifications",
     Desc = "Ativa ou desativa todos os avisos.",
 
     Value = true,
 
     Callback = function(value)
-
         NotificationsEnabled = value
-
         UpdateNotificationControls()
-
     end,
-
 })
 
-
---==================================================
--- 04.10 NOTIFICATION DURATION
---==================================================
-
 local DurationControl = NotificationSettings:Slider({
-
     Title = "Notification Duration",
     Desc = "Define o tempo de exibição dos avisos.",
 
@@ -1157,132 +959,80 @@ local DurationControl = NotificationSettings:Slider({
     IsTextbox = true,
 
     Callback = function(value)
-
         NotificationDuration = value
-
     end,
-
 })
 
-
---==================================================
--- 04.11 ERROR NOTIFICATIONS
---==================================================
-
 local ErrorControl = NotificationSettings:Toggle({
-
     Title = "Error Notifications",
     Desc = "Notifica quando aparece um erro no console.",
 
     Value = true,
 
     Callback = function(value)
-
         ErrorNotifications = value
-
     end,
-
 })
 
-
---==================================================
--- 04.12 PLAYER NOTIFICATIONS
---==================================================
-
 local PlayerControl = NotificationSettings:Toggle({
-
     Title = "Player Notifications",
     Desc = "Notifica quando alguém entra ou sai.",
 
     Value = false,
 
     Callback = function(value)
-
         PlayerNotifications = value
-
     end,
-
 })
 
-
---==================================================
--- 04.13 TEST NOTIFICATION BUTTON
---==================================================
-
 local TestNotificationButton = NotificationSettings:Button({
-
     Title = "Test Notification",
     Icon = "bell-ring",
 
     Callback = function()
-
         Notify(
             "Test",
             "Notifications are working!",
             "check-circle"
         )
-
     end,
-
 })
 
-
---==================================================
--- 04.14 NOTIFICATION CONTROL LIST
---==================================================
-
 NotificationControls = {
-
     DurationControl,
     ErrorControl,
     PlayerControl,
     TestNotificationButton,
-
 }
 
 UpdateNotificationControls()
 
 
 --==================================================
--- 04.15 AUTO CLEAR CONSOLE
+-- CONTROLES DA ABA INFORMATION
 --==================================================
 
 ConsoleSection:Toggle({
-
     Title = "Auto Clear",
     Desc = "Limpa imediatamente se houver 10 ou mais mensagens.",
 
     Value = false,
 
     Callback = function(value)
-
         AutoClearConsole = value
-
-        -- VERIFICA AS MENSAGENS QUE JÁ EXISTEM
 
         if AutoClearConsole
         and #ConsoleItems >= MAX_CONSOLE_MESSAGES then
-
             ClearConsole()
-
         end
-
     end,
-
 })
 
-
---==================================================
--- 04.16 CLEAR CONSOLE BUTTON
---==================================================
-
 ConsoleSection:Button({
-
     Title = "Clear Console",
     Icon = "trash-2",
 
     Callback = function()
-
         ClearConsole()
 
         Notify(
@@ -1290,14 +1040,12 @@ ConsoleSection:Button({
             "All messages have been cleared.",
             "check"
         )
-
     end,
-
 })
 
 
 --==================================================
--- 04.17 INITIAL NOTIFICATION
+-- 05. FINALIZAÇÃO
 --==================================================
 
 Notify(
@@ -1305,7 +1053,6 @@ Notify(
     "Xyron Hub loaded successfully!",
     "check-circle"
 )
-
 
 --==================================================
 -- END OF SCRIPT
