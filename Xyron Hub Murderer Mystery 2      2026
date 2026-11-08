@@ -892,75 +892,36 @@ LogService.MessageOut:Connect(function(message, messageType)
 end)
 
 
--- =========================================================================
--- 🌀 SISTEMA DO FLING
--- =========================================================================
 
-local SelectedFlingTarget = nil
 
-local function GetFlingPlayerNames()
-    local names = {}
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            table.insert(names, p.Name)
-        end
-    end
-    return names
-end
 
-local function ExecutarFling()
-    if not SelectedFlingTarget or not SelectedFlingTarget.Character then
-        Notify("Fling", "Nenhum alvo válido selecionado!", "alert-circle")
-        return
-    end
 
-    local targetChar = SelectedFlingTarget.Character
-    local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
-    local myChar = LocalPlayer.Character
-    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
 
-    if not targetRoot or not myRoot then
-        return
-    end
 
-    local originalPos = myRoot.CFrame
-    Notify("Fling", "Iniciando em " .. SelectedFlingTarget.Name, "wind")
 
-    task.spawn(function()
-        local startTime = tick()
-        local duration = 4
 
-        while tick() - startTime < duration do
-            if not SelectedFlingTarget.Character or not targetRoot then break end
-            
-            local targetHumanoid = targetChar:FindFirstChildOfClass("Humanoid")
-            local isMoving = targetHumanoid and targetHumanoid.MoveDirection.Magnitude > 0.1
 
-            if isMoving then
-                myRoot.CFrame = targetRoot.CFrame + (targetHumanoid.MoveDirection * 3)
-            else
-                myRoot.CFrame = targetRoot.CFrame
-            end
 
-            myRoot.CFrame = myRoot.CFrame * CFrame.Angles(math.random(-100, 100), math.random(-100, 100), math.random(-100, 100))
-            task.wait(0.03)
-        end
 
-        myRoot.CFrame = originalPos
-        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-        if myHumanoid then
-            myHumanoid.PlatformStand = true
-        end
-        
-        task.wait(0.5)
-        
-        if myHumanoid then
-            myHumanoid.PlatformStand = false
-        end
 
-        Notify("Fling", "Fling concluído!", "check")
-    end)
-end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 --==================================================
 -- 17. ABAS DE SISTEMAS
@@ -991,47 +952,68 @@ end
 
 
 
--- =========================================================================
--- 🌀 ABA FLING (INTERFACE)
--- =========================================================================
 
-local FlingSection = Tabs.Fling:Section({
-    Title = "Fling System",
-    Desc = "Selecione um jogador e execute o fling de forma controlada.",
-    Box = true,
-    BoxBorder = true,
-    Opened = true,
-})
 
-local PlayerDropdown = FlingSection:Dropdown({
-    Title = "Selecionar Alvo",
-    Desc = "Escolha o jogador para aplicar o efeito.",
-    Values = GetFlingPlayerNames(),
-    Value = "",
-    Callback = function(value)
-        SelectedFlingTarget = Players:FindFirstChild(value)
-    end,
-})
 
-Players.PlayerAdded:Connect(function()
-    PlayerDropdown:SetValues(GetFlingPlayerNames())
-end)
 
-Players.PlayerRemoving:Connect(function()
-    PlayerDropdown:SetValues(GetFlingPlayerNames())
-    if SelectedFlingTarget and not Players:FindFirstChild(SelectedFlingTarget.Name) then
-        SelectedFlingTarget = nil
-    end
-end)
 
-FlingSection:Button({
-    Title = "Executar Fling no Alvo",
-    Desc = "Move-se até o jogador, aplica rotação e retorna com segurança.",
-    Icon = "wind",
-    Callback = function()
-        ExecutarFling()
-    end,
-})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 --==================================================
@@ -1437,6 +1419,3 @@ Notify(
     "check-circle"
 )
 
---==================================================
--- END OF SCRIPT
---==================================================
