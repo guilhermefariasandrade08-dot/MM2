@@ -950,6 +950,72 @@ LocalPlayer.CharacterAdded:Connect(function()
     UpdateMovement()
 end)
 
+--==================================================
+-- INFINITE JUMP SYSTEM
+--==================================================
+
+local UserInputService = game:GetService("UserInputService")
+
+local InfiniteJumpEnabled = false
+
+UserInputService.JumpRequest:Connect(function()
+    if not InfiniteJumpEnabled then return end
+
+    local Character = LocalPlayer.Character
+    if not Character then return end
+
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    if not Humanoid then return end
+
+    if Humanoid.Health > 0 then
+        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1745,6 +1811,39 @@ end)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  
 --==================================================
 -- 17. ABAS DE SISTEMAS
@@ -1841,7 +1940,22 @@ MovementSection:Slider({
     end
 })
 
+local ExtrasSection = PlayerTab:Section({
+    Title = "Extras",
+    Desc = "Configurações extras do jogador.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
 
+ExtrasSection:Toggle({
+    Title = "Infinite Jump",
+    Desc = "Permite pular novamente mesmo estando no ar.",
+    Value = false,
+    Callback = function(Value)
+        InfiniteJumpEnabled = Value
+    end
+})
 
 
 
