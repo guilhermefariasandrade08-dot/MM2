@@ -48,7 +48,7 @@ local AutoClearConsole = false
 local MAX_CONSOLE_MESSAGES = 10
 
 local InterfaceTransparency = true
-local IMAGE_TRANSPARENCY = 0.45
+local IMAGE_TRANSPARENCY = 0.60
 
 local SessionStart = os.clock()
 
@@ -84,7 +84,7 @@ local BackgroundImages = {
     ["Imagem 5"] = "rbxassetid://95753350199160",
 }
 
-local SelectedBackground = "Xyron Hub"
+local SelectedBackground = "None"
 
 
 --==================================================
