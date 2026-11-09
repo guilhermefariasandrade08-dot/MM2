@@ -1796,7 +1796,7 @@ local RoleTeleport = Tabs.Teleport:Section({
 
 RoleButtons.Murderer = RoleTeleport:Button({
     Title = "Teleport Murderer",
-    Desc = "Teleportar até o Assassino vivo",
+    Desc = "Teleporta até o Assassino vivo",
     Icon = "skull",
     Locked = true,
     LockedTitle = "Murderer indisponível",
@@ -1808,7 +1808,7 @@ RoleButtons.Murderer = RoleTeleport:Button({
 
 RoleButtons.Sheriff = RoleTeleport:Button({
     Title = "Teleport Sheriff",
-    Desc = "Teleportar até o Xerife vivo",
+    Desc = "Teleporta até o Xerife vivo",
     Icon = "shield",
     Locked = true,
     LockedTitle = "Sheriff indisponível",
@@ -1820,7 +1820,7 @@ RoleButtons.Sheriff = RoleTeleport:Button({
 
 RoleButtons.Hero = RoleTeleport:Button({
     Title = "Teleport Herói",
-    Desc = "Teleportar até o Herói vivo",
+    Desc = "Teleporta até o Herói vivo",
     Icon = "star",
     Locked = true,
     LockedTitle = "Herói indisponível",
@@ -1832,7 +1832,7 @@ RoleButtons.Hero = RoleTeleport:Button({
 
 -- Seção dentro da aba Teleport
 local TeleportLobbySection = Tabs.Teleport:Section({
-    Title = "Teleports Rápido",
+    Title = "Quick teleports",
     Desc = "Teleporte para lugares salvos.",
     Box = true,
     BoxBorder = true,
