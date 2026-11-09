@@ -1854,21 +1854,21 @@ local function IrParaLobby()
     end
     
     HRP.CFrame = CFrame.new(Vector3.new(531.33, 461.22, 37.11))
-    Notify("Teleport", " Teleportado para o lobby", "home")
+    Notify("Teleport", " Teleportado para o lobby", "house")
 end
 
 -- Botão
 TeleportLobbySection:Button({
     Title = "Teleport to Lobby",
-    Desc = "Te leva diretamente para o Lobby",
-    Icon = "home",
+    Desc = "Teleporta seu personagem para o spawn do Lobby",
+    Icon = "house",
     Callback = IrParaLobby,
 })
 
 TeleportLobbySection:Button({
     Title = "Teleport above Lobby",
     Desc = "Teleportar para cima do lobby",
-    Icon = "home",
+    Icon = "house",
     Callback = function()
         TeleportarParaCimaDoLobby()
     end
