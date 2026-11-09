@@ -915,7 +915,40 @@ end)
 
 
 
+--==================================================
+-- PLAYER MOVEMENT SYSTEM
+--==================================================
 
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local SpeedEnabled = false
+local JumpEnabled = false
+
+local SpeedValue = 16
+local JumpValue = 50
+
+local function GetHumanoid()
+    local Character = LocalPlayer.Character
+    if not Character then return nil end
+
+    return Character:FindFirstChildOfClass("Humanoid")
+end
+
+local function UpdateMovement()
+    local Humanoid = GetHumanoid()
+    if not Humanoid then return end
+
+    Humanoid.WalkSpeed = SpeedEnabled and SpeedValue or 16
+
+    Humanoid.UseJumpPower = true
+    Humanoid.JumpPower = JumpEnabled and JumpValue or 50
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    UpdateMovement()
+end)
 
 
 
@@ -1733,12 +1766,81 @@ end)
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA AUTO FARM
 
 
--- PLAYER
--- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA PLAYER
+--==================================================
+-- PLAYER | MOVEMENT SECTION
+--==================================================
+
+local MovementSection = Tabs.Player:Section({
+    Title = "Movement",
+    Icon = "move",
+    Opened = true
+})
+
+-- SPEED TOGGLE
+MovementSection:Toggle({
+    Title = "Speed",
+    Desc = "Ativa ou desativa o aumento de velocidade.",
+    Value = false,
+    Callback = function(Value)
+        SpeedEnabled = Value
+        UpdateMovement()
+    end
+})
+
+-- SPEED SLIDER
+MovementSection:Slider({
+    Title = "Speed Amount",
+    Desc = "Escolha a velocidade de caminhada.",
+    Value = 16,
+    Min = 16,
+    Max = 70,
+    Step = 1,
+    Callback = function(Value)
+        SpeedValue = Value
+
+        if SpeedEnabled then
+            UpdateMovement()
+        end
+    end
+})
+
+-- JUMP POWER TOGGLE
+MovementSection:Toggle({
+    Title = "Jump Power",
+    Desc = "Ativa ou desativa o aumento do salto.",
+    Value = false,
+    Callback = function(Value)
+        JumpEnabled = Value
+        UpdateMovement()
+    end
+})
+
+-- JUMP POWER SLIDER
+MovementSection:Slider({
+    Title = "Jump Amount",
+    Desc = "Escolha a força do salto.",
+    Value = 50,
+    Min = 50,
+    Max = 150,
+    Step = 1,
+    Callback = function(Value)
+        JumpValue = Value
+
+        if JumpEnabled then
+            UpdateMovement()
+        end
+    end
+})
 
 
--- TELEPORT
--- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA TELEPORT
+
+
+
+
+
+
+
+
 
 -- =========================================================================
 -- 🚀 ABA TELEPORT 
