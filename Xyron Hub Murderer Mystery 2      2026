@@ -1060,6 +1060,29 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
+-- =========================================================================
+-- 🚀 SISTEMA IMPULSO NO PULO (ajustado)
+-- =========================================================================
+local ImpulsoNoPulo_Ativo = false
+local ForcaImpulso = 250
+local ImpulsoAtivoAgora = false
+
+LocalPlayer.CharacterAdded:Connect(function(Char)
+    local Hum = Char:WaitForChild("Humanoid")
+    local HRP = Char:WaitForChild("HumanoidRootPart")
+
+    Hum.Jumping:Connect(function(estaPulando)
+        if not ImpulsoNoPulo_Ativo or not estaPulando or ImpulsoAtivoAgora then return end
+        if not HRP then return end
+
+        ImpulsoAtivoAgora = true
+        local direcao = HRP.CFrame.LookVector * ForcaImpulso
+        HRP.Velocity = Vector3.new(direcao.X, ForcaImpulso * 0.3, direcao.Z)
+
+        task.wait(0.3)
+        ImpulsoAtivoAgora = false
+    end)
+end)
 
 
 --==================================================
@@ -2127,6 +2150,42 @@ ExtrasSection:Slider({
     end
 })
 
+-- =========================================================================
+-- 🎛️ INTERFACE EXTRAS | IMPULSO NO PULO
+-- =========================================================================
+ExtrasSection:Toggle({
+    Title = "🚀 Impulso no Pulo",
+    Desc = "Ativa ou desativa o impulso ao pular.",
+    Value = false,
+
+    Callback = function(Ativado)
+        ImpulsoNoPulo_Ativo = Ativado
+        if Ativado then
+            Notify("Extras", "Impulso ativado!", "check")
+        else
+            Notify("Extras", "Impulso desativado!", "info")
+        end
+    end,
+})
+
+ExtrasSection:Slider({
+    Title = "⚡ Força do Impulso",
+    Desc = "Define a velocidade do impulso.",
+    Step = 10,
+
+    Value = {
+        Min = 100,
+        Max = 500,
+        Default = 250,
+    },
+
+    IsTooltip = true,
+    IsTextbox = true,
+
+    Callback = function(Valor)
+        ForcaImpulso = Valor
+    end,
+})
 
 
 ExtrasSection:Toggle({
