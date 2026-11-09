@@ -1940,7 +1940,7 @@ MovementSection:Slider({
     end
 })
 
-local ExtrasSection = PlayerTab:Section({
+local ExtrasSection = Tabs.Player:Section({
     Title = "Extras",
     Desc = "Configurações extras do jogador.",
     Box = true,
