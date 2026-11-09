@@ -2156,27 +2156,43 @@ ExtrasSection:Slider({
     end
 })
 
+--==================================================
+-- EXTRAS | IMPULSO NO PULO
+--==================================================
+
+local ImpulsoNoPulo_Ativo = false
+local ForcaImpulso = 250
+
 ExtrasSection:Toggle({
-    Title = "Impulso no Pulo",
-    Desc = "Ao pular, ganha velocidade extra por 0.3s",
+    Title = "Speed Glitch",
+    Desc = "Ativa ou desativa o impulso ao pular.",
     Value = false,
+
     Callback = function(Ativado)
         ImpulsoNoPulo_Ativo = Ativado
+
         if Ativado then
-            Notify("Extras", "Speed Glitch ativado", "check")
+            Notify("Extras", "Speed Glitch ativado!", "check")
         else
-            Notify("Extras", "Speed Glitch desativado", "info")
+            Notify("Extras", "Speed Glitch desativado!", "info")
         end
     end,
 })
 
 ExtrasSection:Slider({
-    Title = " Speed Glitch",
-    Desc = "Define a velocidade do Speed Glitch",
-    Min = 100,
-    Max = 500,
-    Value = 250, -- valor padrão
+    Title = "Speed Glitch",
+    Desc = "Define a velocidade do Speed Glitch.",
     Step = 10,
+
+    Value = {
+        Min = 100,
+        Max = 500,
+        Default = 250,
+    },
+
+    IsTooltip = true,
+    IsTextbox = true,
+
     Callback = function(Valor)
         ForcaImpulso = Valor
     end,
