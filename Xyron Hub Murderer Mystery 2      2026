@@ -1070,6 +1070,151 @@ local function StopFling()
     Notify("Fling", "Stopped!", "check")
 end
 
+-- =========================================================================
+-- 🌪️ FLING POR CARGO — Sistema Completo
+-- =========================================================================
+
+-- ========== DEPENDÊNCIAS DO SEU ESP ==========
+local UltimaChecagemCargo = 0
+local DadosCargos = {}
+
+local function PegarCargos()
+    if tick() - UltimaChecagemCargo < 2 then return end
+    UltimaChecagemCargo = tick()
+    task.spawn(function()
+        local R = game:GetService("ReplicatedStorage"):FindFirstChild("GetPlayerData", true)
+        if not R then return end
+        local ok, d = pcall(function() return R:InvokeServer() end)
+        if ok and d then DadosCargos = d end
+    end)
+end
+
+-- ========== VARIÁVEIS DO FLING ==========
+local FlingActive = false
+local FlingTargetRole = nil -- "Murderer" / "Sheriff" / "Hero"
+local MurdererToggleOn = false
+local SheriffToggleOn = false
+local HeroToggleOn = false
+getgenv().OldPos = nil
+getgenv().FPDH = workspace.FallenPartsDestroyHeight
+
+-- ========== DETECTA SE O CARGO EXISTE NO JOGO ==========
+local function CargoExiste(Role)
+    PegarCargos()
+    for _, Info in pairs(DadosCargos) do
+        if Info and Info.Role == Role and not Info.Dead and not Info.Killed then
+            return true
+        end
+    end
+    return false
+end
+
+-- ========== PEGA JOGADOR POR CARGO ==========
+local function GetPlayerByRole(Role)
+    PegarCargos()
+    for Name, Info in pairs(DadosCargos) do
+        if Info and Info.Role == Role and not Info.Dead and not Info.Killed then
+            return game:GetService("Players"):FindFirstChild(Name)
+        end
+    end
+    return nil
+end
+
+-- ========== SISTEMA DE FLING (KILASIK ORIGINAL) ==========
+local function SkidFling(TargetPlayer)
+    local Character = LocalPlayer.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+    local RootPart = Humanoid and Humanoid.RootPart
+    local TCharacter = TargetPlayer.Character
+    if not TCharacter or not RootPart then return end
+    
+    local THumanoid = TCharacter:FindFirstChildOfClass("Humanoid")
+    local TRootPart = THumanoid and THumanoid.RootPart
+    local THead = TCharacter:FindFirstChild("Head")
+    local Accessory = TCharacter:FindFirstChildOfClass("Accessory")
+    local Handle = Accessory and Accessory:FindFirstChild("Handle")
+    
+    if Character and Humanoid and RootPart then
+        if RootPart.Velocity.Magnitude < 50 then
+            getgenv().OldPos = RootPart.CFrame
+        end
+        if THumanoid and THumanoid.Sit then return end
+        
+        local FPos = function(BasePart, Pos, Ang)
+            RootPart.CFrame = CFrame.new(BasePart.Position) * Pos * Ang
+            Character:SetPrimaryPartCFrame(CFrame.new(BasePart.Position) * Pos * Ang)
+            RootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
+            RootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
+        end
+        
+        local SFBasePart = function(BasePart)
+            local TimeToWait = 2
+            local Time = tick()
+            local Angle = 0
+            repeat
+                if RootPart and THumanoid then
+                    if BasePart.Velocity.Magnitude < 50 then
+                        Angle = Angle + 100
+                        FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                    else
+                        FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, -THumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                    end
+                end
+            until Time + TimeToWait < tick() or not FlingActive
+        end
+        
+        workspace.FallenPartsDestroyHeight = 0/0
+        local BV = Instance.new("BodyVelocity")
+        BV.Parent = RootPart
+        BV.Velocity = Vector3.new(0, 0, 0)
+        BV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+        
+        if TRootPart then SFBasePart(TRootPart)
+        elseif THead then SFBasePart(THead)
+        elseif Handle then SFBasePart(Handle) end
+        
+        BV:Destroy()
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+        workspace.CurrentCamera.CameraSubject = Humanoid
+        
+        if getgenv().OldPos then
+            repeat
+                RootPart.CFrame = getgenv().OldPos * CFrame.new(0, .5, 0)
+                Character:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, .5, 0))
+                Humanoid:ChangeState("GettingUp")
+                for _, part in pairs(Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.Velocity, part.RotVelocity = Vector3.new(), Vector3.new()
+                    end
+                end
+                task.wait()
+            until not RootPart or (RootPart.Position - getgenv().OldPos.p).Magnitude < 25
+            workspace.FallenPartsDestroyHeight = getgenv().FPDH
+        end
+    end
+end
+
+-- ========== LOOP PRINCIPAL DO FLING ==========
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if FlingActive and FlingTargetRole then
+            local Target = GetPlayerByRole(FlingTargetRole)
+            if Target then
+                SkidFling(Target)
+                task.wait(0.1)
+            end
+        end
+    end
+end)
+
 --==================================================
 -- 17. ABAS DE SISTEMAS
 --==================================================
@@ -1161,6 +1306,136 @@ Players.PlayerRemoving:Connect(function(Player)
     PlayerDropdown:Refresh(GetPlayerNames())
 end)
 
+-- =========================================================================
+-- 🌀 FLING BY ROLE — Interface
+-- =========================================================================
+
+local FlingRoleSection = Tabs.Fling:Section({
+    Title = "Fling by Role",
+    Desc = "Selecione um cargo para aplicar o fling automatico.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+-- FUNÇÃO PARA ATUALIZAR STATUS DOS BOTÕES
+local function AtualizarStatusToggles()
+    -- Verifica se cada cargo existe
+    local TemAssassino = CargoExiste("Murderer")
+    local TemSheriff = CargoExiste("Sheriff")
+    local TemHeroi = CargoExiste("Hero")
+    
+    -- Atualiza descrições com cadeado quando necessário
+    MurdererToggle:SetDesc(not TemAssassino and "🔒 Assassino não está no jogo" or (MurdererToggleOn and "✅ Fling ativado no Assassino" or "Ativa fling no Assassino"))
+    SheriffToggle:SetDesc(not TemSheriff and "🔒 Sheriff não está no jogo" or (SheriffToggleOn and "✅ Fling ativado no Sheriff" or "Ativa fling no Sheriff"))
+    HeroToggle:SetDesc(not TemHeroi and "🔒 Herói não está no jogo" or (HeroToggleOn and "✅ Fling ativado no Herói" or "Ativa fling no Herói"))
+end
+
+-- TOGGLE: ASSASSINO
+MurdererToggle = FlingRoleSection:Toggle({
+    Title = "🔴 Murderer",
+    Desc = "Verificando...",
+    Value = false,
+    Callback = function(Value)
+        if not CargoExiste("Murderer") then
+            Notify("Fling", "Assassino não está no jogo!", "alert-circle")
+            return false
+        end
+        
+        if Value then
+            -- Desliga os outros
+            SheriffToggleOn = false
+            HeroToggleOn = false
+            SheriffToggle:SetValue(false)
+            HeroToggle:SetValue(false)
+            
+            -- Liga este
+            MurdererToggleOn = true
+            FlingTargetRole = "Murderer"
+            FlingActive = true
+            Notify("Fling", "Fling ligado no Assassino 🔴", "check")
+        else
+            MurdererToggleOn = false
+            FlingActive = false
+            FlingTargetRole = nil
+            Notify("Fling", "Fling desligado ✅", "check")
+        end
+        
+        AtualizarStatusToggles()
+    end,
+})
+
+-- TOGGLE: SHERIFF
+SheriffToggle = FlingRoleSection:Toggle({
+    Title = "🔵 Sheriff",
+    Desc = "Verificando...",
+    Value = false,
+    Callback = function(Value)
+        if not CargoExiste("Sheriff") then
+            Notify("Fling", "Sheriff não está no jogo!", "alert-circle")
+            return false
+        end
+        
+        if Value then
+            MurdererToggleOn = false
+            HeroToggleOn = false
+            MurdererToggle:SetValue(false)
+            HeroToggle:SetValue(false)
+            
+            SheriffToggleOn = true
+            FlingTargetRole = "Sheriff"
+            FlingActive = true
+            Notify("Fling", "Fling ligado no Sheriff 🔵", "check")
+        else
+            SheriffToggleOn = false
+            FlingActive = false
+            FlingTargetRole = nil
+            Notify("Fling", "Fling desligado ✅", "check")
+        end
+        
+        AtualizarStatusToggles()
+    end,
+})
+
+-- TOGGLE: HERÓI
+HeroToggle = FlingRoleSection:Toggle({
+    Title = "🟡 Hero",
+    Desc = "Verificando...",
+    Value = false,
+    Callback = function(Value)
+        if not CargoExiste("Hero") then
+            Notify("Fling", "Herói não está no jogo!", "alert-circle")
+            return false
+        end
+        
+        if Value then
+            MurdererToggleOn = false
+            SheriffToggleOn = false
+            MurdererToggle:SetValue(false)
+            SheriffToggle:SetValue(false)
+            
+            HeroToggleOn = true
+            FlingTargetRole = "Hero"
+            FlingActive = true
+            Notify("Fling", "Fling ligado no Herói 🟡", "check")
+        else
+            HeroToggleOn = false
+            FlingActive = false
+            FlingTargetRole = nil
+            Notify("Fling", "Fling desligado ✅", "check")
+        end
+        
+        AtualizarStatusToggles()
+    end,
+})
+
+-- ATUALIZAÇÃO AUTOMÁTICA DOS STATUS
+task.spawn(function()
+    while true do
+        task.wait(1)
+        AtualizarStatusToggles()
+    end
+end)
 
 
 
