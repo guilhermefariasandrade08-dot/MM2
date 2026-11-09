@@ -952,29 +952,29 @@ local MAP_SAFE_POSITIONS = {
 }
 
 --==================================================
--- DETECTAR NOME DO MAPA ATUAL
+-- DETECTAR MAPA ATUAL
+-- SISTEMA DO WALK NYX HUB
 --==================================================
 
-local function PegarNomeMapaAtual()
+local function ObterMapaAtual()
 
-    local MapFolder = workspace:FindFirstChild("Map")
-        or workspace:FindFirstChild("CurrentMap")
-
-    if not MapFolder then
-        return nil
-    end
-
-    -- Procurar o mapa entre os filhos diretos
-    for _, Map in ipairs(MapFolder:GetChildren()) do
-        if MAP_SAFE_POSITIONS[Map.Name] then
-            return Map.Name
+    -- Procura os mapas cadastrados no Workspace
+    for MapName in pairs(MAP_SAFE_POSITIONS) do
+        if workspace:FindFirstChild(MapName, true) then
+            return MapName
         end
     end
 
-    -- Procurar o mapa dentro dos descendentes
-    for _, Map in ipairs(MapFolder:GetDescendants()) do
-        if MAP_SAFE_POSITIONS[Map.Name] then
-            return Map.Name
+    -- Checagem alternativa pelo CoinContainer
+    local CoinContainer = workspace:FindFirstChild("CoinContainer", true)
+
+    if CoinContainer then
+        local ParentFolder = CoinContainer.Parent
+
+        if ParentFolder and ParentFolder ~= workspace then
+            if MAP_SAFE_POSITIONS[ParentFolder.Name] then
+                return ParentFolder.Name
+            end
         end
     end
 
@@ -982,28 +982,28 @@ local function PegarNomeMapaAtual()
 end
 
 --==================================================
--- TELEPORTE AUTOMÁTICO PARA O MAPA
+-- TELEPORTAR PARA O SPAWN DO MAPA
 --==================================================
 
-local function IrParaMapa()
+local function TeleportarParaSpawnDoMapa()
 
-    local NomeMapa = PegarNomeMapaAtual()
+    local MapaAtual = ObterMapaAtual()
 
-    if not NomeMapa then
+    if not MapaAtual then
         Notify(
             "Teleport Mapa",
-            "Não consegui detectar o nome do mapa!",
+            "Nenhum mapa conhecido foi detectado!",
             "alert-circle"
         )
         return
     end
 
-    local Posicao = MAP_SAFE_POSITIONS[NomeMapa]
+    local Posicao = MAP_SAFE_POSITIONS[MapaAtual]
 
     if not Posicao then
         Notify(
             "Teleport Mapa",
-            "Mapa '" .. NomeMapa .. "' não está na lista!",
+            "Mapa não cadastrado!",
             "alert-circle"
         )
         return
@@ -1025,7 +1025,7 @@ local function IrParaMapa()
     if not HRP then
         Notify(
             "Teleport Mapa",
-            "Não foi possível encontrar seu personagem!",
+            "HumanoidRootPart não encontrado!",
             "alert-circle"
         )
         return
@@ -1035,11 +1035,10 @@ local function IrParaMapa()
 
     Notify(
         "Teleport Mapa",
-        "Teleportado para: " .. NomeMapa,
+        "Mapa detectado: " .. MapaAtual,
         "check"
     )
 end
-
 
 
 
@@ -1419,11 +1418,14 @@ TeleportLobbySection:Button({
     Callback = IrParaLobby,
 })
 
-TeleportLobbySection:Button({
-    Title = "🗺️ Ir para o Mapa",
-    Desc = "Detecta o mapa atual e te leva para a posição segura",
-    Icon = "map",
-    Callback = IrParaMapa,
+TabTeleport:Button({
+    Title = "Teleport Mapa",
+    Desc = "Teleportar para a posição cadastrada",
+    Icon = "map-pin",
+
+    Callback = function()
+        TeleportarParaSpawnDoMapa()
+    end
 })
 
 
