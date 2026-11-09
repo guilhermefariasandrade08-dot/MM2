@@ -1060,6 +1060,153 @@ Players.PlayerRemoving:Connect(function(Player)
 end)
 
 --==================================================
+-- TELEPORT POR CARGO | SISTEMA COMPLETO
+--==================================================
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+local DadosCargos = {}
+local UltimaChecagemCargo = 0
+local AtualizandoCargos = false
+
+local RoleButtons = {}
+
+--==================================================
+-- IDENTIFICAR CARGOS
+--==================================================
+
+local function PegarCargos()
+    if AtualizandoCargos then return end
+    if tick() - UltimaChecagemCargo < 2 then return end
+
+    UltimaChecagemCargo = tick()
+    AtualizandoCargos = true
+
+    task.spawn(function()
+        local R = ReplicatedStorage:FindFirstChild("GetPlayerData", true)
+
+        if R and R:IsA("RemoteFunction") then
+            local Sucesso, Dados = pcall(function()
+                return R:InvokeServer()
+            end)
+
+            if Sucesso and type(Dados) == "table" then
+                DadosCargos = Dados
+            end
+        end
+
+        AtualizandoCargos = false
+    end)
+end
+
+--==================================================
+-- VERIFICAR SE JOGADOR ESTÁ VIVO
+--==================================================
+
+local function JogadorEstaVivo(Jogador, Info)
+    if not Jogador or not Jogador.Parent then
+        return false
+    end
+
+    if not Info or Info.Dead or Info.Killed then
+        return false
+    end
+
+    local Character = Jogador.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+    local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+
+    return Humanoid ~= nil and Humanoid.Health > 0 and Root ~= nil
+end
+
+--==================================================
+-- ENCONTRAR JOGADOR PELO CARGO
+--==================================================
+
+local function EncontrarJogadorCargo(Cargo)
+    for _, Jogador in ipairs(Players:GetPlayers()) do
+        if Jogador ~= LocalPlayer then
+            local Info = DadosCargos[Jogador.Name]
+
+            if Info and Info.Role == Cargo then
+                if JogadorEstaVivo(Jogador, Info) then
+                    return Jogador
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
+--==================================================
+-- TELEPORTAR ATÉ O CARGO
+--==================================================
+
+local function TeleportarParaCargo(Cargo)
+    PegarCargos()
+
+    local Alvo = EncontrarJogadorCargo(Cargo)
+
+    if not Alvo then
+        Notify("Teleport", "Jogador indisponível ou morto!", "alert-circle")
+        return
+    end
+
+    local Character = LocalPlayer.Character
+    local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+
+    local TargetCharacter = Alvo.Character
+    local TargetRoot = TargetCharacter and TargetCharacter:FindFirstChild("HumanoidRootPart")
+
+    if not Root or not TargetRoot then
+        Notify("Teleport", "Personagem não encontrado!", "alert-circle")
+        return
+    end
+
+    Root.CFrame = TargetRoot.CFrame * CFrame.new(0, 0, 4)
+
+    Notify("Teleport", "Teleport realizado!", "check")
+end
+
+--==================================================
+-- ATUALIZAR CADEADOS
+--==================================================
+
+local function AtualizarBotoesCargo()
+    PegarCargos()
+
+    for Cargo, Botao in pairs(RoleButtons) do
+        local Alvo = EncontrarJogadorCargo(Cargo)
+
+        if Alvo then
+            Botao:Unlock()
+        else
+            Botao:Lock()
+        end
+    end
+end
+
+--==================================================
+-- ATUALIZAÇÃO AUTOMÁTICA
+--==================================================
+
+task.spawn(function()
+    while task.wait(0.5) do
+        AtualizarBotoesCargo()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function()
+    task.defer(AtualizarBotoesCargo)
+end)
+
+Players.PlayerAdded:Connect(function()
+    task.defer(AtualizarBotoesCargo)
+end)
+
+--==================================================
 -- TELEPORT PARA CIMA DO LOBBY
 --==================================================
 
@@ -1636,6 +1783,50 @@ PlayerTeleport:Toggle({
 
     Callback = function(Value)
         SeguirJogador(Value)
+    end
+})
+
+local RoleTeleport = Tabs.Teleport:Section({
+    Title = "Teleports Roles",
+    Desc = "Teleportes para MURDERER/SHERIFF/HEROI",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+RoleButtons.Murderer = RoleTeleport:Button({
+    Title = "Teleport Murderer",
+    Desc = "Teleportar até o Assassino vivo",
+    Icon = "skull",
+    Locked = true,
+    LockedTitle = "Murderer indisponível",
+
+    Callback = function()
+        TeleportarParaCargo("Murderer")
+    end
+})
+
+RoleButtons.Sheriff = RoleTeleport:Button({
+    Title = "Teleport Sheriff",
+    Desc = "Teleportar até o Xerife vivo",
+    Icon = "shield",
+    Locked = true,
+    LockedTitle = "Sheriff indisponível",
+
+    Callback = function()
+        TeleportarParaCargo("Sheriff")
+    end
+})
+
+RoleButtons.Hero = RoleTeleport:Button({
+    Title = "Teleport Herói",
+    Desc = "Teleportar até o Herói vivo",
+    Icon = "star",
+    Locked = true,
+    LockedTitle = "Herói indisponível",
+
+    Callback = function()
+        TeleportarParaCargo("Hero")
     end
 })
 
