@@ -926,81 +926,6 @@ end)
 
 
 
---[[ Tabs.Teleport — Sistema Completo ]]
-if not Tabs then Tabs = {} end
-Tabs.Teleport = {}
-
--- 📍 POSIÇÕES SEGURAS DOS MAPAS
-local MAP_SAFE_POSITIONS = {
-    ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
-    ["Hotel2014"]        = Vector3.new(414.55, 7.59, 722.01),
-    ["Factory"]          = Vector3.new(-62.90, 291.94, 8961.11),
-    ["House2"]           = Vector3.new(40.27, 264.20, 9057.93),
-    ["MilBase"]          = Vector3.new(-22.30, 242.23, 9109.38),
-    ["BioLab"]           = Vector3.new(552.83, 283.26, 9677.74),
-    ["Hospital2014"]     = Vector3.new(458.15, 7.59, 436.82),
-    ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
-    ["ResearchFacility"] = Vector3.new(-50.81, 301.80, 9152.87),
-    ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95),
-    ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
-    ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
-    ["Manor"]            = Vector3.new(-45.09, 289.02, 8984.71),
-}
-
--- 🏠 COORDENADAS DO LOBBY
-local LOBBY_POSITION = Vector3.new(531.33, 461.22, 37.11)
-
--- 🔍 DETECTA QUAL MAPA ESTÁ ATIVO
-local function ObterMapaAtual()
-    -- Procura direto no workspace
-    for mapName, _ in pairs(MAP_SAFE_POSITIONS) do
-        if workspace:FindFirstChild(mapName, true) then
-            return mapName
-        end
-    end
-    
-    -- Método alternativo: procura pelo CoinContainer
-    local CoinContainer = workspace:FindFirstChild("CoinContainer", true)
-    if CoinContainer then
-        local parentFolder = CoinContainer.Parent
-        if parentFolder and parentFolder ~= workspace then
-            if MAP_SAFE_POSITIONS[parentFolder.Name] then
-                return parentFolder.Name
-            end
-        end
-    end
-    return nil
-end
-
--- ✅ FUNÇÃO DE TELEPORTE (segura e confiável)
-local function ExecutarTeleporte(posicao, nomeDestino)
-    local Player = game.Players.LocalPlayer
-    local char = Player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then
-        Notify("Erro", "Personagem não carregado!", 2)
-        return false
-    end
-    
-    local Humanoid = char:FindFirstChild("Humanoid")
-    local RootPart = char.HumanoidRootPart
-    
-    -- Melhora a confiabilidade do teleporte
-    if Humanoid then
-        Humanoid:ChangeState(Enum.HumanoidStateType.Ragdoll)
-        task.wait(0.08)
-    end
-    
-    RootPart.CFrame = CFrame.new(posicao)
-    
-    workspace.CurrentCamera.CameraSubject = RootPart
-    
-    if Humanoid then
-        Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-    end
-    
-    Notify("✅ Sucesso", "Teleportado para " .. nomeDestino, 2)
-    return true
-end
 
 
 
@@ -1387,39 +1312,6 @@ TeleportLobbySection:Button({
     Callback = IrParaLobby,
 })
 
--- ==============================================
--- FUNÇÕES PARA USAR NO SEU HUB
--- ==============================================
-
--- 🏠 IR PARA O LOBBY
-function Tabs.Teleport.ToLobby()
-    ExecutarTeleporte(LOBBY_POSITION, "o Lobby")
-end
-
--- 🗺️ IR PARA O SPAWN DO MAPA ATUAL
-function Tabs.Teleport.ToMapSpawn()
-    local mapaAtual = ObterMapaAtual()
-    if not mapaAtual then
-        Notify("⚠️ Aviso", "Não foi possível detectar o mapa atual!", 3)
-        return false
-    end
-    
-    local posicao = MAP_SAFE_POSITIONS[mapaAtual]
-    if not posicao then
-        Notify("❌ Erro", "Posição não encontrada para: " .. mapaAtual, 3)
-        return false
-    end
-    
-    ExecutarTeleporte(posicao, mapaAtual)
-    return true
-end
-
--- 🔄 RETORNAR O NOME DO MAPA ATUAL (se precisar exibir na UI)
-function Tabs.Teleport.GetCurrentMap()
-    return ObterMapaAtual()
-end
-
-Notify("✅ Carregado", "Sistema de Teleportes pronto!", 2)
 
 
 -- Cria a SEÇÃO dentro da aba
