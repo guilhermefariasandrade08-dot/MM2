@@ -928,6 +928,136 @@ end)
 
 
 
+--==================================================
+-- SISTEMA DE TELEPORT PARA JOGADOR
+-- COLOQUE NA PARTE DE SISTEMAS
+--==================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local SelectedPlayer = nil
+local FollowingPlayer = false
+local FollowConnection = nil
+
+--==================================================
+-- ATUALIZAR JOGADORES
+--==================================================
+
+local function GetPlayerList()
+    local List = {}
+
+    for _, Player in ipairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer then
+            table.insert(List, Player.Name)
+        end
+    end
+
+    table.sort(List)
+    return List
+end
+
+--==================================================
+-- FUNÇÃO DE TELEPORT
+--==================================================
+
+local function TeleportarParaJogador()
+    if not SelectedPlayer or not SelectedPlayer.Parent then
+        Notify("Teleport", "Selecione um jogador válido!", "alert-circle")
+        return
+    end
+
+    local Character = LocalPlayer.Character
+    local TargetCharacter = SelectedPlayer.Character
+
+    local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+    local TargetRoot = TargetCharacter and TargetCharacter:FindFirstChild("HumanoidRootPart")
+
+    if not Root or not TargetRoot then
+        Notify("Teleport", "Personagem não encontrado!", "alert-circle")
+        return
+    end
+
+    Root.CFrame = TargetRoot.CFrame * CFrame.new(0, 0, 4)
+
+    Notify("Teleport", "Teleport realizado!", "check")
+end
+
+--==================================================
+-- FUNÇÃO DE SEGUIR JOGADOR
+--==================================================
+
+local function SeguirJogador(Value)
+    FollowingPlayer = Value
+
+    if FollowConnection then
+        FollowConnection:Disconnect()
+        FollowConnection = nil
+    end
+
+    if not Value then return end
+
+    if not SelectedPlayer or not SelectedPlayer.Parent then
+        FollowingPlayer = false
+        Notify("Perseguição", "Selecione um jogador primeiro!", "alert-circle")
+        return
+    end
+
+    FollowConnection = RunService.Heartbeat:Connect(function()
+        if not FollowingPlayer then return end
+
+        if not SelectedPlayer or not SelectedPlayer.Parent then
+            FollowingPlayer = false
+            FollowConnection:Disconnect()
+            FollowConnection = nil
+            return
+        end
+
+        local Character = LocalPlayer.Character
+        local TargetCharacter = SelectedPlayer.Character
+
+        local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+        local TargetRoot = TargetCharacter and TargetCharacter:FindFirstChild("HumanoidRootPart")
+
+        if Root and TargetRoot then
+            Root.CFrame = TargetRoot.CFrame * CFrame.new(0, 0, 4)
+        end
+    end)
+end
+
+--==================================================
+-- ATUALIZAÇÃO AUTOMÁTICA DA LISTA
+--==================================================
+
+local PlayerDropdown
+
+local function RefreshPlayers()
+    if PlayerDropdown then
+        PlayerDropdown:Refresh(GetPlayerList())
+    end
+
+    if SelectedPlayer and not SelectedPlayer.Parent then
+        SelectedPlayer = nil
+    end
+end
+
+Players.PlayerAdded:Connect(function()
+    task.wait(0.3)
+    RefreshPlayers()
+end)
+
+Players.PlayerRemoving:Connect(function(Player)
+    if SelectedPlayer == Player then
+        SelectedPlayer = nil
+
+        if FollowingPlayer then
+            SeguirJogador(false)
+        end
+    end
+
+    task.wait(0.3)
+    RefreshPlayers()
+end)
 
 --==================================================
 -- TELEPORT PARA CIMA DO LOBBY
@@ -1462,6 +1592,39 @@ end)
 -- 🚀 ABA TELEPORT 
 -- =========================================================================
 
+PlayerDropdown = Tabs.Teleport:Dropdown({
+    Title = "Selecionar Jogador",
+    Desc = "Jogadores presentes na partida",
+    Values = GetPlayerList(),
+    Value = nil,
+    AllowNone = true,
+    SearchBarEnabled = true,
+
+    Callback = function(Value)
+        SelectedPlayer = Players:FindFirstChild(Value)
+    end
+})
+
+Tabs.Teleport:Button({
+    Title = "Teleportar para Jogador",
+    Desc = "Ir até o jogador selecionado",
+    Icon = "user-round",
+
+    Callback = function()
+        TeleportarParaJogador()
+    end
+})
+
+Tabs.Teleport:Toggle({
+    Title = "Seguir Jogador",
+    Desc = "Acompanhar o jogador selecionado",
+    Default = false,
+
+    Callback = function(Value)
+        SeguirJogador(Value)
+    end
+})
+
 -- Seção dentro da aba Teleport
 local TeleportLobbySection = Tabs.Teleport:Section({
     Title = "Teleports Rápido",
@@ -1524,6 +1687,14 @@ TeleportLobbySection:Button({
         TeleportarParaPlataforma()
     end
 })
+
+
+
+
+
+
+
+
 
 
 
