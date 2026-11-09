@@ -84,7 +84,7 @@ local BackgroundImages = {
     ["Imagem 5"] = "rbxassetid://95753350199160",
 }
 
-local SelectedBackground = "None"
+local SelectedBackground = "Xyron Hub"
 
 
 --==================================================
