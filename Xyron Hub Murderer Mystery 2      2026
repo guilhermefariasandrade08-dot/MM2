@@ -1770,11 +1770,14 @@ end)
 -- PLAYER | MOVEMENT
 --==================================================
 
-local MovementSection = Tabs.Player:Section({
+local MovementSection= Tabs.Player:Section({
     Title = "Movement",
-    Icon = "move",
-    Opened = true
+    Desc = "Mude a velocidade/pulo de seu personagem",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
 })
+
 
 -- SPEED
 MovementSection:Toggle({
