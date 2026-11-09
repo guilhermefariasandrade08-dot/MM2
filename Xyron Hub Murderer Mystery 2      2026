@@ -973,7 +973,46 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 
+--==================================================
+-- ANTI-FLING SYSTEM
+--==================================================
 
+local RunService = game:GetService("RunService")
+
+local AntiFlingEnabled = false
+local AntiFlingConnection = nil
+
+local function StopAntiFling()
+    if AntiFlingConnection then
+        AntiFlingConnection:Disconnect()
+        AntiFlingConnection = nil
+    end
+end
+
+local function StartAntiFling()
+    StopAntiFling()
+
+    AntiFlingConnection = RunService.Heartbeat:Connect(function()
+        if not AntiFlingEnabled then return end
+
+        local Character = LocalPlayer.Character
+        if not Character then return end
+
+        local RootPart = Character:FindFirstChild("HumanoidRootPart")
+        local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+        if not RootPart or not Humanoid or Humanoid.Health <= 0 then
+            return
+        end
+
+        local Velocity = RootPart.AssemblyLinearVelocity
+
+        if Velocity.Magnitude > 100 then
+            RootPart.AssemblyLinearVelocity = Vector3.zero
+            RootPart.AssemblyAngularVelocity = Vector3.zero
+        end
+    end)
+end
 
 
 
@@ -1956,7 +1995,21 @@ ExtrasSection:Toggle({
     end
 })
 
+ExtrasSection:Toggle({
+    Title = "Anti-Fling",
+    Desc = "Ajuda a reduzir movimentos físicos bruscos no seu personagem.",
+    Value = false,
 
+    Callback = function(Value)
+        AntiFlingEnabled = Value
+
+        if Value then
+            StartAntiFling()
+        else
+            StopAntiFling()
+        end
+    end
+})
 
 
 
