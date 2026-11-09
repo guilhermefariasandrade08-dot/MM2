@@ -1088,6 +1088,9 @@ end
 
 -- Tabela com as posições que você me mandou
 local MAP_SAFE_POSITIONS = {
+
+    ["Mineshaft"]        = Vector3.new(-49.44, 301.91, 8900.25),
+
     ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
 
     ["Hotel2014"]        = Vector3.new(414.55, 7.59, 722.01),
@@ -1592,7 +1595,16 @@ end)
 -- 🚀 ABA TELEPORT 
 -- =========================================================================
 
-PlayerDropdown = Tabs.Teleport:Dropdown({
+local PlayerTeleport = Tabs.Teleport:Section({
+    Title = "Teleports Rápido",
+    Desc = "Teleporte para lugares salvos.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+
+PlayerDropdown = PlayerTeleport:Dropdown({
     Title = "Selecionar Jogador",
     Desc = "Jogadores presentes na partida",
     Values = GetPlayerList(),
@@ -1605,7 +1617,7 @@ PlayerDropdown = Tabs.Teleport:Dropdown({
     end
 })
 
-Tabs.Teleport:Button({
+PlayerTeleport:Button({
     Title = "Teleportar para Jogador",
     Desc = "Ir até o jogador selecionado",
     Icon = "user-round",
@@ -1615,7 +1627,7 @@ Tabs.Teleport:Button({
     end
 })
 
-Tabs.Teleport:Toggle({
+PlayerTeleport:Toggle({
     Title = "Seguir Jogador",
     Desc = "Acompanhar o jogador selecionado",
     Default = false,
