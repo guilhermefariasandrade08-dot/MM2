@@ -1767,7 +1767,7 @@ end)
 
 
 --==================================================
--- PLAYER | MOVEMENT SECTION
+-- PLAYER | MOVEMENT
 --==================================================
 
 local MovementSection = Tabs.Player:Section({
@@ -1776,7 +1776,7 @@ local MovementSection = Tabs.Player:Section({
     Opened = true
 })
 
--- SPEED TOGGLE
+-- SPEED
 MovementSection:Toggle({
     Title = "Speed",
     Desc = "Ativa ou desativa o aumento de velocidade.",
@@ -1787,14 +1787,17 @@ MovementSection:Toggle({
     end
 })
 
--- SPEED SLIDER
 MovementSection:Slider({
     Title = "Speed Amount",
     Desc = "Escolha a velocidade de caminhada.",
-    Value = 16,
-    Min = 16,
-    Max = 70,
     Step = 1,
+    Value = {
+        Min = 16,
+        Max = 70,
+        Default = 16,
+    },
+    IsTooltip = true,
+    IsTextbox = true,
     Callback = function(Value)
         SpeedValue = Value
 
@@ -1804,7 +1807,7 @@ MovementSection:Slider({
     end
 })
 
--- JUMP POWER TOGGLE
+-- JUMP POWER
 MovementSection:Toggle({
     Title = "Jump Power",
     Desc = "Ativa ou desativa o aumento do salto.",
@@ -1815,14 +1818,17 @@ MovementSection:Toggle({
     end
 })
 
--- JUMP POWER SLIDER
 MovementSection:Slider({
     Title = "Jump Amount",
     Desc = "Escolha a força do salto.",
-    Value = 50,
-    Min = 50,
-    Max = 150,
     Step = 1,
+    Value = {
+        Min = 50,
+        Max = 150,
+        Default = 50,
+    },
+    IsTooltip = true,
+    IsTextbox = true,
     Callback = function(Value)
         JumpValue = Value
 
@@ -1831,7 +1837,6 @@ MovementSection:Slider({
         end
     end
 })
-
 
 
 
