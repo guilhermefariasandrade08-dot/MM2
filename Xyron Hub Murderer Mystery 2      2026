@@ -1859,14 +1859,14 @@ end
 
 -- Botão
 TeleportLobbySection:Button({
-    Title = "Teleport Lobby",
+    Title = "Teleport to Lobby",
     Desc = "Te leva diretamente para o Lobby",
     Icon = "home",
     Callback = IrParaLobby,
 })
 
 TeleportLobbySection:Button({
-    Title = "Teleport Lobby",
+    Title = "Teleport above Lobby",
     Desc = "Teleportar para cima do lobby",
     Icon = "home",
     Callback = function()
@@ -1875,8 +1875,8 @@ TeleportLobbySection:Button({
 })
 
 TeleportLobbySection:Button({
-    Title = "Teleport Mapa",
-    Desc = "Teleportar para a posição cadastrada",
+    Title = "Teleport to Map Spawn",
+    Desc = "Teleporta seu personagem para o mapa atual",
     Icon = "map-pin",
 
     Callback = function()
@@ -1885,8 +1885,8 @@ TeleportLobbySection:Button({
 })
 
 TeleportLobbySection:Button({
-    Title = "Teleport Plataforma",
-    Desc = "Teleportar para a plataforma suspensa",
+    Title = "Teleport Sky Platform",
+    Desc = "Teleporta seu personagem para uma plataforma",
     Icon = "layers",
     Callback = function()
         TeleportarParaPlataforma()
