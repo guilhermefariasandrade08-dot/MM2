@@ -951,47 +951,94 @@ local MAP_SAFE_POSITIONS = {
     ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
 }
 
--- Função para pegar o nome do mapa atual
+--==================================================
+-- DETECTAR NOME DO MAPA ATUAL
+--==================================================
+
 local function PegarNomeMapaAtual()
-    -- Tenta pegar o nome do mapa automaticamente
-    local MapFolder = workspace:FindFirstChild("Map") or workspace:FindFirstChild("CurrentMap")
-    if MapFolder then
-        return MapFolder.Name
+
+    local MapFolder = workspace:FindFirstChild("Map")
+        or workspace:FindFirstChild("CurrentMap")
+
+    if not MapFolder then
+        return nil
     end
+
+    -- Procurar o mapa entre os filhos diretos
+    for _, Map in ipairs(MapFolder:GetChildren()) do
+        if MAP_SAFE_POSITIONS[Map.Name] then
+            return Map.Name
+        end
+    end
+
+    -- Procurar o mapa dentro dos descendentes
+    for _, Map in ipairs(MapFolder:GetDescendants()) do
+        if MAP_SAFE_POSITIONS[Map.Name] then
+            return Map.Name
+        end
+    end
+
     return nil
 end
 
--- Função de teleporte automático
-local function IrParaMapa()
-    local NomeMapa = PegarNomeMapaAtual()
-    
-    if not NomeMapa then
-        Notify("Teleport Mapa", "Não consegui detectar o nome do mapa!", "alert-circle")
-        return
-    end
-    
-    local Posicao = MAP_SAFE_POSITIONS[NomeMapa]
-    if not Posicao then
-        Notify("Teleport Mapa", "Mapa '" .. NomeMapa .. "' não está na lista!", "alert-circle")
-        return
-    end
-    
-    local Char = LocalPlayer.Character
-    if not Char then
-        Notify("Teleport Mapa", "Personagem não carregado!", "alert-circle")
-        return
-    end
-    
-    local HRP = Char:FindFirstChild("HumanoidRootPart")
-    if not HRP then
-        Notify("Teleport Mapa", "Não foi possível encontrar seu personagem!", "alert-circle")
-        return
-    end
-    
-    HRP.CFrame = CFrame.new(Posicao)
-    Notify("Teleport Mapa", "✅ Teleportado para: " .. NomeMapa, "check")
-end
+--==================================================
+-- TELEPORTE AUTOMÁTICO PARA O MAPA
+--==================================================
 
+local function IrParaMapa()
+
+    local NomeMapa = PegarNomeMapaAtual()
+
+    if not NomeMapa then
+        Notify(
+            "Teleport Mapa",
+            "Não consegui detectar o nome do mapa!",
+            "alert-circle"
+        )
+        return
+    end
+
+    local Posicao = MAP_SAFE_POSITIONS[NomeMapa]
+
+    if not Posicao then
+        Notify(
+            "Teleport Mapa",
+            "Mapa '" .. NomeMapa .. "' não está na lista!",
+            "alert-circle"
+        )
+        return
+    end
+
+    local Char = LocalPlayer.Character
+
+    if not Char then
+        Notify(
+            "Teleport Mapa",
+            "Personagem não carregado!",
+            "alert-circle"
+        )
+        return
+    end
+
+    local HRP = Char:FindFirstChild("HumanoidRootPart")
+
+    if not HRP then
+        Notify(
+            "Teleport Mapa",
+            "Não foi possível encontrar seu personagem!",
+            "alert-circle"
+        )
+        return
+    end
+
+    HRP.CFrame = CFrame.new(Posicao)
+
+    Notify(
+        "Teleport Mapa",
+        "Teleportado para: " .. NomeMapa,
+        "check"
+    )
+end
 
 
 
