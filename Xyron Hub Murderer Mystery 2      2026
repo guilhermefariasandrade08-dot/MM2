@@ -1061,29 +1061,43 @@ player.CharacterAdded:Connect(function()
 end)
 
 -- =========================================================================
--- 🚀 SISTEMA IMPULSO NO PULO (ajustado)
+-- 🚀 SISTEMA IMPULSO NO PULO (Corrigido)
 -- =========================================================================
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
 local ImpulsoNoPulo_Ativo = false
 local ForcaImpulso = 250
 local ImpulsoAtivoAgora = false
 
-LocalPlayer.CharacterAdded:Connect(function(Char)
+local function ConfigurarPersonagem(Char)
     local Hum = Char:WaitForChild("Humanoid")
     local HRP = Char:WaitForChild("HumanoidRootPart")
 
     Hum.Jumping:Connect(function(estaPulando)
         if not ImpulsoNoPulo_Ativo or not estaPulando or ImpulsoAtivoAgora then return end
-        if not HRP then return end
+        if not HRP or not HRP.Parent then return end
 
         ImpulsoAtivoAgora = true
+        
+        -- Pega a direção que o personagem está olhando e aplica a nova propriedade de física
         local direcao = HRP.CFrame.LookVector * ForcaImpulso
-        HRP.Velocity = Vector3.new(direcao.X, ForcaImpulso * 0.3, direcao.Z)
+        HRP.AssemblyLinearVelocity = Vector3.new(direcao.X, ForcaImpulso * 0.3, direcao.Z)
 
         task.wait(0.3)
         ImpulsoAtivoAgora = false
     end)
-end)
+end
 
+-- Se o personagem já existir (caso o script carregue depois)
+if LocalPlayer.Character then
+    task.spawn(function()
+        ConfigurarPersonagem(LocalPlayer.Character)
+    end)
+end
+
+-- Conecta para futuros respawns
+LocalPlayer.CharacterAdded:Connect(ConfigurarPersonagem)
 
 --==================================================
 -- INFINITE JUMP SYSTEM
