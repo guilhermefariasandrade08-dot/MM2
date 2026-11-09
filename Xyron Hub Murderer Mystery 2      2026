@@ -1301,6 +1301,41 @@ end)
 -- 🚀 ABA TELEPORT 
 -- =========================================================================
 
+-- Seção dentro da aba Teleport
+local TeleportLobbySection = Tabs.Teleport:Section({
+    Title = "Teleport Rápido",
+    Desc = "Teleporte para lugares salvos.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+-- Função de teleporte para Lobby
+local function IrParaLobby()
+    local Char = LocalPlayer.Character
+    if not Char then
+        Notify("Teleport", "Personagem não carregado!", "alert-circle")
+        return
+    end
+    
+    local HRP = Char:FindFirstChild("HumanoidRootPart")
+    if not HRP then
+        Notify("Teleport", "Não foi possível encontrar seu personagem!", "alert-circle")
+        return
+    end
+    
+    HRP.CFrame = CFrame.new(Vector3.new(531.33, 461.22, 37.11))
+    Notify("Teleport", "✅ Teleportado para o Lobby!", "check")
+end
+
+-- Botão
+TeleportLobbySection:Button({
+    Title = "🏠 Ir para o Lobby",
+    Desc = "Te leva diretamente para o Lobby",
+    Icon = "home",
+    Callback = IrParaLobby,
+})
+
 -- Cria a SEÇÃO dentro da aba
 local TeleportSection = Tabs.Teleport:Section({
     Title = "Ferramentas de Posição",
