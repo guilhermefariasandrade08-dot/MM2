@@ -1754,7 +1754,7 @@ local PlayerTeleport = Tabs.Teleport:Section({
 
 
 PlayerDropdown = PlayerTeleport:Dropdown({
-    Title = "Selecionar Jogador",
+    Title = ".              ",
     Desc = "Jogadores presentes na partida",
     Values = GetPlayerList(),
     Value = nil,
@@ -1767,8 +1767,8 @@ PlayerDropdown = PlayerTeleport:Dropdown({
 })
 
 PlayerTeleport:Button({
-    Title = "Teleportar para Jogador",
-    Desc = "Ir até o jogador selecionado",
+    Title = "Teleport to Player",
+    Desc = "Teleporta seu personagem para atras do jogador selecionado",
     Icon = "user-round",
 
     Callback = function()
@@ -1777,8 +1777,8 @@ PlayerTeleport:Button({
 })
 
 PlayerTeleport:Toggle({
-    Title = "Seguir Jogador",
-    Desc = "Acompanhar o jogador selecionado",
+    Title = "Follow Player",
+    Desc = "Acompanha continuamente o jogador selecionado",
     Default = false,
 
     Callback = function(Value)
@@ -1787,8 +1787,8 @@ PlayerTeleport:Toggle({
 })
 
 local RoleTeleport = Tabs.Teleport:Section({
-    Title = "Teleports Roles",
-    Desc = "Teleportes para MURDERER/SHERIFF/HEROI",
+    Title = "Role Teleports",
+    Desc = "Teleporte para jogadores com cargos específicos da partida",
     Box = true,
     BoxBorder = true,
     Opened = true,
