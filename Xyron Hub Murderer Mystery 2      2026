@@ -1089,6 +1089,8 @@ end
 -- Tabela com as posições que você me mandou
 local MAP_SAFE_POSITIONS = {
 
+    ["Spaceship"]        = Vector3.new(-80.54, 270.30, 9101.09),
+
     ["Mineshaft"]        = Vector3.new(-49.44, 301.91, 8900.25),
 
     ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
