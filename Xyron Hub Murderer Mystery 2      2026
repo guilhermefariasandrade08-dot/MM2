@@ -938,16 +938,29 @@ end)
 -- Tabela com as posições que você me mandou
 local MAP_SAFE_POSITIONS = {
     ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
+
     ["Hotel2014"]        = Vector3.new(414.55, 7.59, 722.01),
+
     ["Factory"]          = Vector3.new(-62.90, 291.94, 8961.11),
+
     ["House2"]           = Vector3.new(40.27, 264.20, 9057.93),
+
     ["MilBase"]          = Vector3.new(-22.30, 242.23, 9109.38),
+
     ["BioLab"]           = Vector3.new(552.83, 283.26, 9677.74),
+
     ["Hospital2014"]     = Vector3.new(458.15, 7.59, 436.82),
+
     ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
-    ["ResearchFacility"] = Vector3.new(-50.81, 301.80, 9152.87),
+
+    ["ResearchFacility"] = Vector3.new(-73.92, 287.35, 8922.85),
+
+    ["Office3"]          = Vector3.new(550.27, 562.75, 40.65),
+
     ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95),
+
     ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
+
     ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
 }
 
