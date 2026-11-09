@@ -920,47 +920,7 @@ end)
 
 
 
--- ========== SISTEMA: COPIAR POSIÇÃO ==========
-local function CopiarMinhaPosicao()
-    local Jogador = game.Players.LocalPlayer
-    if not Jogador or not Jogador.Character then
-        Notify("Copiar Posição", "Seu personagem não está carregado!", "alert-circle")
-        return
-    end
-    
-    local Root = Jogador.Character:FindFirstChild("HumanoidRootPart")
-    if not Root then
-        Notify("Copiar Posição", "Não encontrei sua posição!", "alert-circle")
-        return
-    end
-    
-    local Pos = Root.Position
-    local Texto = string.format("Vector3.new(%.2f, %.2f, %.2f)", Pos.X, Pos.Y, Pos.Z)
-    
-    if setclipboard then
-        setclipboard(Texto)
-        Notify("Copiar Posição", "✅ Copiado: " .. Texto, "check")
-    else
-        Notify("Copiar Posição", "⚠️ Não foi possível copiar — veja no console", "info")
-        print("📋 Posição copiada: " .. Texto)
-    end
-end
 
-local TeleportSection = Tabs.Teleport:Section({
-    Title = "Teleports",
-    Desc = "Ligares para teleportar",
-    Box = true,
-    BoxBorder = true,
-    Opened = true,
-})
-
--- ========== BOTÃO NA ABA TELEPORT ==========
-TeleportSction:Button({
-    Title = "📋 Copiar Posição",
-    Desc = "Copia sua posição atual para a área de transferência",
-    Icon = "clipboard",
-    Callback = CopiarMinhaPosicao,
-})
 
 
 
