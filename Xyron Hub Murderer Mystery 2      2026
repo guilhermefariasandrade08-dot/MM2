@@ -1385,7 +1385,7 @@ end)
 
 -- Seção dentro da aba Teleport
 local TeleportLobbySection = Tabs.Teleport:Section({
-    Title = "Teleport Rápido",
+    Title = "Teleports Rápido",
     Desc = "Teleporte para lugares salvos.",
     Box = true,
     BoxBorder = true,
@@ -1418,7 +1418,7 @@ TeleportLobbySection:Button({
     Callback = IrParaLobby,
 })
 
-TabTeleport:Button({
+TeleportLobbySection:Button({
     Title = "Teleport Mapa",
     Desc = "Teleportar para a posição cadastrada",
     Icon = "map-pin",
