@@ -1745,8 +1745,8 @@ end)
 -- =========================================================================
 
 local PlayerTeleport = Tabs.Teleport:Section({
-    Title = "Teleports Rápido",
-    Desc = "Teleporte para lugares salvos.",
+    Title = "Player Teleports",
+    Desc = "Selecione jogadores para teleporta ou acompanhar",
     Box = true,
     BoxBorder = true,
     Opened = true,
@@ -1754,8 +1754,8 @@ local PlayerTeleport = Tabs.Teleport:Section({
 
 
 PlayerDropdown = PlayerTeleport:Dropdown({
-    Title = ".              ",
-    Desc = "Jogadores presentes na partida",
+    Title = "Select Player",
+    Desc = "Escolha um jogador para usar as funções abaixo",
     Values = GetPlayerList(),
     Value = nil,
     AllowNone = true,
