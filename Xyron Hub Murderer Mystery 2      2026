@@ -929,7 +929,28 @@ end)
 
 
 
+--==================================================
+-- TELEPORT PARA CIMA DO LOBBY
+--==================================================
 
+local POSICAO_LOBBY = Vector3.new(550.27, 562.75, 40.65)
+
+local function TeleportarParaCimaDoLobby()
+
+    local Character = LocalPlayer.Character
+    if not Character then return end
+
+    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not HumanoidRootPart then return end
+
+    HumanoidRootPart.CFrame = CFrame.new(POSICAO_LOBBY)
+
+    Notify(
+        "Teleport Lobby",
+        "Teleportado para cima do lobby!",
+        "check"
+    )
+end
 
 -- =========================================================================
 -- 🗺️ SISTEMA TELEPORT MAPA
@@ -1474,6 +1495,15 @@ TeleportLobbySection:Button({
     Desc = "Te leva diretamente para o Lobby",
     Icon = "home",
     Callback = IrParaLobby,
+})
+
+TeleportLobbySection:Button({
+    Title = "Teleport Lobby",
+    Desc = "Teleportar para cima do lobby",
+    Icon = "home",
+    Callback = function()
+        TeleportarParaCimaDoLobby()
+    end
 })
 
 TeleportLobbySection:Button({
