@@ -1060,36 +1060,7 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
--- =========================================================================
--- 🚀 SISTEMA PULO COM IMPULSO
--- =========================================================================
 
-local ImpulsoNoPulo_Ativo = false
-local ForcaImpulso = 250 -- valor padrão
-
-game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(Char)
-    local Hum = Char:WaitForChild("Humanoid")
-    
-    -- Detecta quando o jogador PULA
-    Hum.Jumping:Connect(function(IsPulo)
-        if not ImpulsoNoPulo_Ativo then return end
-        if not IsPulo then return end -- só quando PULA (true)
-        
-        local HRP = Char:FindFirstChild("HumanoidRootPart")
-        if not HRP then return end
-        
-        -- Aplica a velocidade do slider
-        local Direcao = HRP.CFrame.LookVector * ForcaImpulso
-        HRP.Velocity = Vector3.new(Direcao.X, ForcaImpulso * 0.3, Direcao.Z)
-        
-        -- Depois de 0.3s volta ao normal
-        task.delay(0.3, function()
-            if HRP and HRP:IsDescendantOf(workspace) then
-                -- Não precisa mudar nada, só deixa o jogo controlar de novo
-            end
-        end)
-    end)
-end)
 
 --==================================================
 -- INFINITE JUMP SYSTEM
@@ -2156,47 +2127,7 @@ ExtrasSection:Slider({
     end
 })
 
---==================================================
--- EXTRAS | IMPULSO NO PULO
---==================================================
 
-local ImpulsoNoPulo_Ativo = false
-local ForcaImpulso = 250
-
-ExtrasSection:Toggle({
-    Title = "Speed Glitch",
-    Desc = "Ativa ou desativa o impulso ao pular.",
-    Value = false,
-
-    Callback = function(Ativado)
-        ImpulsoNoPulo_Ativo = Ativado
-
-        if Ativado then
-            Notify("Extras", "Speed Glitch ativado!", "check")
-        else
-            Notify("Extras", "Speed Glitch desativado!", "info")
-        end
-    end,
-})
-
-ExtrasSection:Slider({
-    Title = "Speed Glitch",
-    Desc = "Define a velocidade do Speed Glitch.",
-    Step = 10,
-
-    Value = {
-        Min = 100,
-        Max = 500,
-        Default = 250,
-    },
-
-    IsTooltip = true,
-    IsTextbox = true,
-
-    Callback = function(Valor)
-        ForcaImpulso = Valor
-    end,
-})
 
 ExtrasSection:Toggle({
     Title = "Infinite Jump",
