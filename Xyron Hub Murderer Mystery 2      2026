@@ -1302,7 +1302,7 @@ end)
 -- =========================================================================
 
 -- Cria a SEÇÃO dentro da aba
-local TeleportSection = TabTeleport:Section({
+local TeleportSection = Tabs.Teleport:Section({
     Title = "Ferramentas de Posição",
     Desc = "Copie sua posição para usar em teleports.",
     Box = true,
