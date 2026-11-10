@@ -1109,6 +1109,23 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
+-- 👻 Variável do Noclip
+_G.NoclipAtivo = false
+
+-- 🟢 LOOP PRINCIPAL (Adicione esta parte dentro do seu RunService.Stepped)
+RunService.Stepped:Connect(function()
+    local Char = player.Character
+    if not Char or not Char:FindFirstChild("Humanoid") then return end
+
+    -- ✅ Sistema de Noclip
+    if _G.NoclipAtivo then
+        for _, parte in ipairs(Char:GetDescendants()) do
+            if parte:IsA("BasePart") then
+                parte.CanCollide = false
+            end
+        end
+    end
+end)
 
 --==================================================
 -- ANTI-FLING SYSTEM
@@ -2157,7 +2174,7 @@ ExtrasSection:Slider({
 -- =========================================================================
 
 ExtrasSection:Toggle({
-    Title = "🚀 Velocidade no Ar",
+    Title = "Speed Glitch",
     Desc = "Muda a velocidade enquanto você estiver pulando/no ar.",
     Value = false,
 
@@ -2177,7 +2194,7 @@ ExtrasSection:Toggle({
 })
 
 ExtrasSection:Slider({
-    Title = "⚡ Velocidade no Ar (Valor)",
+    Title = "Glitch speed",
     Desc = "Define qual será a velocidade no ar.",
     Step = 1,
 
@@ -2202,6 +2219,31 @@ ExtrasSection:Toggle({
     Callback = function(Value)
         InfiniteJumpEnabled = Value
     end
+})
+
+ExtrasSection:Toggle({
+    Title = "Noclip",
+    Desc = "Permite atravessar paredes e objetos.",
+    Value = false,
+
+    Callback = function(Ativado)
+        _G.NoclipAtivo = Ativado
+        if Ativado then
+            Notify("LocalPlayer", "Noclip ativado!", "check")
+        else
+            Notify("LocalPlayer", "Noclip desativado!", "info")
+            
+            -- Ao desativar, reativa a colisão padrão do personagem
+            local Char = player.Character
+            if Char then
+                for _, parte in ipairs(Char:GetDescendants()) do
+                    if parte:IsA("BasePart") and parte.Name ~= "HumanoidRootPart" then
+                        parte.CanCollide = true
+                    end
+                end
+            end
+        end
+    end,
 })
 
 ExtrasSection:Toggle({
