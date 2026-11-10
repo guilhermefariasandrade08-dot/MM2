@@ -1061,7 +1061,7 @@ player.CharacterAdded:Connect(function()
 end)
 
 -- =========================================================================
--- 🚀 SISTEMA IMPULSO NO PULO (Corrigido)
+-- 🚀 SISTEMA IMPULSO NO PULO (Somando à velocidade atual)
 -- =========================================================================
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -1080,24 +1080,32 @@ local function ConfigurarPersonagem(Char)
 
         ImpulsoAtivoAgora = true
         
-        -- Pega a direção que o personagem está olhando e aplica a nova propriedade de física
-        local direcao = HRP.CFrame.LookVector * ForcaImpulso
-        HRP.AssemblyLinearVelocity = Vector3.new(direcao.X, ForcaImpulso * 0.3, direcao.Z)
+        -- Pega a velocidade atual do personagem
+        local velocidadeAtual = HRP.AssemblyLinearVelocity
+        
+        -- Calcula a direção do impulso para frente com base na câmera/rosto
+        local direcaoImpulso = HRP.CFrame.LookVector * ForcaImpulso
+        
+        -- Soma o impulso à velocidade atual (mantendo o eixo Y do pulo natural do Roblox)
+        HRP.AssemblyLinearVelocity = Vector3.new(
+            velocidadeAtual.X + direcaoImpulso.X,
+            velocidadeAtual.Y, -- Mantém a física natural do pulo no eixo Y
+            velocidadeAtual.Z + direcaoImpulso.Z
+        )
 
         task.wait(0.3)
         ImpulsoAtivoAgora = false
     end)
 end
 
--- Se o personagem já existir (caso o script carregue depois)
 if LocalPlayer.Character then
     task.spawn(function()
         ConfigurarPersonagem(LocalPlayer.Character)
     end)
 end
 
--- Conecta para futuros respawns
 LocalPlayer.CharacterAdded:Connect(ConfigurarPersonagem)
+
 
 --==================================================
 -- INFINITE JUMP SYSTEM
