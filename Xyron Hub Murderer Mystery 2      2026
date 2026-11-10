@@ -916,7 +916,7 @@ end)
 
 
 -- =========================================================================
--- PLAYER MOVEMENT SYSTEM (Com Proteção de Equip/Itens)
+-- PLAYER MOVEMENT SYSTEM (Com Proteção de Equip/Itens + Speed Glitch Unificado)
 -- =========================================================================
 
 local Players = game:GetService("Players")
@@ -928,6 +928,11 @@ local JumpEnabled = false
 
 local SpeedValue = 16
 local JumpValue = 50
+
+-- 🚀 Variáveis do Sistema de Velocidade no Ar (Speed Glitch)
+_G.SpeedNoPulo = false
+local VelocidadeNoPulo = 25  
+local VelocidadePadrao = 16   
 
 local function GetHumanoid()
     local Character = LocalPlayer.Character
@@ -944,19 +949,26 @@ local function UpdateMovement()
     Humanoid.UseJumpPower = true
     Humanoid.JumpPower = JumpEnabled and JumpValue or 50
     
-    -- Aplica a Velocidade se estiver ativada
-    if SpeedEnabled then
-        if Humanoid.WalkSpeed ~= SpeedValue then
-            Humanoid.WalkSpeed = SpeedValue
+    -- Checa os estados de ar / escalada
+    local estaEscalando = (Humanoid:GetState() == Enum.HumanoidStateType.Climbing)
+    local estaNoAr = (Humanoid.FloorMaterial == Enum.Material.Air or Humanoid:GetState() == Enum.HumanoidStateType.Freefall)
+
+    -- ✅ Lógica unificada sem conflitos:
+    if _G.SpeedNoPulo and estaNoAr and not estaEscalando then
+        -- Se o Speed Glitch estiver ativado e você estiver no ar (e não escalando)
+        if Humanoid.WalkSpeed ~= VelocidadeNoPulo then
+            Humanoid.WalkSpeed = VelocidadeNoPulo
         end
     else
-        if Humanoid.WalkSpeed ~= 16 then
-            Humanoid.WalkSpeed = 16
+        -- Se estiver no chão, aplica o Speed normal ou o padrão (com proteção contra itens)
+        local targetSpeed = SpeedEnabled and SpeedValue or VelocidadePadrao
+        if Humanoid.WalkSpeed ~= targetSpeed then
+            Humanoid.WalkSpeed = targetSpeed
         end
     end
 end
 
--- Roda a cada frame para garantir que nenhum item altere sua velocidade de forma indesejada
+-- Roda a cada frame unificado para cuidar de tudo (Itens, Speed normal e Speed Glitch)
 RunService.Stepped:Connect(function()
     UpdateMovement()
 end)
@@ -965,6 +977,7 @@ LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
     UpdateMovement()
 end)
+
 
 
 --==================================================
@@ -1076,31 +1089,6 @@ player.CharacterAdded:Connect(function()
         StartFly()
     end
 end)
-
--- 🚀 Variáveis do Sistema de Velocidade no Ar
-_G.SpeedNoPulo = false
-local VelocidadeNoPulo = 25  -- Valor padrão que fica no ar
-local VelocidadePadrao = 16   -- Sua velocidade normal no chão
-
--- 🟢 LOOP PRINCIPAL (Velocidade no Pulo + Câmera Sem Bloqueio + FOV)
-RunService.Stepped:Connect(function()
-    local Char = player.Character
-    if not Char or not Char:FindFirstChild("Humanoid") then return end
-    local Hum = Char.Humanoid
-
-    -- ✅ Velocidade no Pulo (Ignora se estiver escalando escadas/postes)
-    if _G.SpeedNoPulo then  
-        local estaEscalando = (Hum:GetState() == Enum.HumanoidStateType.Climbing)
-        
-        if (Hum.FloorMaterial == Enum.Material.Air or Hum:GetState() == Enum.HumanoidStateType.Freefall) and not estaEscalando then  
-            Hum.WalkSpeed = VelocidadeNoPulo  
-        else  
-            Hum.WalkSpeed = VelocidadePadrao  
-        end  
-    end
-end)
-
-
 
 --==================================================
 -- INFINITE JUMP SYSTEM
@@ -2311,7 +2299,7 @@ ExtrasSection:Toggle({
 })
 
 ExtrasSection:Toggle({
-    Title = "🛡️ Anti-Fling",
+    Title = "Anti-Fling",
     Desc = "Impede que outros jogadores te joguem longe travando as colisões deles.",
     Value = false,
 
