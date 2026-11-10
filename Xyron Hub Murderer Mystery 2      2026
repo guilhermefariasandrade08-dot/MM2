@@ -1061,7 +1061,7 @@ player.CharacterAdded:Connect(function()
 end)
 
 -- =========================================================================
--- 🚀 SISTEMA IMPULSO NO PULO (Somando à velocidade atual)
+-- 🚀 SISTEMA IMPULSO NO PULO (Velocidade Direta)
 -- =========================================================================
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -1080,18 +1080,12 @@ local function ConfigurarPersonagem(Char)
 
         ImpulsoAtivoAgora = true
         
-        -- Pega a velocidade atual do personagem
+        -- Pega a direção exata para onde olha e define a velocidade diretamente
+        local direcao = HRP.CFrame.LookVector * ForcaImpulso
         local velocidadeAtual = HRP.AssemblyLinearVelocity
         
-        -- Calcula a direção do impulso para frente com base na câmera/rosto
-        local direcaoImpulso = HRP.CFrame.LookVector * ForcaImpulso
-        
-        -- Soma o impulso à velocidade atual (mantendo o eixo Y do pulo natural do Roblox)
-        HRP.AssemblyLinearVelocity = Vector3.new(
-            velocidadeAtual.X + direcaoImpulso.X,
-            velocidadeAtual.Y, -- Mantém a física natural do pulo no eixo Y
-            velocidadeAtual.Z + direcaoImpulso.Z
-        )
+        -- Substitui X e Z pela velocidade definida, mantendo o Y original do pulo
+        HRP.AssemblyLinearVelocity = Vector3.new(direcao.X, velocidadeAtual.Y, direcao.Z)
 
         task.wait(0.3)
         ImpulsoAtivoAgora = false
@@ -1105,6 +1099,7 @@ if LocalPlayer.Character then
 end
 
 LocalPlayer.CharacterAdded:Connect(ConfigurarPersonagem)
+
 
 
 --==================================================
