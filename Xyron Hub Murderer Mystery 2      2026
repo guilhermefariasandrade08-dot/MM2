@@ -909,6 +909,316 @@ end)
 
 
 
+-- =========================================================================
+-- ⚙️ CONFIGURAÇÕES DO AUTO FARM DE COINS (Atualizado)
+-- =========================================================================
+local CONFIG_FARM = {
+    Active = false,
+    Speed = 22,
+    MaxDistance = 500,
+    MurdererDangerRadius = 25,
+    Posture = "Levantado", -- Opções: "Levantado" ou "Deitado"
+    FullDestination = "Lobby", -- Opções: "Mapa", "Lobby", "Em cima do lobby", "Plataforma"
+}
+
+local LOBBY_SAFE_POS = Vector3.new(531.33, 461.22, 37.11)
+local ACIMA_LOB_POS = Vector3.new(550.27, 562.75, 40.65)
+local PLATAFORMA_FARM_POS = Vector3.new(27399.39, 239156.52, 209485.08)
+
+
+local RestaurarColisoes = function()
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = (part.Name == "HumanoidRootPart" or part.Name == "Head" or part.Name == "UpperTorso" or part.Name == "LowerTorso")
+            end
+        end
+    end
+end
+
+local collectedCoins = {}
+local cachedCoinContainer = nil
+local HitboxOriginal = {}
+local StoppedUntilNewRound = false
+local bagFullByEvent = false
+local lastBagCheck = 0
+local lastBagCheckResult = false
+local safePlatformInstance = nil
+
+local FARM_MAP_POSITIONS = {
+    ["Spaceship"]        = Vector3.new(-80.54, 270.30, 9101.09),
+    ["Mineshaft"]        = Vector3.new(-49.44, 301.91, 8900.25),
+    ["Mansion2"]         = Vector3.new(75.37, 277.62, 8987.54),
+    ["Hotel2014"]        = Vector3.new(414.55, 7.59, 722.01),
+    ["Factory"]          = Vector3.new(-62.90, 291.94, 8961.11),
+    ["House2"]           = Vector3.new(40.27, 264.20, 9057.93),
+    ["MilBase"]          = Vector3.new(-22.30, 242.23, 9109.38),
+    ["BioLab"]           = Vector3.new(552.83, 283.26, 9677.74),
+    ["Hospital2014"]     = Vector3.new(458.15, 7.59, 436.82),
+    ["PoliceStation"]    = Vector3.new(11.45, 288.95, 8928.50),
+    ["ResearchFacility"] = Vector3.new(-73.92, 287.35, 8922.85),
+    ["Office3"]          = Vector3.new(550.27, 562.75, 40.65),
+    ["Office2014"]       = Vector3.new(558.72, 3.90, 626.95),
+    ["Bank2"]            = Vector3.new(-0.57, 311.13, 9022.47),
+    ["Workplace"]        = Vector3.new(-58.88, 291.47, 9055.98),
+}
+
+local function ObterMapaAtualParaFarm()
+    for MapName in pairs(FARM_MAP_POSITIONS) do
+        if workspace:FindFirstChild(MapName, true) then
+            return MapName
+        end
+    end
+    local CoinContainer = workspace:FindFirstChild("CoinContainer", true)
+    if CoinContainer then
+        local ParentFolder = CoinContainer.Parent
+        if ParentFolder and ParentFolder ~= workspace then
+            if FARM_MAP_POSITIONS[ParentFolder.Name] then
+                return ParentFolder.Name
+            end
+        end
+    end
+    return nil
+end
+
+local function GetMurderer()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local char = p.Character
+            local hum = char:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
+                local hasKnife = char:FindFirstChild("Knife") or (p:FindFirstChild("Backpack") and p.Backpack:FindFirstChild("Knife"))
+                if p:GetAttribute("Role") == "Murderer" or hasKnife then return char end
+            end
+        end
+    end
+    return nil
+end
+
+local function ResetFarmState()
+    table.clear(collectedCoins)
+    cachedCoinContainer = nil
+    table.clear(HitboxOriginal)
+    StoppedUntilNewRound = false
+    bagFullByEvent = false
+    RestaurarColisoes()
+    local c = LocalPlayer.Character
+    local hum = c and c:FindFirstChildOfClass("Humanoid")
+    if hum then hum.PlatformStand = false end
+end
+
+LocalPlayer.CharacterAdded:Connect(ResetFarmState)
+LocalPlayer:GetAttributeChangedSignal("Alive"):Connect(function()
+    if LocalPlayer:GetAttribute("Alive") == true then ResetFarmState() end
+end)
+
+local function CheckBagFullText()
+    if bagFullByEvent then return true end
+    local now = os.clock()
+    if now - lastBagCheck < 0.3 then return lastBagCheckResult end
+    lastBagCheck = now
+
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return false end
+    local mainGui = playerGui:FindFirstChild("MainGUI") or playerGui:FindFirstChild("GUI")
+    if not mainGui then return false end
+
+    for _, gui in ipairs(mainGui:GetDescendants()) do
+        if gui:IsA("TextLabel") and gui.Visible and gui.Text ~= "" then
+            local text = string.lower(gui.Text)
+            if (string.find(text, "bag") and string.find(text, "full")) or
+               string.find(text, "full coin") or string.find(text, "max coins") or
+               (string.find(text, "saco") and string.find(text, "cheio")) then
+                lastBagCheckResult = true
+                return true
+            end
+        end
+    end
+    lastBagCheckResult = false
+    return false
+end
+
+local function InGame()
+    local c = LocalPlayer.Character
+    if not c or not c:FindFirstChild("Humanoid") or c.Humanoid.Health <= 0 then return false end
+    if not c:FindFirstChild("HumanoidRootPart") then return false end
+
+    local aliveAttr = LocalPlayer:GetAttribute("Alive")
+    if aliveAttr ~= nil and aliveAttr == false then return false end
+
+    local coinContainer = workspace:FindFirstChild("CoinContainer", true)
+    if not coinContainer or not coinContainer.Parent then return false end
+
+    if workspace:FindFirstChild("Lobby") then
+        local lobbyDist = (c.HumanoidRootPart.Position - workspace.Lobby:GetPivot().Position).Magnitude
+        if lobbyDist < 100 then return false end
+    end
+    return true
+end
+
+local function GetSafeMapSpawn()
+    local mapaAtual = ObterMapaAtualParaFarm()
+    if mapaAtual and FARM_MAP_POSITIONS[mapaAtual] then
+        local pos = FARM_MAP_POSITIONS[mapaAtual]
+        return CFrame.new(pos) + Vector3.new(0, 3.5, 0)
+    end
+    return CFrame.new(LOBBY_SAFE_POS)
+end
+
+local function GetNearestCoin(myPos)
+    local bestCoin, shortestDist = nil, math.huge
+    if not cachedCoinContainer or not cachedCoinContainer.Parent then
+        cachedCoinContainer = workspace:FindFirstChild("CoinContainer", true)
+    end
+    if not cachedCoinContainer then return nil end
+
+    local charMurderer = GetMurderer()
+    local hrpMurderer = charMurderer and charMurderer:FindFirstChild("HumanoidRootPart")
+
+    for _, coin in ipairs(cachedCoinContainer:GetChildren()) do
+        if coin:IsA("BasePart") and coin.Name == "Coin_Server" and coin:FindFirstChild("TouchInterest") and not collectedCoins[coin] and not coin:GetAttribute("Collected") then
+            if not HitboxOriginal[coin] then
+                HitboxOriginal[coin] = coin.Size
+            end
+            
+            -- Aplica a hitbox dependendo da postura escolhida
+            if CONFIG_FARM.Posture == "Deitado" then
+                coin.Size = Vector3.new(5, 20, 5)
+            else
+                coin.Size = Vector3.new(1, 1, 1) -- Tamanho padrão ou original se levantado
+            end
+            coin.Transparency = 1
+            coin.CanCollide = false
+
+            if hrpMurderer then
+                if (coin.Position - hrpMurderer.Position).Magnitude <= CONFIG_FARM.MurdererDangerRadius then continue end
+            end
+            local distVal = (myPos - coin.Position).Magnitude
+            if distVal < CONFIG_FARM.MaxDistance and distVal < shortestDist then
+                shortestDist = distVal
+                bestCoin = coin
+            end
+        end
+    end
+    return bestCoin
+end
+
+-- Loop de preenchimento / teleporte ao encher o saco
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if not InGame() then
+            StoppedUntilNewRound = false
+            continue
+        end
+
+        local isBagFull = CheckBagFullText()
+        local currentCoinContainer = workspace:FindFirstChild("CoinContainer", true)
+        if currentCoinContainer ~= cachedCoinContainer then
+            cachedCoinContainer = currentCoinContainer
+            StoppedUntilNewRound = false
+            bagFullByEvent = false
+        end
+
+        if not StoppedUntilNewRound and isBagFull then
+            StoppedUntilNewRound = true
+            if CONFIG_FARM.Active then
+                RestaurarColisoes()
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                local finalDestination = nil
+                if CONFIG_FARM.FullDestination == "Mapa" then
+                    finalDestination = GetSafeMapSpawn()
+                elseif CONFIG_FARM.FullDestination == "Lobby" then
+                    finalDestination = CFrame.new(LOBBY_SAFE_POS)
+                elseif CONFIG_FARM.FullDestination == "Em cima do lobby" then
+                    finalDestination = CFrame.new(ACIMA_LOB_POS)
+                elseif CONFIG_FARM.FullDestination == "Plataforma" then
+                    finalDestination = CFrame.new(PLATAFORMA_FARM_POS)
+                else
+                    finalDestination = CFrame.new(LOBBY_SAFE_POS)
+                end
+
+                if finalDestination and hrp then
+                    if hum then hum.PlatformStand = true end
+                    local holdStart = os.clock()
+                    while os.clock() - holdStart < 1.5 and InGame() and CONFIG_FARM.Active do
+                        hrp.CFrame = finalDestination
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        RunService.Heartbeat:Wait()
+                    end
+                    if hum and InGame() then
+                        hum.PlatformStand = false
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Loop principal do Farm com suporte à postura Deitado/Levantado
+task.spawn(function()
+    while true do
+        if CONFIG_FARM.Active and not StoppedUntilNewRound and not CheckBagFullText() and InGame() then
+            local c = LocalPlayer.Character
+            local hrp = c and c:FindFirstChild("HumanoidRootPart")
+            local humanoid = c and c:FindFirstChildOfClass("Humanoid")
+
+            if not InGame() or not hrp or not humanoid then
+                RestaurarColisoes()
+                if humanoid then humanoid.PlatformStand = false end
+                task.wait(0.4)
+                continue
+            end
+
+            local target = GetNearestCoin(hrp.Position)
+            if target and not StoppedUntilNewRound and not CheckBagFullText() then
+                humanoid.PlatformStand = true
+
+                -- Se for "Deitado", posiciona abaixo da moeda (com offset no eixo Y) e deita o boneco
+                local heightOffset = (CONFIG_FARM.Posture == "Deitado") and Vector3.new(0, 4, 0) or Vector3.new(0, 0, 0)
+                local targetPos = target.Position - heightOffset
+                local currentPos = hrp.Position
+                local direction = (targetPos - currentPos)
+                local distance = direction.Magnitude
+
+                if distance <= 0.8 then
+                    collectedCoins[target] = true
+                else
+                    local currentSpeed = math.clamp(CONFIG_FARM.Speed, 16, 25)
+                    local dt = RunService.Heartbeat:Wait()
+                    local step = math.min(currentSpeed * dt, distance)
+                    local newPos = currentPos + (direction.Unit * step)
+
+                    if CONFIG_FARM.Posture == "Deitado" then
+                        hrp.CFrame = CFrame.new(newPos) * CFrame.Angles(math.rad(90), 0, 0)
+                    else
+                        hrp.CFrame = CFrame.new(newPos)
+                    end
+                    
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                end
+
+                humanoid.PlatformStand = false
+            else
+                RestaurarColisoes()
+                humanoid.PlatformStand = false
+                task.wait(0.2)
+            end
+        else
+            RestaurarColisoes()
+            local c = LocalPlayer.Character
+            local hum = c and c:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = false end
+            task.wait(0.5)
+        end
+    end
+end)
+
+
 
 
 
@@ -2105,8 +2415,80 @@ end)
 -- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA ESP
 
 
--- AUTO FARM
--- COLOQUE AQUI OS SISTEMAS E CONTROLES DA ABA AUTO FARM
+-- =========================================================================
+-- 🌾 AUTO FARM INTERFACE (Tabs.AutoFarm)
+-- =========================================================================
+
+local FarmSection = Tabs.AutoFarm:Section({
+    Title = "Coin Auto Farm",
+    Desc = "Configurações automáticas de coleta de moedas.",
+    Box = true,
+    BoxBorder = true,
+    Opened = true,
+})
+
+FarmSection:Toggle({
+    Title = "Ativar Auto Farm",
+    Desc = "Inicia a coleta automática de moedas.",
+    Value = false,
+    Callback = function(Value)
+        CONFIG_FARM.Active = Value
+        if Value then
+            Notify("Auto Farm", "Auto Farm ativado!", "check")
+        else
+            ResetFarmState()
+            Notify("Auto Farm", "Auto Farm desativado!", "info")
+        end
+    end,
+})
+
+-- 1ª Lista: Destino ao encher o saco
+FarmSection:Dropdown({
+    Title = "Destino ao Encher o Saco",
+    Desc = "Escolha para onde ir quando coletar todas as moedas.",
+    Values = {
+        "Mapa",
+        "Lobby",
+        "Em cima do lobby",
+        "Plataforma"
+    },
+    Value = "Lobby",
+    Callback = function(Value)
+        CONFIG_FARM.FullDestination = Value
+        Notify("Auto Farm", "Destino alterado para: " .. Value, "info")
+    end,
+})
+
+-- 2ª Lista: Postura de coleta
+FarmSection:Dropdown({
+    Title = "Postura de Coleta",
+    Desc = "Escolha como o personagem vai em direção à moeda.",
+    Values = {
+        "Levantado",
+        "Deitado"
+    },
+    Value = "Levantado",
+    Callback = function(Value)
+        CONFIG_FARM.Posture = Value
+        Notify("Auto Farm", "Postura alterada para: " .. Value, "info")
+    end,
+})
+
+FarmSection:Slider({
+    Title = "Velocidade do Farm",
+    Desc = "Velocidade de movimento até as moedas.",
+    Step = 1,
+    Value = {
+        Min = 16,
+        Max = 25,
+        Default = 22,
+    },
+    IsTooltip = true,
+    IsTextbox = true,
+    Callback = function(Value)
+        CONFIG_FARM.Speed = Value
+    end,
+})
 
 
 --==================================================
