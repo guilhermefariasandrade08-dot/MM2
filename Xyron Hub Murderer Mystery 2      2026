@@ -2153,7 +2153,7 @@ ExtrasSection:Slider({
 -- 🎛️ INTERFACE LOCAL PLAYER | VELOCIDADE NO AR
 -- =========================================================================
 
-LocalPlayerSection:Toggle({
+ExtrasSection:Toggle({
     Title = "🚀 Velocidade no Ar",
     Desc = "Muda a velocidade enquanto você estiver pulando/no ar.",
     Value = false,
@@ -2173,7 +2173,7 @@ LocalPlayerSection:Toggle({
     end,
 })
 
-LocalPlayerSection:Slider({
+ExrrasSection:Slider({
     Title = "⚡ Velocidade no Ar (Valor)",
     Desc = "Define qual será a velocidade no ar.",
     Step = 1,
