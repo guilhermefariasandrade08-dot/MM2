@@ -1071,15 +1071,18 @@ RunService.Stepped:Connect(function()
     if not Char or not Char:FindFirstChild("Humanoid") then return end
     local Hum = Char.Humanoid
 
-    -- ✅ Velocidade no Pulo / Ar
+    -- ✅ Velocidade no Pulo (Ignora se estiver escalando escadas/postes)
     if _G.SpeedNoPulo then  
-        if Hum.FloorMaterial == Enum.Material.Air or Hum:GetState() == Enum.HumanoidStateType.Freefall then  
+        local estaEscalando = (Hum:GetState() == Enum.HumanoidStateType.Climbing)
+        
+        if (Hum.FloorMaterial == Enum.Material.Air or Hum:GetState() == Enum.HumanoidStateType.Freefall) and not estaEscalando then  
             Hum.WalkSpeed = VelocidadeNoPulo  
         else  
             Hum.WalkSpeed = VelocidadePadrao  
         end  
     end
 end)
+
 
 
 
