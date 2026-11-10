@@ -2173,7 +2173,7 @@ ExtrasSection:Toggle({
     end,
 })
 
-ExrrasSection:Slider({
+ExtrasSection:Slider({
     Title = "⚡ Velocidade no Ar (Valor)",
     Desc = "Define qual será a velocidade no ar.",
     Step = 1,
