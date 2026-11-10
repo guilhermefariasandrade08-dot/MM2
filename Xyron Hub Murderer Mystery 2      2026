@@ -1077,6 +1077,11 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
+-- 🚀 Variáveis do Sistema de Velocidade no Ar
+_G.SpeedNoPulo = false
+local VelocidadeNoPulo = 25  -- Valor padrão que fica no ar
+local VelocidadePadrao = 16   -- Sua velocidade normal no chão
+
 -- 🟢 LOOP PRINCIPAL (Velocidade no Pulo + Câmera Sem Bloqueio + FOV)
 RunService.Stepped:Connect(function()
     local Char = player.Character
@@ -1094,9 +1099,6 @@ RunService.Stepped:Connect(function()
         end  
     end
 end)
-
-
-
 
 
 
