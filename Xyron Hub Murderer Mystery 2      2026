@@ -1060,45 +1060,27 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
--- =========================================================================
--- 🚀 SISTEMA IMPULSO NO PULO (Velocidade Direta)
--- =========================================================================
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+-- 🚀 Variáveis do Sistema de Velocidade no Ar
+_G.SpeedNoPulo = false
+local VelocidadeNoPulo = 25  -- Valor padrão que fica no ar
+local VelocidadePadrao = 16   -- Sua velocidade normal no chão
 
-local ImpulsoNoPulo_Ativo = false
-local ForcaImpulso = 250
-local ImpulsoAtivoAgora = false
+-- 🟢 LOOP PRINCIPAL (Velocidade no Pulo + Câmera Sem Bloqueio + FOV)
+RunService.Stepped:Connect(function()
+    local Char = player.Character
+    if not Char or not Char:FindFirstChild("Humanoid") then return end
+    local Hum = Char.Humanoid
 
-local function ConfigurarPersonagem(Char)
-    local Hum = Char:WaitForChild("Humanoid")
-    local HRP = Char:WaitForChild("HumanoidRootPart")
+    -- ✅ Velocidade no Pulo / Ar
+    if _G.SpeedNoPulo then  
+        if Hum.FloorMaterial == Enum.Material.Air or Hum:GetState() == Enum.HumanoidStateType.Freefall then  
+            Hum.WalkSpeed = VelocidadeNoPulo  
+        else  
+            Hum.WalkSpeed = VelocidadePadrao  
+        end  
+    end
+end)
 
-    Hum.Jumping:Connect(function(estaPulando)
-        if not ImpulsoNoPulo_Ativo or not estaPulando or ImpulsoAtivoAgora then return end
-        if not HRP or not HRP.Parent then return end
-
-        ImpulsoAtivoAgora = true
-        
-        -- Pega a direção exata para onde olha e define a velocidade diretamente
-        local direcao = HRP.CFrame.LookVector * ForcaImpulso
-        local velocidadeAtual = HRP.AssemblyLinearVelocity
-        
-        -- Substitui X e Z pela velocidade definida, mantendo o Y original do pulo
-        HRP.AssemblyLinearVelocity = Vector3.new(direcao.X, velocidadeAtual.Y, direcao.Z)
-
-        task.wait(0.3)
-        ImpulsoAtivoAgora = false
-    end)
-end
-
-if LocalPlayer.Character then
-    task.spawn(function()
-        ConfigurarPersonagem(LocalPlayer.Character)
-    end)
-end
-
-LocalPlayer.CharacterAdded:Connect(ConfigurarPersonagem)
 
 
 
@@ -2168,42 +2150,47 @@ ExtrasSection:Slider({
 })
 
 -- =========================================================================
--- 🎛️ INTERFACE EXTRAS | IMPULSO NO PULO
+-- 🎛️ INTERFACE LOCAL PLAYER | VELOCIDADE NO AR
 -- =========================================================================
-ExtrasSection:Toggle({
-    Title = "🚀 Impulso no Pulo",
-    Desc = "Ativa ou desativa o impulso ao pular.",
+
+LocalPlayerSection:Toggle({
+    Title = "🚀 Velocidade no Ar",
+    Desc = "Muda a velocidade enquanto você estiver pulando/no ar.",
     Value = false,
 
     Callback = function(Ativado)
-        ImpulsoNoPulo_Ativo = Ativado
+        _G.SpeedNoPulo = Ativado
         if Ativado then
-            Notify("Extras", "Impulso ativado!", "check")
+            Notify("LocalPlayer", "Velocidade no ar ativada!", "check")
         else
-            Notify("Extras", "Impulso desativado!", "info")
+            Notify("LocalPlayer", "Velocidade no ar desativada!", "info")
+            -- Reseta para a velocidade padrão ao desativar
+            local Char = player.Character
+            if Char and Char:FindFirstChild("Humanoid") then
+                Char.Humanoid.WalkSpeed = VelocidadePadrao
+            end
         end
     end,
 })
 
-ExtrasSection:Slider({
-    Title = "⚡ Força do Impulso",
-    Desc = "Define a velocidade do impulso.",
-    Step = 10,
+LocalPlayerSection:Slider({
+    Title = "⚡ Velocidade no Ar (Valor)",
+    Desc = "Define qual será a velocidade no ar.",
+    Step = 1,
 
     Value = {
-        Min = 100,
-        Max = 500,
-        Default = 250,
+        Min = 16,
+        Max = 150,
+        Default = 25,
     },
 
     IsTooltip = true,
     IsTextbox = true,
 
     Callback = function(Valor)
-        ForcaImpulso = Valor
+        VelocidadeNoPulo = Valor
     end,
 })
-
 
 ExtrasSection:Toggle({
     Title = "Infinite Jump",
