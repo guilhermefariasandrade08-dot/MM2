@@ -915,11 +915,12 @@ end)
 
 
 
---==================================================
--- PLAYER MOVEMENT SYSTEM
---==================================================
+-- =========================================================================
+-- PLAYER MOVEMENT SYSTEM (Com Proteção de Equip/Itens)
+-- =========================================================================
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 local SpeedEnabled = false
@@ -939,16 +940,32 @@ local function UpdateMovement()
     local Humanoid = GetHumanoid()
     if not Humanoid then return end
 
-    Humanoid.WalkSpeed = SpeedEnabled and SpeedValue or 16
-
+    -- Aplica o Pulo
     Humanoid.UseJumpPower = true
     Humanoid.JumpPower = JumpEnabled and JumpValue or 50
+    
+    -- Aplica a Velocidade se estiver ativada
+    if SpeedEnabled then
+        if Humanoid.WalkSpeed ~= SpeedValue then
+            Humanoid.WalkSpeed = SpeedValue
+        end
+    else
+        if Humanoid.WalkSpeed ~= 16 then
+            Humanoid.WalkSpeed = 16
+        end
+    end
 end
+
+-- Roda a cada frame para garantir que nenhum item altere sua velocidade de forma indesejada
+RunService.Stepped:Connect(function()
+    UpdateMovement()
+end)
 
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
     UpdateMovement()
 end)
+
 
 --==================================================
 -- FLY SYSTEM
