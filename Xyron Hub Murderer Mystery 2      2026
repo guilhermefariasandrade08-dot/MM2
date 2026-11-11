@@ -938,9 +938,8 @@ end)
 
 
 
-
 -- =========================================================================
--- 🌾 SISTEMA DE AUTO FARM DE COINS (Variáveis e Lógica Interna)
+-- 🌾 SISTEMA DE AUTO FARM DE COINS (Corrigido para novas rodadas automáticas)
 -- =========================================================================
 
 local CONFIG_FARM = {
@@ -948,8 +947,8 @@ local CONFIG_FARM = {
     Speed = 22,
     MaxDistance = 500,
     MurdererDangerRadius = 25,
-    Posture = "Levantado", -- "Levantado" ou "Deitado"
-    FullDestination = "Lobby", -- "Mapa", "Lobby", "Em cima do lobby", "Plataforma"
+    Posture = "Levantado",
+    FullDestination = "Lobby",
 }
 
 local LOBBY_SAFE_POS = Vector3.new(531.33, 461.22, 37.11)
@@ -1113,6 +1112,8 @@ local function GetNearestCoin(myPos)
     if not cachedCoinContainer or cachedCoinContainer ~= currentContainer or not cachedCoinContainer.Parent then
         cachedCoinContainer = currentContainer
         table.clear(collectedCoins)
+        StoppedUntilNewRound = false
+        bagFullByEvent = false
     end
 
     if not cachedCoinContainer then return nil end
@@ -1145,13 +1146,20 @@ local function GetNearestCoin(myPos)
     return bestCoin
 end
 
+-- Monitor de bolsa cheia e teleporte
 task.spawn(function()
+    local toggleAnterior = false
     while true do
         task.wait(0.1)
-        if not InGame() then
+        
+        -- Se o usuário religou o Auto Farm pelo menu, reseta os estados de bloqueio
+        if CONFIG_FARM.Active and not toggleAnterior then
             StoppedUntilNewRound = false
-            continue
+            bagFullByEvent = false
         end
+        toggleAnterior = CONFIG_FARM.Active
+
+        if not InGame() then continue end
 
         local isBagFull = CheckBagFullText()
         local currentCoinContainer = workspace:FindFirstChild("CoinContainer", true)
@@ -1187,15 +1195,26 @@ task.spawn(function()
                     if hum and InGame() then hum.PlatformStand = false end
                 end
 
-                CONFIG_FARM.Active = false
+                -- Apenas pausa o farm ao encher a bolsa nesta rodada
+                StoppedUntilNewRound = true
                 RestaurarColisoes()
             end
         end
     end
 end)
 
+-- Loop principal de movimento e coleta
 task.spawn(function()
     while true do
+        -- Detecta automaticamente se um novo CoinContainer (nova partida) surgiu no jogo
+        local currentContainer = workspace:FindFirstChild("CoinContainer", true)
+        if currentContainer and currentContainer ~= cachedCoinContainer then
+            cachedCoinContainer = currentContainer
+            table.clear(collectedCoins)
+            StoppedUntilNewRound = false
+            bagFullByEvent = false
+        end
+
         if CONFIG_FARM.Active and not StoppedUntilNewRound and not CheckBagFullText() and InGame() then
             local c = LocalPlayer.Character
             local hrp = c and c:FindFirstChild("HumanoidRootPart")
@@ -1209,7 +1228,7 @@ task.spawn(function()
             end
 
             local target = GetNearestCoin(hrp.Position)
-            if target and not StoppedUntilNewRound and not CheckBagFullText() then
+            if target and not StoppedUntilNewRound and not CheckBagFullTest() then
                 humanoid.PlatformStand = true
 
                 local heightOffset = (CONFIG_FARM.Posture == "Deitado") and Vector3.new(0, 4, 0) or Vector3.new(0, 0, 0)
