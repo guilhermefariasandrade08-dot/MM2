@@ -915,8 +915,32 @@ end)
 
 
 
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- =========================================================================
--- 🌾 SISTEMA COMPLETO DE AUTO FARM DE COINS (Murderer Mystery 2)
+-- 🌾 SISTEMA DE AUTO FARM DE COINS (Variáveis e Lógica Interna)
 -- =========================================================================
 
 local CONFIG_FARM = {
@@ -1084,9 +1108,13 @@ end
 
 local function GetNearestCoin(myPos)
     local bestCoin, shortestDist = nil, math.huge
-    if not cachedCoinContainer or not cachedCoinContainer.Parent then
-        cachedCoinContainer = workspace:FindFirstChild("CoinContainer", true)
+    
+    local currentContainer = workspace:FindFirstChild("CoinContainer", true)
+    if not cachedCoinContainer or cachedCoinContainer ~= currentContainer or not cachedCoinContainer.Parent then
+        cachedCoinContainer = currentContainer
+        table.clear(collectedCoins)
     end
+
     if not cachedCoinContainer then return nil end
 
     local charMurderer = GetMurderer()
@@ -1117,7 +1145,6 @@ local function GetNearestCoin(myPos)
     return bestCoin
 end
 
--- Teleporta ao encher a bolsa e desliga o farm automaticamente
 task.spawn(function()
     while true do
         task.wait(0.1)
