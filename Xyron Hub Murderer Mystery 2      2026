@@ -902,44 +902,8 @@ end)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 -- =========================================================================
--- 🌾 SISTEMA DE AUTO FARM DE COINS (Corrigido para novas rodadas automáticas)
+-- 🌾 SISTEMA DE AUTO FARM DE COINS (Sem Erros de Console)
 -- =========================================================================
 
 local CONFIG_FARM = {
@@ -1027,7 +991,7 @@ local function ResetFarmState()
     StoppedUntilNewRound = false
     bagFullByEvent = false
     RestaurarColisoes()
-    local c = LocalPlayer.Character
+    local c = LocalPlayer and LocalPlayer.Character
     local hum = c and c:FindFirstChildOfClass("Humanoid")
     if hum then hum.PlatformStand = false end
 end
@@ -1061,6 +1025,7 @@ local function CheckBagFullText()
     if now - lastBagCheck < 0.3 then return lastBagCheckResult end
     lastBagCheck = now
 
+    if not LocalPlayer then return false end
     local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return false end
     local mainGui = playerGui:FindFirstChild("MainGUI") or playerGui:FindFirstChild("GUI")
@@ -1082,6 +1047,7 @@ local function CheckBagFullText()
 end
 
 local function InGame()
+    if not LocalPlayer then return false end
     local c = LocalPlayer.Character
     if not c or not c:FindFirstChild("Humanoid") or c.Humanoid.Health <= 0 then return false end
     if not c:FindFirstChild("HumanoidRootPart") then return false end
@@ -1146,13 +1112,11 @@ local function GetNearestCoin(myPos)
     return bestCoin
 end
 
--- Monitor de bolsa cheia e teleporte
 task.spawn(function()
     local toggleAnterior = false
     while true do
         task.wait(0.1)
         
-        -- Se o usuário religou o Auto Farm pelo menu, reseta os estados de bloqueio
         if CONFIG_FARM.Active and not toggleAnterior then
             StoppedUntilNewRound = false
             bagFullByEvent = false
@@ -1173,7 +1137,7 @@ task.spawn(function()
             StoppedUntilNewRound = true
             if CONFIG_FARM.Active then
                 RestaurarColisoes()
-                local char = LocalPlayer.Character
+                local char = LocalPlayer and LocalPlayer.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 
@@ -1195,7 +1159,6 @@ task.spawn(function()
                     if hum and InGame() then hum.PlatformStand = false end
                 end
 
-                -- Apenas pausa o farm ao encher a bolsa nesta rodada
                 StoppedUntilNewRound = true
                 RestaurarColisoes()
             end
@@ -1203,10 +1166,8 @@ task.spawn(function()
     end
 end)
 
--- Loop principal de movimento e coleta
 task.spawn(function()
     while true do
-        -- Detecta automaticamente se um novo CoinContainer (nova partida) surgiu no jogo
         local currentContainer = workspace:FindFirstChild("CoinContainer", true)
         if currentContainer and currentContainer ~= cachedCoinContainer then
             cachedCoinContainer = currentContainer
@@ -1216,7 +1177,7 @@ task.spawn(function()
         end
 
         if CONFIG_FARM.Active and not StoppedUntilNewRound and not CheckBagFullText() and InGame() then
-            local c = LocalPlayer.Character
+            local c = LocalPlayer and LocalPlayer.Character
             local hrp = c and c:FindFirstChild("HumanoidRootPart")
             local humanoid = c and c:FindFirstChildOfClass("Humanoid")
 
@@ -1228,7 +1189,7 @@ task.spawn(function()
             end
 
             local target = GetNearestCoin(hrp.Position)
-            if target and not StoppedUntilNewRound and not CheckBagFullTest() then
+            if target and not StoppedUntilNewRound and not CheckBagFullText() then
                 humanoid.PlatformStand = true
 
                 local heightOffset = (CONFIG_FARM.Posture == "Deitado") and Vector3.new(0, 4, 0) or Vector3.new(0, 0, 0)
@@ -1260,13 +1221,46 @@ task.spawn(function()
             end
         else
             RestaurarColisoes()
-            local c = LocalPlayer.Character
+            local c = LocalPlayer and LocalPlayer.Character
             local hum = c and c:FindFirstChildOfClass("Humanoid")
             if hum then hum.PlatformStand = false end
             task.wait(0.5)
         end
     end
 end)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- 🌾 Interface na Aba Auto Farm
 local FarmSection = Tabs.AutoFarm:Section({ Title = "Coin Auto Farm", Desc = "Coleta automática de moedas.", Box = true, BoxBorder = true, Opened = true })
